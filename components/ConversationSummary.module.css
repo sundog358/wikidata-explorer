@@ -1,0 +1,19 @@
+.container {
+  @apply bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg p-4 flex flex-col gap-4 border border-blue-200/30 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300;
+}
+
+.header {
+  @apply flex items-center justify-between;
+}
+
+.input {
+  @apply bg-white/30 border-none focus:ring-2 focus:ring-blue-400 flex-1 text-blue-900 placeholder-blue-400;
+}
+
+.removeButton {
+  @apply text-blue-600 hover:text-red-500 ml-2 transition-colors duration-200;
+}
+
+.summary {
+  @apply text-sm text-blue-900 whitespace-pre-wrap bg-white/50 rounded-lg p-3 shadow-inner;
+}

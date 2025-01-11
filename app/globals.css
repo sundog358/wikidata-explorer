@@ -1,0 +1,217 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Root color variables */
+@layer base {
+  :root {
+    /* Bright white backgrounds */
+    --background: 0 0% 98%; /* Very light grey */
+    --foreground: 220 13% 20%; /* Darker grey for contrast */
+
+    /* Card colors */
+    --card: 0 0% 98%; /* Bright white */
+    --card-foreground: 220 13% 20%;
+
+    /* Popover */
+    --popover: 0 0% 100%; /* Pure white */
+    --popover-foreground: 220 13% 20%;
+
+    /* Light and fresh primary */
+    --primary: 200 95% 85%; /* Soft cyan */
+    --primary-foreground: 210 20% 98%;
+
+    /* Secondary colors */
+    --secondary: 220 50% 92%; /* Light blue */
+    --secondary-foreground: 220 13% 20%;
+
+    /* Muted tones */
+    --muted: 220 14.3% 95.9%; /* Pale grey */
+    --muted-foreground: 220 13% 35%; /* Mid grey */
+
+    /* Accent colors */
+    --accent: 195 75% 80%; /* Soft teal */
+    --accent-foreground: 220 13% 20%;
+
+    /* Destructive (less saturated red) */
+    --destructive: 0 78% 70%; /* Soft pinkish red */
+    --destructive-foreground: 220 13% 20%;
+
+    /* Borders and inputs */
+    --border: 220 14% 93%; /* Light grey border */
+    --input: 220 14% 93%; /* Matching light grey for inputs */
+    --ring: 200 95% 85%; /* Cyan ring for focus */
+
+    /* Brightened chart colors */
+    --chart-1: 200 95% 85%; /* Light cyan */
+    --chart-2: 180 85% 75%; /* Soft aqua */
+    --chart-3: 260 83% 88%; /* Soft lavender */
+    --chart-4: 176 85% 80%; /* Light mint */
+    --chart-5: 199 89% 85%; /* Bright sky blue */
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark mode background */
+    --background: 220 13% 15%; /* Dark grey */
+    --foreground: 220 13% 90%; /* Bright white */
+
+    /* Dark cards */
+    --card: 220 13% 15%;
+    --card-foreground: 220 13% 90%;
+
+    /* Popover in dark mode */
+    --popover: 220 13% 15%;
+    --popover-foreground: 220 13% 90%;
+
+    /* Dark primary */
+    --primary: 200 95% 70%; /* Brighter cyan */
+    --primary-foreground: 220 13% 90%;
+
+    /* Dark secondary */
+    --secondary: 220 13% 25%; /* Muted blue-grey */
+    --secondary-foreground: 220 13% 90%;
+
+    /* Muted for dark mode */
+    --muted: 220 13% 25%;
+    --muted-foreground: 220 13% 70%; /* Softer grey */
+
+    /* Accent in dark mode */
+    --accent: 200 95% 70%; /* Brightened teal */
+    --accent-foreground: 220 13% 90%;
+
+    /* Dark destructive */
+    --destructive: 0 78% 45%; /* Soft red for dark mode */
+    --destructive-foreground: 220 13% 90%;
+
+    /* Dark borders and inputs */
+    --border: 220 13% 25%; /* Subtle grey border */
+    --input: 220 13% 25%; /* Matching grey for inputs */
+    --ring: 200 95% 70%; /* Brighter cyan ring */
+
+    /* Chart colors for dark mode */
+    --chart-1: 200 95% 75%; /* Cyan */
+    --chart-2: 180 85% 65%; /* Aqua */
+    --chart-3: 260 83% 75%; /* Lavender */
+    --chart-4: 176 85% 70%; /* Mint */
+    --chart-5: 199 89% 75%; /* Sky blue */
+  }
+}
+
+/* Color swatch styling */
+@layer components {
+  .color-swatch {
+    display: inline-block;
+    width: 100px;
+    height: 50px;
+    border-radius: var(--radius);
+    margin: 0.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .color-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .color-grid h2 {
+    width: 100%;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--foreground);
+  }
+
+  /* Layout */
+  .page-container {
+    @apply min-h-screen bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 
+    dark:from-primary/20 dark:via-secondary/15 dark:to-accent/20;
+  }
+
+  /* Hero Section */
+  .hero-container {
+    @apply container mx-auto px-4 pt-20 pb-16;
+  }
+
+  .hero-content {
+    @apply text-center space-y-6;
+  }
+
+  .hero-title {
+    @apply text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent 
+    dark:from-primary-foreground dark:via-secondary-foreground dark:to-accent-foreground 
+    text-transparent bg-clip-text animate-gradient;
+  }
+
+  .hero-description {
+    @apply text-xl text-foreground/80 dark:text-foreground/90 max-w-2xl mx-auto;
+  }
+
+  /* Feature Cards */
+  .features-grid {
+    @apply grid md:grid-cols-2 lg:grid-cols-3 gap-8;
+  }
+
+  .feature-card {
+    @apply p-6 rounded-2xl bg-gradient-to-br from-background to-muted 
+    dark:from-background/50 dark:to-muted/50 backdrop-blur-sm 
+    border border-border hover:shadow-xl transition-all duration-300 
+    transform hover:-translate-y-1;
+  }
+
+  .feature-icon {
+    @apply w-12 h-12 text-primary dark:text-primary-foreground mb-4;
+  }
+
+  .feature-title {
+    @apply text-xl font-semibold mb-2 text-foreground dark:text-foreground;
+  }
+
+  .feature-description {
+    @apply text-muted-foreground dark:text-muted-foreground;
+  }
+
+  /* CTA Section */
+  .cta-container {
+    @apply relative p-8 rounded-3xl bg-gradient-to-r from-primary via-secondary to-accent 
+    dark:from-primary dark:via-secondary dark:to-accent;
+  }
+
+  .cta-overlay {
+    @apply absolute inset-0 bg-background/20 rounded-3xl backdrop-blur-xl;
+  }
+
+  .cta-content {
+    @apply relative z-10 text-center space-y-4;
+  }
+
+  .cta-icon {
+    @apply w-12 h-12 mx-auto mb-4 text-foreground animate-pulse;
+  }
+
+  .cta-title {
+    @apply text-3xl font-bold text-foreground;
+  }
+
+  .cta-description {
+    @apply max-w-2xl mx-auto text-lg text-foreground/90;
+  }
+
+  .cta-button {
+    @apply bg-background hover:bg-muted text-primary hover:text-primary-foreground 
+    mt-4 border-2 border-transparent hover:border-primary transition-all duration-300;
+  }
+}
+
+.color-grid .color-swatch {
+  width: 100px;
+  height: 50px;
+  border-radius: var(--radius);
+}
