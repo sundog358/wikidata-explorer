@@ -66,10 +66,13 @@ export class WikidataClient {
   }
 
   // Get detailed item info
-  async getItem(id: string): Promise<WikidataItem> {
-    const response = await fetch(`${this.baseUrl}/entities/items/${id}`);
+  async getEntity(id: string): Promise<WikidataItem> {
+    const entityType = id.startsWith("P") ? "properties" : "items";
+    const response = await fetch(
+      `${this.baseUrl}/entities/${entityType}/${id}`
+    );
     if (!response.ok) {
-      throw new Error(`Failed to fetch item ${id}: ${response.statusText}`);
+      throw new Error(`Failed to fetch entity ${id}: ${response.statusText}`);
     }
     return await response.json();
   }
@@ -105,34 +108,71 @@ export class WikidataClient {
 
   // Search entities (using action API since REST API doesn't have search endpoint yet)
   async searchEntities(searchTerm: string): Promise<WikidataItem[]> {
-    const response = await fetch(
-      `https://www.wikidata.org/w/api.php?` +
-        new URLSearchParams({
-          action: "wbsearchentities",
-          search: searchTerm,
-          language: "en",
-          format: "json",
-          origin: "*",
-        })
-    );
+    try {
+      // First search for items
+      const itemResponse = await fetch(
+        `https://www.wikidata.org/w/api.php?` +
+          new URLSearchParams({
+            action: "wbsearchentities",
+            search: searchTerm,
+            language: "en",
+            format: "json",
+            origin: "*",
+            type: "item",
+            limit: "10",
+            uselang: "en",
+          }).toString()
+      );
 
-    if (!response.ok) {
-      throw new Error("Failed to search Wikidata");
+      // Then search for properties
+      const propertyResponse = await fetch(
+        `https://www.wikidata.org/w/api.php?` +
+          new URLSearchParams({
+            action: "wbsearchentities",
+            search: searchTerm,
+            language: "en",
+            format: "json",
+            origin: "*",
+            type: "property",
+            limit: "10",
+            uselang: "en",
+          }).toString()
+      );
+
+      const [itemData, propertyData] = await Promise.all([
+        itemResponse.json(),
+        propertyResponse.json(),
+      ]);
+
+      // Combine and transform the results
+      const items = (itemData.search || []).map((result: any) => ({
+        id: result.id,
+        type: "item",
+        labels: { en: result.label || result.match?.text || "" },
+        descriptions: { en: result.description || "" },
+        aliases: { en: result.aliases || [] },
+        statements: result.claims || {},
+        sitelinks: result.sitelinks || {},
+      }));
+
+      const properties = (propertyData.search || []).map((result: any) => ({
+        id: result.id,
+        type: "property",
+        labels: { en: result.label || result.match?.text || "" },
+        descriptions: { en: result.description || "" },
+        aliases: { en: result.aliases || [] },
+        statements: result.claims || {},
+        sitelinks: result.sitelinks || {},
+      }));
+
+      // Return combined results
+      return [...items, ...properties].filter(
+        (item) => item.id && item.labels.en
+      );
+    } catch (error) {
+      console.error("Search error:", error);
+      throw error;
     }
-
-    const data = await response.json();
-    const results = await Promise.all(
-      data.search.map(async (result: any) => {
-        try {
-          return await this.getItem(result.id);
-        } catch (error) {
-          console.warn(`Failed to fetch details for ${result.id}`, error);
-          return null;
-        }
-      })
-    );
-
-    return results.filter((item): item is WikidataItem => item !== null);
   }
 }
 
