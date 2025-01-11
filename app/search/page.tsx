@@ -5,13 +5,8 @@ import { Search as SearchIcon, ArrowRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-
-interface WikidataItem {
-  id: string;
-  label: string;
-  description: string;
-  url: string;
-}
+import { searchWikidata } from "@/lib/wikidata";
+import type { WikidataItem } from "../../lib/wikidata";
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,41 +26,14 @@ export default function SearchPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `https://www.wikidata.org/w/api.php?` +
-          new URLSearchParams({
-            action: "wbsearchentities",
-            search: searchTerm,
-            language: "en",
-            format: "json",
-            origin: "*",
-            limit: "10",
-          })
-      );
+      const results = await searchWikidata(searchTerm);
+      setResults(results);
 
-      const data = await response.json();
-
-      if (data.search && data.search.length > 0) {
-        const items: WikidataItem[] = data.search.map((item: any) => ({
-          id: item.id,
-          label: item.label || "No label",
-          description: item.description || "No description available",
-          url: `https://www.wikidata.org/wiki/${item.id}`,
-        }));
-        setResults(items);
-        addToast({
-          title: "Results found",
-          description: `Found ${items.length} matching items`,
-          variant: "success",
-        });
-      } else {
-        setResults([]);
-        addToast({
-          title: "No results",
-          description: "No matching items found in Wikidata",
-          variant: "default",
-        });
-      }
+      addToast({
+        title: "Results found",
+        description: `Found ${results.length} items and properties`,
+        variant: "success",
+      });
     } catch (error) {
       addToast({
         title: "Error",
@@ -129,18 +97,41 @@ export default function SearchPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-lg font-semibold text-sky-800 dark:text-sky-300">
-                        {item.label}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-sky-800 dark:text-sky-300">
+                          {item.labels?.["en"] ?? "No label"}
+                        </h3>
+                        <span
+                          className={`px-2 py-0.5 text-xs rounded-full ${
+                            item.type === "property"
+                              ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                              : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                          }`}
+                        >
+                          {item.type}
+                        </span>
+                      </div>
                       <p className="text-gray-700 dark:text-gray-300 mt-1">
-                        {item.description}
+                        {item.descriptions?.["en"] ?? "No description"}
                       </p>
+                      {(item.aliases?.["en"] ?? []).length > 0 && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          Also known as:{" "}
+                          {(item.aliases?.["en"] ?? []).join(", ")}
+                        </p>
+                      )}
+                      {Object.keys(item.sitelinks).length > 0 && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          Available in {Object.keys(item.sitelinks).length}{" "}
+                          Wikipedia languages
+                        </p>
+                      )}
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                         ID: {item.id}
                       </p>
                     </div>
                     <a
-                      href={item.url}
+                      href={`https://www.wikidata.org/wiki/${item.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 dark:hover:text-cyan-300"

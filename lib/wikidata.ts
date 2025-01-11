@@ -1,63 +1,145 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-// API Types
-export const WikibasePropertySchema = z.object({
-  id: z.string(),
-  type: z.literal('property'),
-  data_type: z.string(),
-  labels: z.record(z.string()),
-  descriptions: z.record(z.string()),
-  aliases: z.record(z.array(z.string())),
-  statements: z.record(z.array(z.any()))
-});
+// --- Type Definitions ---
+export type WikidataItem = {
+  id: string;
+  type: "item" | "property";
+  labels: Record<string, string>;
+  descriptions: Record<string, string>;
+  aliases: Record<string, string[]>;
+  statements: Record<string, WikidataStatement[]>;
+  sitelinks: Record<string, WikidataSitelink>;
+};
 
-export const WikibaseItemSchema = z.object({
-  id: z.string(),
-  type: z.literal('item'),
-  labels: z.record(z.string()),
-  descriptions: z.record(z.string()),
-  aliases: z.record(z.array(z.string())),
-  statements: z.record(z.array(z.any())),
-  sitelinks: z.record(z.object({
-    title: z.string(),
-    badges: z.array(z.string()),
-    url: z.string()
-  }))
-});
+export type WikidataStatement = {
+  id: string;
+  rank: "deprecated" | "normal" | "preferred";
+  property: {
+    id: string;
+    data_type: string | null;
+  };
+  value: {
+    type: "value" | "somevalue" | "novalue";
+    content?: any;
+  };
+  qualifiers: WikidataQualifier[];
+  references: WikidataReference[];
+};
 
-// API Client
+export type WikidataSitelink = {
+  title: string;
+  badges: string[];
+  url: string;
+};
+
+export type WikidataQualifier = {
+  property: {
+    id: string;
+    data_type: string | null;
+  };
+  value: {
+    type: "value" | "somevalue" | "novalue";
+    content?: any;
+  };
+};
+
+export type WikidataReference = {
+  hash: string;
+  parts: {
+    property: {
+      id: string;
+      data_type: string | null;
+    };
+    value: {
+      type: "value" | "somevalue" | "novalue";
+      content?: any;
+    };
+  }[];
+};
+
+// --- API Client Class ---
 export class WikidataClient {
   private baseUrl: string;
 
-  constructor(baseUrl = 'https://www.wikidata.org/w/rest.php/wikibase/v1') {
+  constructor(baseUrl = "https://www.wikidata.org/w/rest.php/wikibase/v1") {
     this.baseUrl = baseUrl;
   }
 
-  async getItem(id: string) {
+  // Get detailed item info
+  async getItem(id: string): Promise<WikidataItem> {
     const response = await fetch(`${this.baseUrl}/entities/items/${id}`);
-    if (!response.ok) throw new Error(`Failed to fetch item ${id}`);
-    const data = await response.json();
-    return WikibaseItemSchema.parse(data);
-  }
-
-  async getProperty(id: string) {
-    const response = await fetch(`${this.baseUrl}/entities/properties/${id}`);
-    if (!response.ok) throw new Error(`Failed to fetch property ${id}`);
-    const data = await response.json();
-    return WikibasePropertySchema.parse(data);
-  }
-
-  async searchEntities(query: string, language = 'en', limit = 10) {
-    const params = new URLSearchParams({
-      search: query,
-      language,
-      limit: limit.toString()
-    });
-    const response = await fetch(`${this.baseUrl}/search/entities?${params}`);
-    if (!response.ok) throw new Error('Search failed');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch item ${id}: ${response.statusText}`);
+    }
     return await response.json();
+  }
+
+  // Get item statements
+  async getItemStatements(
+    id: string,
+    propertyId?: string
+  ): Promise<Record<string, WikidataStatement[]>> {
+    const url = new URL(`${this.baseUrl}/entities/items/${id}/statements`);
+    if (propertyId) {
+      url.searchParams.append("property", propertyId);
+    }
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch statements for ${id}: ${response.statusText}`
+      );
+    }
+    return await response.json();
+  }
+
+  // Get item labels
+  async getItemLabels(id: string): Promise<Record<string, string>> {
+    const response = await fetch(`${this.baseUrl}/entities/items/${id}/labels`);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch labels for ${id}: ${response.statusText}`
+      );
+    }
+    return await response.json();
+  }
+
+  // Search entities (using action API since REST API doesn't have search endpoint yet)
+  async searchEntities(searchTerm: string): Promise<WikidataItem[]> {
+    const response = await fetch(
+      `https://www.wikidata.org/w/api.php?` +
+        new URLSearchParams({
+          action: "wbsearchentities",
+          search: searchTerm,
+          language: "en",
+          format: "json",
+          origin: "*",
+        })
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to search Wikidata");
+    }
+
+    const data = await response.json();
+    const results = await Promise.all(
+      data.search.map(async (result: any) => {
+        try {
+          return await this.getItem(result.id);
+        } catch (error) {
+          console.warn(`Failed to fetch details for ${result.id}`, error);
+          return null;
+        }
+      })
+    );
+
+    return results.filter((item): item is WikidataItem => item !== null);
   }
 }
 
-// Singleton instance
-export const wikidataClient = new WikidataClient();
+// --- Search Function ---
+export async function searchWikidata(
+  searchTerm: string
+): Promise<WikidataItem[]> {
+  const client = new WikidataClient();
+  return client.searchEntities(searchTerm);
+}
