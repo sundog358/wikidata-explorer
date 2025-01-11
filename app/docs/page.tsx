@@ -47,8 +47,8 @@ export default function DocsPage() {
                     </span>
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">type</span> - "item" |
-                    "property"
+                    <span className="font-semibold">type</span> -
+                    &apos;item&apos; | &apos;property&apos;
                     <br />
                     <span className="text-xs">The type of the entity</span>
                   </p>
@@ -91,8 +91,9 @@ export default function DocsPage() {
                     </span>
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">rank</span> - "deprecated" |
-                    "normal" | "preferred"
+                    <span className="font-semibold">rank</span> -
+                    &quot;deprecated&quot; | &quot;normal&quot; |
+                    &quot;preferred&quot;
                     <br />
                     <span className="text-xs">The rank of the statement</span>
                   </p>
@@ -125,7 +126,7 @@ export default function DocsPage() {
                   <span className="px-2 py-1 text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
                     GET
                   </span>
-                  <code className="text-sm">/entities/items/{"{item_id}"}</code>
+                  <code className="text-sm">/entities/items/{`{item_id}`}</code>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 text-sm">
                   Retrieve a single Wikibase Item by ID
@@ -138,7 +139,7 @@ export default function DocsPage() {
                     GET
                   </span>
                   <code className="text-sm">
-                    /entities/items/{"{item_id}"}/statements
+                    /entities/items/{`{item_id}`}/statements
                   </code>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 text-sm">
@@ -152,11 +153,11 @@ export default function DocsPage() {
                     GET
                   </span>
                   <code className="text-sm">
-                    /entities/items/{"{item_id}"}/labels
+                    /entities/items/{`{item_id}`}/labels
                   </code>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 text-sm">
-                  Retrieve an Item's labels
+                  Retrieve an Item&apos;s labels
                 </p>
               </div>
             </div>
