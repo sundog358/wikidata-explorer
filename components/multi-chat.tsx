@@ -1,6 +1,6 @@
 "use client";
 
-import { useChatContext } from "./ChatContext";
+import { useChatContext } from "@/components/context/ChatContext";
 import { useState } from "react";
 import { AvatarImage, AvatarFallback, Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

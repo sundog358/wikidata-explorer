@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useChat } from "ai/react";
-import { useChatContext } from "./ChatContext";
+import { useChatContext } from "@/components/context/ChatContext";
 import {
   useEffect,
   useState,
@@ -119,22 +119,19 @@ export default memo(function ConversationSummary({
 
   const { messages, handleInputChange, handleSubmit, isLoading } = useChat({
     body: { messageList },
-    onFinish: useCallback((message: { content: string }) => {
+    onFinish: (message) => {
       setSummary(message.content);
       setStreamingSummary("");
       retryCount.current = 0;
-    }, []),
-    onError: useCallback(
-      (error: Error) => {
-        if (error.message.includes("locked to a reader")) {
-          console.warn("Stream lock error, retrying...");
-          setTimeout(() => handleChatSubmission(), 100);
-          return;
-        }
-        handleError(error);
-      },
-      [handleError]
-    ),
+    },
+    onError: (error) => {
+      if (error.message.includes("locked to a reader")) {
+        console.warn("Stream lock error, retrying...");
+        setTimeout(() => handleChatSubmission(), 100);
+        return;
+      }
+      handleError(error);
+    },
   });
 
   // Atomic state updates
@@ -201,35 +198,27 @@ export default memo(function ConversationSummary({
 
   // Cleanup effect with proper dependency tracking
   useEffect(() => {
-    const currentVersion = stateVersion.current;
-
-    return () => {
-      if (currentVersion === stateVersion.current) {
-        setStreamingSummary("");
-        setError(null);
-        retryCount.current = 0;
-      }
+    const cleanup = () => {
+      stateVersion.current += 1;
+      resetState();
     };
-  }, []); // Empty dependency array since we're using refs
+    return cleanup;
+  }, [resetState]);
 
   // Start analysis when central chat completes and hasn't started yet
   useEffect(() => {
     if (centralChatComplete && !hasStarted && messageList.length > 0) {
       setHasStarted(true);
-      // Use a timeout to avoid immediate state updates
-      const timeoutId = setTimeout(() => {
-        handleChatSubmission();
-      }, 0);
-      return () => clearTimeout(timeoutId);
+      handleChatSubmission();
     }
-  }, [centralChatComplete, hasStarted, messageList.length]); // Simplified dependencies
+  }, [centralChatComplete, hasStarted, messageList, handleChatSubmission]);
 
   // Reset hasStarted when new messages come in
   useEffect(() => {
     if (!centralChatComplete) {
       setHasStarted(false);
     }
-  }, [centralChatComplete]); // Remove messageList dependency
+  }, [messageList, centralChatComplete]);
 
   // Memoize expensive computations
   const processedMessageList = useMemo(() => {
@@ -335,21 +324,18 @@ export default memo(function ConversationSummary({
     return <div className="text-blue-900 whitespace-pre-wrap">{summary}</div>;
   }, [hasStarted, isLoading, streamingSummary, summary]);
 
-  // Add resetState to local state management
-  const resetLocalState = useCallback(() => {
-    setStreamingSummary("");
-    setError(null);
-    retryCount.current = 0;
-  }, []);
+  // Add a ref to track if we've processed this content
+  const processedContentRef = useRef<string>("");
 
-  // Update the cleanup effect
   useEffect(() => {
-    const cleanup = () => {
-      stateVersion.current += 1;
-      resetLocalState();
-    };
-    return cleanup;
-  }, [resetLocalState]);
+    if (streamingSummary && streamingSummary !== processedContentRef.current) {
+      processedContentRef.current = streamingSummary;
+      setSummary((prev) => {
+        const newSummary = prev + streamingSummary;
+        return newSummary;
+      });
+    }
+  }, [streamingSummary]);
 
   return (
     <ErrorBoundary>

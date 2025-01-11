@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
-import { ChatProvider } from "@/components/ChatContext";
+import { ChatProvider } from "@/components/context/ChatContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
