@@ -12,7 +12,7 @@ export const ToastContext = React.createContext<{
   toasts: ToasterToast[];
   addToast: (toast: Omit<ToasterToast, "id">) => void;
   updateToast: (
-    toast: Pick<ToasterToast, "id"> & Partial<ToasterToast>
+    toast: Pick<ToasterToast, "id"> & Partial<ToasterToast>,
   ) => void;
   dismissToast: (toastId?: string) => void;
   removeToast: (toastId?: string) => void;

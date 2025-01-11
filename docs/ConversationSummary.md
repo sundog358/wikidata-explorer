@@ -33,6 +33,7 @@ setSummary((prev) => prev + streamingContent);
 }, [streamingContent]);
 
 return (
+
 <div className={styles.container}>
 <div className={styles.header}>
 <Avatar className="w-6 h-6">

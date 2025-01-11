@@ -48,7 +48,7 @@ export function MainNav() {
               "flex items-center text-sm font-medium transition-colors hover:text-blue-800 dark:hover:text-blue-400",
               pathname === item.href
                 ? "text-green-700 dark:text-green-500"
-                : "text-muted-foreground"
+                : "text-muted-foreground",
             )}
           >
             <Icon className="h-4 w-4 mr-2" />

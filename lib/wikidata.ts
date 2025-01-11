@@ -69,7 +69,7 @@ export class WikidataClient {
   async getEntity(id: string): Promise<WikidataItem> {
     const entityType = id.startsWith("P") ? "properties" : "items";
     const response = await fetch(
-      `${this.baseUrl}/entities/${entityType}/${id}`
+      `${this.baseUrl}/entities/${entityType}/${id}`,
     );
     if (!response.ok) {
       throw new Error(`Failed to fetch entity ${id}: ${response.statusText}`);
@@ -80,7 +80,7 @@ export class WikidataClient {
   // Get item statements
   async getItemStatements(
     id: string,
-    propertyId?: string
+    propertyId?: string,
   ): Promise<Record<string, WikidataStatement[]>> {
     const url = new URL(`${this.baseUrl}/entities/items/${id}/statements`);
     if (propertyId) {
@@ -89,7 +89,7 @@ export class WikidataClient {
     const response = await fetch(url.toString());
     if (!response.ok) {
       throw new Error(
-        `Failed to fetch statements for ${id}: ${response.statusText}`
+        `Failed to fetch statements for ${id}: ${response.statusText}`,
       );
     }
     return await response.json();
@@ -100,7 +100,7 @@ export class WikidataClient {
     const response = await fetch(`${this.baseUrl}/entities/items/${id}/labels`);
     if (!response.ok) {
       throw new Error(
-        `Failed to fetch labels for ${id}: ${response.statusText}`
+        `Failed to fetch labels for ${id}: ${response.statusText}`,
       );
     }
     return await response.json();
@@ -121,7 +121,7 @@ export class WikidataClient {
             type: "item",
             limit: "10",
             uselang: "en",
-          }).toString()
+          }).toString(),
       );
 
       // Then search for properties
@@ -136,7 +136,7 @@ export class WikidataClient {
             type: "property",
             limit: "10",
             uselang: "en",
-          }).toString()
+          }).toString(),
       );
 
       const [itemData, propertyData] = await Promise.all([
@@ -167,7 +167,7 @@ export class WikidataClient {
 
       // Return combined results
       return [...items, ...properties].filter(
-        (item) => item.id && item.labels.en
+        (item) => item.id && item.labels.en,
       );
     } catch (error) {
       console.error("Search error:", error);
@@ -178,7 +178,7 @@ export class WikidataClient {
 
 // --- Search Function ---
 export async function searchWikidata(
-  searchTerm: string
+  searchTerm: string,
 ): Promise<WikidataItem[]> {
   const client = new WikidataClient();
   return client.searchEntities(searchTerm);

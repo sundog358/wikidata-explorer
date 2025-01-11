@@ -17,7 +17,7 @@ const ToastViewport = React.forwardRef<
     ref={ref}
     className={cn(
       "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
-      className
+      className,
     )}
     {...props}
   />
@@ -41,7 +41,7 @@ const toastVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 );
 
 const Toast = React.forwardRef<
@@ -69,7 +69,7 @@ const ToastAction = React.forwardRef<
       "group-[.destructive]:bg-red-100 group-[.destructive]:hover:bg-red-200 dark:group-[.destructive]:bg-red-900 dark:group-[.destructive]:hover:bg-red-800",
       "group-[.success]:bg-green-100 group-[.success]:hover:bg-green-200 dark:group-[.success]:bg-green-900 dark:group-[.success]:hover:bg-green-800",
       "group-[.warning]:bg-yellow-100 group-[.warning]:hover:bg-yellow-200 dark:group-[.warning]:bg-yellow-900 dark:group-[.warning]:hover:bg-yellow-800",
-      className
+      className,
     )}
     {...props}
   />
@@ -89,7 +89,7 @@ const ToastClose = React.forwardRef<
       "group-[.success]:text-green-600 group-[.success]:hover:text-green-900 dark:group-[.success]:text-green-400 dark:group-[.success]:hover:text-green-100",
       "group-[.warning]:text-yellow-600 group-[.warning]:hover:text-yellow-900 dark:group-[.warning]:text-yellow-400 dark:group-[.warning]:hover:text-yellow-100",
       "focus:opacity-100 focus:outline-none group-hover:opacity-100",
-      className
+      className,
     )}
     toast-close=""
     {...props}

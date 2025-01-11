@@ -52,7 +52,7 @@ export function ToastProvider({
           return {
             ...state,
             toasts: state.toasts.map((t) =>
-              t.id === action.toast.id ? { ...t, ...action.toast } : t
+              t.id === action.toast.id ? { ...t, ...action.toast } : t,
             ),
           };
         case actionTypes.DISMISS_TOAST: {
@@ -67,7 +67,7 @@ export function ToastProvider({
             toasts: state.toasts.map((t) =>
               t.id === toastId || toastId === undefined
                 ? { ...t, open: false }
-                : t
+                : t,
             ),
           };
         }
@@ -83,7 +83,7 @@ export function ToastProvider({
           return state;
       }
     },
-    { toasts: [] }
+    { toasts: [] },
   );
 
   const addToRemoveQueue = React.useCallback((toastId: string) => {
@@ -104,7 +104,7 @@ export function ToastProvider({
     (toast: Pick<ToasterToast, "id"> & Partial<ToasterToast>) => {
       dispatch({ type: actionTypes.UPDATE_TOAST, toast });
     },
-    []
+    [],
   );
 
   const dismissToast = React.useCallback((toastId?: string) => {
@@ -126,7 +126,7 @@ export function ToastProvider({
         removeToast,
       },
     },
-    children
+    children,
   );
 }
 
