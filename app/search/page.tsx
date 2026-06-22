@@ -77,6 +77,11 @@ function formatStatementValue(statement: WikidataStatement, onEntityClick: (id: 
   return <span>{String(content)}</span>;
 }
 
+function getInitialSearchTerm() {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("q") || "";
+}
+
 function collectCommonsFiles(item: WikidataItem | null): string[] {
   if (!item) return [];
 
@@ -88,7 +93,7 @@ function collectCommonsFiles(item: WikidataItem | null): string[] {
 }
 
 export default function SearchPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(getInitialSearchTerm);
   const [results, setResults] = useState<WikidataItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<WikidataItem | null>(null);
   const [loading, setLoading] = useState(false);
@@ -119,17 +124,23 @@ export default function SearchPage() {
     let cancelled = false;
     const files = collectCommonsFiles(selectedItem);
 
-    setMediaInfo({});
-    if (!files.length) return;
+    async function loadMedia() {
+      if (!files.length) {
+        setMediaInfo({});
+        return;
+      }
 
-    client
-      .fetchCommonsMedia(files.slice(0, 12))
-      .then((media) => {
+      setMediaInfo({});
+
+      try {
+        const media = await client.fetchCommonsMedia(files.slice(0, 12));
         if (!cancelled) setMediaInfo(media);
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setMediaInfo({});
-      });
+      }
+    }
+
+    void loadMedia();
 
     return () => {
       cancelled = true;
@@ -186,11 +197,14 @@ export default function SearchPage() {
   }, []);
 
   useEffect(() => {
-    const initialQuery = new URLSearchParams(window.location.search).get("q");
-    if (initialQuery) {
-      setSearchTerm(initialQuery);
+    const initialQuery = getInitialSearchTerm();
+    if (!initialQuery) return;
+
+    const timeout = window.setTimeout(() => {
       void runSearch(initialQuery);
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, [runSearch]);
 
   async function handleSearch(event: React.FormEvent) {
@@ -314,7 +328,7 @@ export default function SearchPage() {
                   <div>
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <h2 className="text-2xl font-semibold text-slate-950 dark:text-slate-50">{getEntityLabel(selectedItem)}</h2>
-                      <Badge variant="secondary">{selectedItem.id}</Badge>
+                      <Badge variant="secondary" data-testid="selected-entity-id">{selectedItem.id}</Badge>
                       <Badge variant="outline">{selectedItem.type}</Badge>
                     </div>
                     <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">{getEntityDescription(selectedItem)}</p>
