@@ -19,11 +19,16 @@ The best version of the project is not just a prettier Wikidata search UI. It is
 The project already has a strong base:
 
 - Next.js 16 App Router and React 19 stable
-- AI SDK 6 research assistant with server-side OpenAI key handling
+- AG2-backed research assistant with server-side OpenAI key handling
+- Grounded AG2 entity summaries and specialist workflows generated from visible or fetched Wikidata context
+- Browser-local AG2 agent run history for revisiting research, graph, verifier, comparison, and report outputs
 - Wikidata Action API, Wikibase REST API, and Commons media integration
-- Clickable relationship graph for selected entities
+- Clickable relationship graph for selected entities with hover previews, rank badges, and selected-edge details
 - Stable English label fallback for multilingual Wikidata records
-- Route smoke checks, unit tests, graph-click e2e test, visual QA screenshots, and GitHub Actions CI
+- Expandable statement evidence for ranks, qualifiers, and references
+- Evidence review queue seeded from deprecated and unreferenced visible statements
+- Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
+- Route smoke checks, unit tests, AG2 workflow validation, graph-click/evidence e2e test, visual QA screenshots, and GitHub Actions CI
 - Cleaned repo presentation with tracked portfolio screenshots
 
 ## 🚦 Near-Term Priorities
@@ -32,10 +37,10 @@ The project already has a strong base:
 
 Goal: make the graph the signature feature.
 
-- Add graph node hover previews with property, label, ID, and description
+- Add richer graph node descriptions from secondary entity lookups
 - Add graph filters for relationship type, statement rank, item/property type, and media presence
 - Add graph depth controls: 1-hop, 2-hop, and selected-property expansion
-- Add a side panel for selected graph edges and statement details
+- Add multi-edge history and pinned comparison for selected graph relationships
 - Add layout modes: radial, grouped by property, and timeline-like for date-heavy entities
 
 ### 2. Entity Comparison
@@ -47,15 +52,15 @@ Goal: support research workflows beyond single-entity browsing.
 - Add quick comparison examples such as `Q42` vs another author or `P31` vs related properties
 - Export comparison summaries as Markdown
 
-### 3. AI Assistant Context
+### 3. AG2 Assistant Context
 
-Goal: make AI assistance grounded in visible Wikidata context.
+Goal: make AG2 assistance grounded in visible and fetched Wikidata context through focused specialist agents.
 
-- Send selected entity summary, graph nodes, and selected statements as explicit chat context
+- Send selected graph nodes and selected statements into the full AG2 chat surface
 - Add citation-style references to Wikidata IDs in AI responses
-- Add a “summarize this entity” action from the search page
+- Persist agent result history beyond browser-local storage when a database layer is introduced
 - Add a “suggest next entities to inspect” action from the graph
-- Add safety copy that distinguishes Wikidata-derived facts from model-generated reasoning
+- Expand safety copy and policy UI for draft exports, bot-ready actions, and human approval states
 
 ### 4. Evidence And Trust
 
@@ -66,6 +71,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Add badges for referenced vs unreferenced claims
 - Add source links where references include URLs, identifiers, or stated-in records
 - Add a data-quality summary for each entity
+- Promote review queue findings into saved, exportable curation tasks
 
 ## 🧪 Testing And Quality Roadmap
 
@@ -107,7 +113,7 @@ Goal: help users evaluate data quality, not just browse facts.
 ## 🧹 Maintenance Roadmap
 
 - Monitor Next.js audit advisories; avoid npm’s bad forced downgrade path for the current internal PostCSS advisory
-- Keep React, Next, AI SDK, and Playwright Core current on a regular schedule
+- Keep React, Next, AG2, Python dependencies, and Playwright Core current on a regular schedule
 - Keep screenshots fresh after visual design changes
 - Keep ignored local research artifacts out of git
 

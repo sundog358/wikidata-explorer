@@ -1,67 +1,8 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { z } from "zod";
+import { Ag2BridgeError, runAg2Agent } from "@/lib/ag2";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
-
-function readLocalEnvValue(name: string) {
-  if (process.env.NODE_ENV === "production") return undefined;
-
-  const envPath = join(process.cwd(), ".env");
-  if (!existsSync(envPath)) return undefined;
-
-  const line = readFileSync(envPath, "utf8")
-    .split(/\r?\n/)
-    .find((entry) => entry.match(new RegExp(`^\\s*${name}\\s*=`)));
-
-  if (!line) return undefined;
-
-  const value = line.replace(new RegExp(`^\\s*${name}\\s*=\\s*`), "").trim();
-  if (!value) return undefined;
-
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    return value.slice(1, -1);
-  }
-
-  return value;
-}
-
-function getOpenAIKey() {
-  return readLocalEnvValue("OPENAI_API_KEY") || process.env.OPENAI_API_KEY;
-}
-
-function toSafeChatError(error: unknown) {
-  console.error("Chat stream failed:", error);
-
-  if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    if (
-      message.includes("api key") ||
-      message.includes("401") ||
-      message.includes("unauthorized")
-    ) {
-      return "The OpenAI API key was rejected by the provider.";
-    }
-    if (message.includes("model") || message.includes("404")) {
-      return "The configured OpenAI model is unavailable for this key.";
-    }
-    if (
-      message.includes("rate") ||
-      message.includes("quota") ||
-      message.includes("429")
-    ) {
-      return "The OpenAI API is rate limited or out of quota.";
-    }
-  }
-
-  return "The chat service could not complete the response.";
-}
+export const maxDuration = 60;
 
 const textPartSchema = z.object({
   type: z.literal("text"),
@@ -71,23 +12,24 @@ const textPartSchema = z.object({
 const messageSchema = z.object({
   id: z.string().optional(),
   role: z.enum(["system", "user", "assistant"]),
-  parts: z.array(textPartSchema).min(1).max(20),
+  content: z.string().trim().min(1).max(8000).optional(),
+  parts: z.array(textPartSchema).min(1).max(20).optional(),
 });
 
 const requestSchema = z.object({
   messages: z.array(messageSchema).min(1).max(30),
 });
 
+function messageContent(message: z.infer<typeof messageSchema>) {
+  if (message.content) return message.content;
+  return (message.parts || [])
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("\n")
+    .trim();
+}
+
 export async function POST(req: Request) {
-  const apiKey = getOpenAIKey();
-
-  if (!apiKey) {
-    return Response.json(
-      { error: "OpenAI API key is not configured for this server." },
-      { status: 503 },
-    );
-  }
-
   let body: unknown;
   try {
     body = await req.json();
@@ -106,24 +48,21 @@ export async function POST(req: Request) {
     );
   }
 
-  try {
-    const openai = createOpenAI({ apiKey });
-    const result = streamText({
-      model: openai(process.env.OPENAI_MODEL || "gpt-4o-mini"),
-      system:
-        "You are a concise assistant inside Wikidata Explorer. Help users reason about Wikidata, linked data, and the current conversation without fabricating facts.",
-      messages: await convertToModelMessages(parsed.data.messages as UIMessage[]),
-      temperature: 0.4,
-      maxOutputTokens: 700,
-    });
+  const messages = parsed.data.messages.map((message) => ({
+    role: message.role,
+    content: messageContent(message),
+  }));
 
-    return result.toUIMessageStreamResponse({
-      onError: toSafeChatError,
-    });
+  try {
+    const result = await runAg2Agent({ mode: "chat", messages });
+    return Response.json({ message: result.message });
   } catch (error) {
-    console.error("Chat route failed:", error);
+    console.error("AG2 chat route failed:", error);
+    if (error instanceof Ag2BridgeError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     return Response.json(
-      { error: "The chat service could not start a response." },
+      { error: "The AG2 chat service could not complete the response." },
       { status: 500 },
     );
   }

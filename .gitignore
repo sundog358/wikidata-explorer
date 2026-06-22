@@ -61,3 +61,5 @@ __pycache__/
 /utils/scripts/
 /.env
 /.tmp/
+# Local AG2 reference repo
+/metagenauto/

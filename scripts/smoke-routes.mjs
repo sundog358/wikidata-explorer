@@ -7,6 +7,7 @@ const routeChecks = [
   { route: "/docs", includes: "Developer Commands" },
   { route: "/about", includes: "Portfolio project" },
   { route: "/chat", includes: "Wikidata Research Chat" },
+  { route: "/agents", includes: "Agent Workbench" },
 ];
 
 async function checkRoute({ route, includes }) {
@@ -39,9 +40,43 @@ async function checkInvalidChatRequest() {
   };
 }
 
+
+async function checkInvalidEntitySummaryRequest() {
+  const url = new URL("/api/entity-summary", baseUrl).toString();
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ entity: null }),
+  });
+
+  return {
+    ok: response.status === 400 || response.status === 503,
+    route: "/api/entity-summary invalid request",
+    status: response.status,
+    reason: response.status === 400 || response.status === 503 ? "" : "expected validation or missing-key response",
+  };
+}
+
+async function checkInvalidAg2WorkflowRequest() {
+  const url = new URL("/api/ag2-workflow", baseUrl).toString();
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "compare", entity: null }),
+  });
+
+  return {
+    ok: response.status === 400 || response.status === 503,
+    route: "/api/ag2-workflow invalid request",
+    status: response.status,
+    reason: response.status === 400 || response.status === 503 ? "" : "expected validation or missing-key response",
+  };
+}
 const results = [
   ...(await Promise.all(routeChecks.map(checkRoute))),
   await checkInvalidChatRequest(),
+  await checkInvalidEntitySummaryRequest(),
+  await checkInvalidAg2WorkflowRequest(),
 ];
 
 for (const result of results) {

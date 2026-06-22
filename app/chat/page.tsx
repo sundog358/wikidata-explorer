@@ -1,11 +1,16 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useChat } from "@ai-sdk/react";
 import { BrainCircuit, Database, Search, Send, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
 
 const starterPrompts = [
   "Explain how Q42 is connected to notable works and occupations.",
@@ -13,18 +18,19 @@ const starterPrompts = [
   "Suggest a research path for exploring linked open data about museums.",
 ];
 
-function messageText(message: { parts?: Array<{ type: string; text?: string }> }) {
-  return (message.parts || [])
-    .filter((part) => part.type === "text")
-    .map((part) => part.text || "")
-    .join("");
+function newMessage(role: ChatMessage["role"], content: string): ChatMessage {
+  return {
+    id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    role,
+    content,
+  };
 }
 
 export default function ChatPage() {
   const [input, setInput] = useState("");
-  const { messages, sendMessage, status, error } = useChat();
-
-  const isLoading = status === "submitted" || status === "streaming";
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function submitPrompt(prompt: string) {
     setInput(prompt);
@@ -35,8 +41,33 @@ export default function ChatPage() {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
 
+    const nextMessages = [...messages, newMessage("user", trimmed)];
+    setMessages(nextMessages);
     setInput("");
-    await sendMessage({ text: trimmed });
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: nextMessages.map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "The AG2 chat service could not complete the response.");
+
+      setMessages((current) => [...current, newMessage("assistant", data.message || "")]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The AG2 chat service could not complete the response.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   function submitOnEnter(event: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -53,11 +84,11 @@ export default function ChatPage() {
           <div className="space-y-3">
             <Badge variant="outline" className="bg-white dark:bg-slate-900">
               <Sparkles className="mr-2 h-4 w-4 text-sky-500" />
-              AI research assistant
+              AG2 research assistant
             </Badge>
             <h1 className="text-3xl font-semibold tracking-tight">Ask about linked data</h1>
             <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Use chat for research planning, statement interpretation, and Wikidata workflow questions. The assistant does not browse Wikidata for you, so verify factual claims in the explorer.
+              Use chat for research planning, statement interpretation, and Wikidata workflow questions. The AG2 agent does not browse Wikidata for you, so verify factual claims in the explorer.
             </p>
           </div>
 
@@ -85,7 +116,7 @@ export default function ChatPage() {
               <Database className="h-4 w-4 text-sky-600 dark:text-sky-300" />
               Portfolio note
             </div>
-            The chat endpoint validates requests, streams through AI SDK 6, and keeps the OpenAI key server-side.
+            The chat endpoint validates requests, runs a bounded AG2 agent in the local `wikidata` conda env, and keeps provider keys server-side.
           </Card>
         </aside>
 
@@ -93,7 +124,7 @@ export default function ChatPage() {
           <div className="border-b border-slate-200 p-4 dark:border-slate-800">
             <div className="flex items-center gap-2 font-semibold">
               <BrainCircuit className="h-5 w-5 text-sky-600 dark:text-sky-300" />
-              Wikidata Research Chat
+              AG2 Wikidata Research Chat
             </div>
           </div>
 
@@ -107,28 +138,25 @@ export default function ChatPage() {
               </div>
             )}
 
-            {messages.map((message) => {
-              const content = messageText(message);
-              return (
-                <div key={message.id} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                  <div
-                    className={
-                      message.role === "user"
-                        ? "max-w-[80%] rounded-lg bg-sky-600 px-4 py-3 text-sm text-white"
-                        : "max-w-[80%] rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
-                    }
-                  >
-                    <div className="mb-1 text-xs font-medium uppercase tracking-wide opacity-70">
-                      {message.role === "user" ? "You" : "Assistant"}
-                    </div>
-                    <div className="whitespace-pre-wrap leading-6">{content}</div>
+            {messages.map((message) => (
+              <div key={message.id} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                <div
+                  className={
+                    message.role === "user"
+                      ? "max-w-[80%] rounded-lg bg-sky-600 px-4 py-3 text-sm text-white"
+                      : "max-w-[80%] rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+                  }
+                >
+                  <div className="mb-1 text-xs font-medium uppercase tracking-wide opacity-70">
+                    {message.role === "user" ? "You" : "AG2 Assistant"}
                   </div>
+                  <div className="whitespace-pre-wrap leading-6">{message.content}</div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
 
-            {isLoading && <div className="text-sm text-slate-500 dark:text-slate-400">Assistant is thinking...</div>}
-            {error && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">{error.message}</div>}
+            {isLoading && <div className="text-sm text-slate-500 dark:text-slate-400">AG2 agent is thinking...</div>}
+            {error && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">{error}</div>}
           </div>
 
           <form onSubmit={submitMessage} className="border-t border-slate-200 p-4 dark:border-slate-800">

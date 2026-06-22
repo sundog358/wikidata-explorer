@@ -8,6 +8,7 @@ import {
   SearchIcon,
   HomeIcon,
   BookIcon,
+  BrainCircuitIcon,
 } from "lucide-react";
 
 const navItems = [
@@ -25,6 +26,11 @@ const navItems = [
     name: "Research Assistant",
     href: "/chat",
     icon: MessageSquareIcon,
+  },
+  {
+    name: "Agents",
+    href: "/agents",
+    icon: BrainCircuitIcon,
   },
   {
     name: "Docs",

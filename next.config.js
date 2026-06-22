@@ -8,6 +8,16 @@ const nextConfig = {
     "@radix-ui/react-slot",
     "@radix-ui/react-tabs",
   ],
+  outputFileTracingExcludes: {
+    "*": [
+      "./metagenauto/**/*",
+      "./.git/**/*",
+      "./.tmp/**/*",
+      "./data/**/*",
+      "./images/**/*",
+      "./notebooks/**/*",
+    ],
+  },
 };
 
 module.exports = nextConfig;
