@@ -1,168 +1,73 @@
-"use client";
+import { BookOpen, Database, Link2, Search, ShieldCheck } from "lucide-react";
 
-import { ArrowRight } from "lucide-react";
+const sections = [
+  {
+    icon: Search,
+    title: "Search",
+    body: "Use the home page or /search to look up a term, QID, or PID. Direct IDs open the entity immediately; keyword searches keep results available in the left panel.",
+  },
+  {
+    icon: Database,
+    title: "Inspect",
+    body: "Entity details are normalized into readable labels, descriptions, aliases, statements, media, sitelinks, and language rows.",
+  },
+  {
+    icon: Link2,
+    title: "Follow",
+    body: "Linked Data collects related Q and P identifiers from statements and qualifiers so you can branch through the graph without losing context.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Verify",
+    body: "Run lint and build before shipping. Local secrets, Pywikibot credentials, notebooks, and research artifacts are ignored by default.",
+  },
+];
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-100 dark:from-gray-900 dark:via-gray-800 dark:to-sky-950">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-sky-500 to-cyan-400 text-transparent bg-clip-text">
-              Wikidata REST API Documentation
-            </h1>
-            <p className="text-gray-700 dark:text-gray-300">
-              Explore the Wikidata REST API endpoints and data models
-            </p>
+    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
+      <div className="container mx-auto px-4 py-10">
+        <div className="mb-8 max-w-3xl space-y-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <BookOpen className="h-4 w-4 text-sky-500" />
+            Explorer guide
           </div>
-
-          {/* API Base URL */}
-          <section className="space-y-4">
-            <h2 className="text-2xl font-semibold text-sky-800 dark:text-sky-300">
-              Base URL
-            </h2>
-            <code className="block p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-              https://www.wikidata.org/w/rest.php/wikibase/v1
-            </code>
-          </section>
-
-          {/* Data Models */}
-          <section className="space-y-4">
-            <h2 className="text-2xl font-semibold text-sky-800 dark:text-sky-300">
-              Data Models
-            </h2>
-
-            <div className="grid gap-6">
-              {/* Item */}
-              <div className="p-6 bg-white/80 dark:bg-gray-800/80 rounded-lg border-2 border-sky-300 dark:border-gray-600">
-                <h3 className="text-xl font-semibold text-sky-700 dark:text-sky-400 mb-4">
-                  Item
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">id</span> - string
-                    <br />
-                    <span className="text-xs">
-                      The unique identifier for the item (e.g., Q24)
-                    </span>
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">type</span> -
-                    &apos;item&apos; | &apos;property&apos;
-                    <br />
-                    <span className="text-xs">The type of the entity</span>
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">labels</span> -
-                    Record&lt;string, string&gt;
-                    <br />
-                    <span className="text-xs">Language-specific labels</span>
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">descriptions</span> -
-                    Record&lt;string, string&gt;
-                    <br />
-                    <span className="text-xs">
-                      Language-specific descriptions
-                    </span>
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">aliases</span> -
-                    Record&lt;string, string[]&gt;
-                    <br />
-                    <span className="text-xs">
-                      Language-specific alternative names
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Statement */}
-              <div className="p-6 bg-white/80 dark:bg-gray-800/80 rounded-lg border-2 border-sky-300 dark:border-gray-600">
-                <h3 className="text-xl font-semibold text-sky-700 dark:text-sky-400 mb-4">
-                  Statement
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">id</span> - string
-                    <br />
-                    <span className="text-xs">
-                      Unique identifier for the statement
-                    </span>
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">rank</span> -
-                    &quot;deprecated&quot; | &quot;normal&quot; |
-                    &quot;preferred&quot;
-                    <br />
-                    <span className="text-xs">The rank of the statement</span>
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">property</span> - object
-                    <br />
-                    <span className="text-xs">
-                      Property information including ID and data type
-                    </span>
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold">value</span> - object
-                    <br />
-                    <span className="text-xs">The value content and type</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Endpoints */}
-          <section className="space-y-4">
-            <h2 className="text-2xl font-semibold text-sky-800 dark:text-sky-300">
-              Key Endpoints
-            </h2>
-
-            <div className="space-y-4">
-              <div className="p-6 bg-white/80 dark:bg-gray-800/80 rounded-lg border-2 border-sky-300 dark:border-gray-600">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="px-2 py-1 text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                    GET
-                  </span>
-                  <code className="text-sm">/entities/items/{`{item_id}`}</code>
-                </div>
-                <p className="text-gray-700 dark:text-gray-300 text-sm">
-                  Retrieve a single Wikibase Item by ID
-                </p>
-              </div>
-
-              <div className="p-6 bg-white/80 dark:bg-gray-800/80 rounded-lg border-2 border-sky-300 dark:border-gray-600">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="px-2 py-1 text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
-                    GET
-                  </span>
-                  <code className="text-sm">
-                    /entities/items/{`{item_id}`}/statements
-                  </code>
-                </div>
-                <p className="text-gray-700 dark:text-gray-300 text-sm">
-                  Retrieve statements from an Item
-                </p>
-              </div>
-
-              <div className="p-6 bg-white/80 dark:bg-gray-800/80 rounded-lg border-2 border-sky-300 dark:border-gray-600">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="px-2 py-1 text-sm font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded">
-                    GET
-                  </span>
-                  <code className="text-sm">
-                    /entities/items/{`{item_id}`}/labels
-                  </code>
-                </div>
-                <p className="text-gray-700 dark:text-gray-300 text-sm">
-                  Retrieve an Item&apos;s labels
-                </p>
-              </div>
-            </div>
-          </section>
+          <h1 className="text-4xl font-semibold tracking-tight">
+            Wikidata Explorer Documentation
+          </h1>
+          <p className="text-slate-600 dark:text-slate-300">
+            A quick reference for the app workflow, data model, and verification steps.
+          </p>
         </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {sections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <section
+                key={section.title}
+                className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <Icon className="h-5 w-5 text-sky-600 dark:text-sky-300" />
+                  <h2 className="text-lg font-semibold">{section.title}</h2>
+                </div>
+                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {section.body}
+                </p>
+              </section>
+            );
+          })}
+        </div>
+
+        <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="mb-3 text-lg font-semibold">Developer Commands</h2>
+          <div className="grid gap-3 text-sm md:grid-cols-3">
+            <code className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">npm run dev -- --port 3002</code>
+            <code className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">npm run lint</code>
+            <code className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">npm run build</code>
+          </div>
+        </section>
       </div>
     </div>
   );

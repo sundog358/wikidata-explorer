@@ -1,0 +1,3 @@
+display_name: Ship Project
+short_description: Verify, commit, sync, clean safe worktrees, and push main.
+default_prompt: Ship this project now.

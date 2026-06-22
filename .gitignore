@@ -33,3 +33,31 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.env.*
+!.env.example
+# Python / notebook caches
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+# Local Wikidata / Pywikibot credentials and runtime files
+/user-config.py
+/user-password.py
+/pywikibot.lwp
+/throttle.ctrl
+# Local research artifacts not required by the web app
+/data/
+/images/
+/notebooks/
+/5_Star_Open_Data.png
+/LinkedOpenArtData.txt
+/Linked_Data_Getty_Vocabularies.pdf
+/intro_openai_assistant.ipynb
+/objects_historical_data.csv
+/linter.py
+/requirements.txt
+/setup.cfg
+/utils/*.py
+/utils/scripts/
+/.env
+/.tmp/

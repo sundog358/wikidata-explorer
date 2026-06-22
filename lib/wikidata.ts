@@ -1,6 +1,6 @@
-import { z } from "zod";
+const API_BASE_URL = "https://www.wikidata.org/w/api.php";
+const REST_BASE_URL = "https://www.wikidata.org/w/rest.php/wikibase/v1";
 
-// --- Type Definitions ---
 export type WikidataItem = {
   id: string;
   type: "item" | "property";
@@ -9,7 +9,6 @@ export type WikidataItem = {
   aliases: Record<string, string[]>;
   statements: Record<string, WikidataStatement[]>;
   sitelinks: Record<string, WikidataSitelink>;
-  modified?: string;
 };
 
 export type WikidataStatement = {
@@ -17,10 +16,11 @@ export type WikidataStatement = {
   rank: "deprecated" | "normal" | "preferred";
   property: {
     id: string;
+    label?: string;
     data_type: string | null;
   };
   value: {
-    type: "value" | "somevalue" | "novalue";
+    type: string;
     content?: any;
   };
   qualifiers: WikidataQualifier[];
@@ -38,10 +38,11 @@ export type WikidataSitelink = {
 export type WikidataQualifier = {
   property: {
     id: string;
+    label?: string;
     data_type: string | null;
   };
   value: {
-    type: "value" | "somevalue" | "novalue";
+    type: string;
     content?: any;
   };
 };
@@ -51,352 +52,481 @@ export type WikidataReference = {
   parts: {
     property: {
       id: string;
+      label?: string;
       data_type: string | null;
     };
     value: {
-      type: "value" | "somevalue" | "novalue";
+      type: string;
       content?: any;
     };
   }[];
 };
 
-// --- API Client Class ---
-export class WikidataClient {
-  private baseUrl: string;
+export interface WikidataLanguage {
+  code: string;
+  name: string;
+}
 
-  constructor(baseUrl = "https://www.wikidata.org/w/rest.php/wikibase/v1") {
-    this.baseUrl = baseUrl;
+export interface WikidataMediaInfo {
+  url: string;
+  mime: string;
+  mediatype: "BITMAP" | "AUDIO" | "VIDEO" | "OTHER";
+  title?: string;
+  size?: number;
+  width?: number;
+  height?: number;
+  duration?: number;
+}
+
+type LabelMap = Record<string, string>;
+
+function normalizeLanguageMap(value: Record<string, any> = {}): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(value).map(([lang, entry]) => [
+      lang,
+      typeof entry === "string" ? entry : entry?.value || "",
+    ]),
+  );
+}
+
+function normalizeAliases(value: Record<string, any[]> = {}): Record<string, string[]> {
+  return Object.fromEntries(
+    Object.entries(value).map(([lang, aliases]) => [
+      lang,
+      aliases.map((alias) => (typeof alias === "string" ? alias : alias?.value)).filter(Boolean),
+    ]),
+  );
+}
+
+function sitelinkUrl(site: string, title: string): string {
+  if (site === "commonswiki") {
+    return `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
   }
 
-  // Get detailed item info
-  async getEntity(id: string): Promise<WikidataItem> {
+  const match = site.match(/^([a-z-]+)wiki$/);
+  if (match) {
+    return `https://${match[1]}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
+  }
+
+  return `https://www.wikidata.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
+}
+
+function normalizeSitelinks(value: Record<string, any> = {}): Record<string, WikidataSitelink> {
+  return Object.fromEntries(
+    Object.entries(value).map(([site, link]) => [
+      site,
+      {
+        title: link.title,
+        badges: link.badges || [],
+        url: link.url || sitelinkUrl(site, link.title),
+      },
+    ]),
+  );
+}
+
+function entityIdFromDatavalue(value: any): string | null {
+  if (!value) return null;
+  if (value.id) return value.id;
+  if (value["entity-type"] === "item" && value["numeric-id"]) return `Q${value["numeric-id"]}`;
+  if (value["entity-type"] === "property" && value["numeric-id"]) return `P${value["numeric-id"]}`;
+  return null;
+}
+
+function collectEntityIdsFromSnak(snak: any, ids: Set<string>) {
+  const id = entityIdFromDatavalue(snak?.datavalue?.value);
+  if (id) ids.add(id);
+}
+
+function collectIdsFromClaims(claims: Record<string, any[]> = {}): string[] {
+  const ids = new Set<string>();
+
+  Object.entries(claims).forEach(([propertyId, propertyClaims]) => {
+    ids.add(propertyId);
+    propertyClaims.forEach((claim) => {
+      collectEntityIdsFromSnak(claim.mainsnak, ids);
+      Object.entries(claim.qualifiers || {}).forEach(([qualifierPropertyId, qualifiers]: [string, any]) => {
+        ids.add(qualifierPropertyId);
+        if (Array.isArray(qualifiers)) {
+          qualifiers.forEach((qualifier) => collectEntityIdsFromSnak(qualifier, ids));
+        }
+      });
+      (claim.references || []).forEach((reference: any) => {
+        Object.entries(reference.snaks || {}).forEach(([referencePropertyId, snaks]: [string, any]) => {
+          ids.add(referencePropertyId);
+          if (Array.isArray(snaks)) {
+            snaks.forEach((snak) => collectEntityIdsFromSnak(snak, ids));
+          }
+        });
+      });
+    });
+  });
+
+  return Array.from(ids);
+}
+
+function normalizeSnakValue(snak: any, labels: LabelMap) {
+  if (!snak || snak.snaktype !== "value") {
+    return { type: snak?.snaktype || "novalue" };
+  }
+
+  const dataType = snak.datatype || snak.datavalue?.type || "unknown";
+  const rawValue = snak.datavalue?.value;
+  const entityId = entityIdFromDatavalue(rawValue);
+
+  if (entityId) {
+    return {
+      type: dataType,
+      content: {
+        id: entityId,
+        label: labels[entityId] || entityId,
+      },
+    };
+  }
+
+  if (dataType === "time") {
+    return {
+      type: dataType,
+      content: {
+        time: rawValue?.time,
+        precision: rawValue?.precision,
+      },
+    };
+  }
+
+  if (dataType === "quantity") {
+    return {
+      type: dataType,
+      content: {
+        amount: rawValue?.amount,
+        unit: rawValue?.unit,
+      },
+    };
+  }
+
+  if (dataType === "globecoordinate") {
+    return {
+      type: dataType,
+      content: {
+        latitude: rawValue?.latitude,
+        longitude: rawValue?.longitude,
+        precision: rawValue?.precision,
+      },
+    };
+  }
+
+  if (dataType === "monolingualtext") {
+    return {
+      type: dataType,
+      content: {
+        value: rawValue?.text,
+        language: rawValue?.language,
+      },
+    };
+  }
+
+  return {
+    type: dataType,
+    content: {
+      value: rawValue,
+    },
+  };
+}
+
+function normalizeQualifier(snak: any, labels: LabelMap): WikidataQualifier {
+  return {
+    property: {
+      id: snak.property,
+      label: labels[snak.property] || snak.property,
+      data_type: snak.datatype || null,
+    },
+    value: normalizeSnakValue(snak, labels),
+  };
+}
+
+function normalizeReferencePart(snak: any, labels: LabelMap): WikidataReference["parts"][number] {
+  return {
+    property: {
+      id: snak.property,
+      label: labels[snak.property] || snak.property,
+      data_type: snak.datatype || null,
+    },
+    value: normalizeSnakValue(snak, labels),
+  };
+}
+
+function normalizeClaims(claims: Record<string, any[]> = {}, labels: LabelMap): Record<string, WikidataStatement[]> {
+  return Object.fromEntries(
+    Object.entries(claims).map(([propertyId, propertyClaims]) => [
+      propertyId,
+      propertyClaims.map((claim) => ({
+        id: claim.id,
+        rank: claim.rank || "normal",
+        propertyId,
+        explorable: true,
+        property: {
+          id: propertyId,
+          label: labels[propertyId] || propertyId,
+          data_type: claim.mainsnak?.datatype || null,
+        },
+        value: normalizeSnakValue(claim.mainsnak, labels),
+        qualifiers: Object.values(claim.qualifiers || {})
+          .flat()
+          .map((qualifier: any) => normalizeQualifier(qualifier, labels)),
+        references: (claim.references || []).map((reference: any) => ({
+          hash: reference.hash,
+          parts: Object.values(reference.snaks || {})
+            .flat()
+            .map((snak: any) => normalizeReferencePart(snak, labels)),
+        })),
+      })),
+    ]),
+  );
+}
+
+export class WikidataClient {
+  private async fetchWithHeaders(url: string, options: RequestInit = {}) {
+    const headers = {
+      Accept: "application/json",
+      ...options.headers,
+    };
+
+    const response = await fetch(url, { ...options, headers });
+
+    if (response.status === 304) {
+      return null;
+    }
+
+    if (!response.ok) {
+      let message = response.statusText;
+      try {
+        const error = await response.json();
+        message = error.message || error.error?.info || message;
+      } catch {
+        // Keep the HTTP status text when the body is not JSON.
+      }
+      throw new Error(`Wikidata request failed: ${message}`);
+    }
+
+    const data = await response.json();
+    return {
+      data,
+      etag: response.headers.get("ETag"),
+      lastModified: response.headers.get("Last-Modified"),
+    };
+  }
+
+  async getEntity(id: string, fields?: string[]) {
+    const fieldsParam = fields ? `?_fields=${fields.join(",")}` : "";
     const entityType = id.startsWith("P") ? "properties" : "items";
+    const url = `${REST_BASE_URL}/entities/${entityType}/${id}${fieldsParam}`;
+
+    const response = await this.fetchWithHeaders(url);
+    return response?.data;
+  }
+
+  async getItem(id: string): Promise<WikidataItem> {
+    return this.getDetailedEntity(id);
+  }
+
+  async getProperty(id: string): Promise<WikidataItem> {
+    return this.getDetailedEntity(id);
+  }
+
+  async searchEntities(searchTerm: string): Promise<WikidataItem[]> {
     const response = await fetch(
-      `${this.baseUrl}/entities/${entityType}/${id}`
+      `${API_BASE_URL}?${new URLSearchParams({
+        action: "wbsearchentities",
+        search: searchTerm,
+        language: "en",
+        format: "json",
+        origin: "*",
+        limit: "20",
+      })}`,
     );
+
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return (data.search || []).map((item: any) => ({
+      id: item.id,
+      type: item.id?.startsWith("P") ? "property" : "item",
+      labels: { en: item.label || item.id },
+      descriptions: { en: item.description || "" },
+      aliases: { en: item.aliases || [] },
+      statements: {},
+      sitelinks: {},
+    }));
+  }
+
+  async getDetailedEntity(id: string): Promise<WikidataItem> {
+    const response = await fetch(
+      `${API_BASE_URL}?${new URLSearchParams({
+        action: "wbgetentities",
+        ids: id,
+        format: "json",
+        origin: "*",
+        props: "labels|descriptions|aliases|claims|sitelinks",
+      })}`,
+    );
+
     if (!response.ok) {
       throw new Error(`Failed to fetch entity ${id}: ${response.statusText}`);
     }
-    return await response.json();
-  }
-
-  // Get item statements
-  async getItemStatements(
-    id: string,
-    propertyId?: string
-  ): Promise<Record<string, WikidataStatement[]>> {
-    const url = new URL(`${this.baseUrl}/entities/items/${id}/statements`);
-    if (propertyId) {
-      url.searchParams.append("property", propertyId);
-    }
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch statements for ${id}: ${response.statusText}`
-      );
-    }
-    return await response.json();
-  }
-
-  // Get item labels
-  async getItemLabels(id: string): Promise<Record<string, string>> {
-    const response = await fetch(`${this.baseUrl}/entities/items/${id}/labels`);
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch labels for ${id}: ${response.statusText}`
-      );
-    }
-    return await response.json();
-  }
-
-  // Search entities (using action API since REST API doesn't have search endpoint yet)
-  async searchEntities(searchTerm: string): Promise<WikidataItem[]> {
-    try {
-      // First search for items
-      const itemResponse = await fetch(
-        `https://www.wikidata.org/w/api.php?` +
-          new URLSearchParams({
-            action: "wbsearchentities",
-            search: searchTerm,
-            language: "en",
-            format: "json",
-            origin: "*",
-            type: "item",
-            limit: "10",
-            uselang: "en",
-          }).toString()
-      );
-
-      // Then search for properties
-      const propertyResponse = await fetch(
-        `https://www.wikidata.org/w/api.php?` +
-          new URLSearchParams({
-            action: "wbsearchentities",
-            search: searchTerm,
-            language: "en",
-            format: "json",
-            origin: "*",
-            type: "property",
-            limit: "10",
-            uselang: "en",
-          }).toString()
-      );
-
-      const [itemData, propertyData] = await Promise.all([
-        itemResponse.json(),
-        propertyResponse.json(),
-      ]);
-
-      // Combine and transform the results
-      const items = (itemData.search || []).map((result: any) => ({
-        id: result.id.replace(/^Q*/, "Q"),
-        type: "item",
-        labels: { en: result.label || result.match?.text || "" },
-        descriptions: { en: result.description || "" },
-        aliases: {
-          en: result.aliases?.map((alias: string) => alias) || [],
-        },
-        statements: this.addExplorationMetadata(result.claims || {}),
-        sitelinks: this.addSitelinkMetadata(result.sitelinks || {}),
-        explorable: true,
-      }));
-
-      const properties = (propertyData.search || []).map((result: any) => ({
-        id: result.id.replace(/^P*/, "P"),
-        type: "property",
-        labels: { en: result.label || result.match?.text || "" },
-        descriptions: { en: result.description || "" },
-        aliases: { en: result.aliases || [] },
-        statements: result.claims || {},
-        sitelinks: result.sitelinks || {},
-        explorable: true,
-      }));
-
-      // Return combined results
-      return [...items, ...properties].filter(
-        (item) => item.id && item.labels.en
-      );
-    } catch (error) {
-      console.error("Search error:", error);
-      throw error;
-    }
-  }
-
-  // Add this new method to WikidataClient class
-  async getDetailedEntity(id: string): Promise<WikidataItem> {
-    try {
-      const response = await fetch(
-        `https://www.wikidata.org/w/api.php?` +
-          new URLSearchParams({
-            action: "wbgetentities",
-            ids: id,
-            format: "json",
-            languages: "en",
-            props: "labels|descriptions|aliases|claims|sitelinks|datatype|info",
-            origin: "*",
-          }).toString()
-      );
-
-      const data = await response.json();
-      const entity = data.entities[id];
-
-      if (!entity) {
-        throw new Error(`Entity ${id} not found`);
-      }
-
-      // Get all property IDs from claims and ensure they exist
-      const propertyIds = Object.keys(entity.claims || {})
-        .filter(Boolean)
-        .map((id) => (id.startsWith("P") ? id : `P${id}`));
-
-      const propertyLabels = await getPropertyLabels(propertyIds);
-
-      // Process claims with safe property access
-      const processedClaims: Record<string, any> = {};
-      for (const [propId, claims] of Object.entries(entity.claims || {})) {
-        if (!propId) continue;
-
-        const propertyLabel = propertyLabels[propId] || propId;
-
-        processedClaims[propertyLabel] = Array.isArray(claims)
-          ? claims.map((claim: any) => {
-              const value = this.formatClaimValue(claim.mainsnak);
-              return {
-                value: value || "No value",
-                qualifiers: this.processQualifiers(claim.qualifiers || {}),
-                references: this.processReferences(claim.references || []),
-                propertyId: propId,
-                entityId: value?.entityId,
-                type: value?.type,
-                url: value?.url,
-              };
-            })
-          : [];
-      }
-
-      return {
-        id: entity.id,
-        type: entity.type || "item",
-        labels: entity.labels || {},
-        descriptions: entity.descriptions || {},
-        aliases: {
-          en: (entity.aliases?.en || []).map((alias: any) =>
-            typeof alias === "object" ? alias.value || alias.text : alias
-          ),
-        },
-        statements: processedClaims,
-        sitelinks: this.processSitelinks(entity.sitelinks || {}),
-        modified: entity.modified,
-      };
-    } catch (error) {
-      console.error("Error fetching detailed entity:", error);
-      throw error;
-    }
-  }
-
-  // Add these helper methods to WikidataClient class
-  private formatClaimValue(mainsnak: any): any {
-    if (!mainsnak || mainsnak.snaktype !== "value" || !mainsnak.datavalue) {
-      return "No value";
-    }
-
-    try {
-      switch (mainsnak.datatype) {
-        case "wikibase-item":
-          return {
-            value: mainsnak.datavalue.value?.id || "Unknown entity",
-            entityId: mainsnak.datavalue.value?.id,
-            type: "entity",
-          };
-        case "commonsMedia":
-          return {
-            value: mainsnak.datavalue.value,
-            type: "image",
-            url: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(
-              mainsnak.datavalue.value
-            )}`,
-          };
-        default:
-          return mainsnak.datavalue.value || "Unknown value";
-      }
-    } catch (error) {
-      console.error("Error formatting claim value:", error);
-      return "Error formatting value";
-    }
-  }
-
-  private processQualifiers(
-    qualifiers: Record<string, any[]>
-  ): Record<string, string[]> {
-    const processed: Record<string, string[]> = {};
-    for (const [propId, quals] of Object.entries(qualifiers)) {
-      processed[propId] = quals.map((q) => this.formatClaimValue(q));
-    }
-    return processed;
-  }
-
-  private processReferences(references: any[]): any[] {
-    return references.map((ref) => {
-      const processed: Record<string, string[]> = {};
-      for (const [propId, snaks] of Object.entries(ref.snaks || {})) {
-        processed[propId] = (snaks as any[]).map((snak) =>
-          this.formatClaimValue(snak)
-        );
-      }
-      return processed;
-    });
-  }
-
-  private processSitelinks(
-    sitelinks: Record<string, any>
-  ): Record<string, WikidataSitelink> {
-    const processed: Record<string, WikidataSitelink> = {};
-    for (const [site, link] of Object.entries(sitelinks)) {
-      processed[site] = {
-        title: link.title,
-        badges: link.badges || [],
-        url: `https://${site}.wikipedia.org/wiki/${encodeURIComponent(
-          link.title
-        )}`,
-      };
-    }
-    return processed;
-  }
-
-  private addExplorationMetadata(
-    claims: Record<string, any>
-  ): Record<string, any> {
-    const processed: Record<string, any> = {};
-    for (const [propId, claimValues] of Object.entries(claims)) {
-      processed[propId] = Array.isArray(claimValues)
-        ? claimValues.map((claim) => ({
-            ...claim,
-            explorable: true,
-            entityId: claim.mainsnak?.datavalue?.value?.id || null,
-            propertyId: propId,
-          }))
-        : [];
-    }
-    return processed;
-  }
-
-  private addSitelinkMetadata(
-    sitelinks: Record<string, any>
-  ): Record<string, WikidataSitelink> {
-    const processed: Record<string, WikidataSitelink> = {};
-    for (const [site, link] of Object.entries(sitelinks)) {
-      processed[site] = {
-        ...link,
-        explorable: true,
-        url: `https://${site}.wikipedia.org/wiki/${encodeURIComponent(
-          link.title
-        )}`,
-        wikidataUrl: `https://www.wikidata.org/wiki/${link.title}`,
-      };
-    }
-    return processed;
-  }
-}
-
-// --- Search Function ---
-export async function searchWikidata(
-  searchTerm: string
-): Promise<WikidataItem[]> {
-  const client = new WikidataClient();
-  return client.searchEntities(searchTerm);
-}
-
-// Add this helper function to format property IDs to human-readable labels
-async function getPropertyLabels(
-  propertyIds: string[]
-): Promise<Record<string, string>> {
-  if (!propertyIds.length) return {};
-
-  try {
-    const response = await fetch(
-      `https://www.wikidata.org/w/api.php?` +
-        new URLSearchParams({
-          action: "wbgetentities",
-          ids: propertyIds.join("|"),
-          props: "labels",
-          languages: "en",
-          format: "json",
-          origin: "*",
-        }).toString()
-    );
 
     const data = await response.json();
-    const labels: Record<string, string> = {};
+    const entity = data.entities?.[id];
 
-    if (data.entities) {
-      Object.entries(data.entities).forEach(([id, entity]: [string, any]) => {
-        labels[id] = entity?.labels?.en?.value || id;
-      });
+    if (!entity || entity.missing) {
+      throw new Error(`No Wikidata entity found for ${id}`);
     }
 
-    return labels;
-  } catch (error) {
-    console.error("Error fetching property labels:", error);
-    return propertyIds.reduce((acc, id) => ({ ...acc, [id]: id }), {});
+    const labels = await this.getLabels(collectIdsFromClaims(entity.claims));
+
+    return {
+      id: entity.id,
+      type: entity.type,
+      labels: normalizeLanguageMap(entity.labels),
+      descriptions: normalizeLanguageMap(entity.descriptions),
+      aliases: normalizeAliases(entity.aliases),
+      statements: normalizeClaims(entity.claims, labels),
+      sitelinks: normalizeSitelinks(entity.sitelinks),
+    };
   }
+
+  async getItemLabels(id: string): Promise<Record<string, string>> {
+    const response = await fetch(`${REST_BASE_URL}/entities/items/${id}/labels`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch labels for ${id}: ${response.statusText}`);
+    }
+    return await response.json();
+  }
+
+  async fetchLabelsForIds(ids: string[], lang: string = "en"): Promise<Record<string, string>> {
+    return this.getLabels(ids, lang);
+  }
+
+  async fetchCommonsMedia(files: string[]): Promise<Record<string, WikidataMediaInfo>> {
+    if (!files.length) return {};
+
+    const normalizedFiles = files.map((file) =>
+      file.startsWith("File:") ? file : `File:${file}`,
+    );
+
+    const response = await fetch(
+      `https://commons.wikimedia.org/w/api.php?${new URLSearchParams({
+        action: "query",
+        prop: "imageinfo",
+        iiprop: "url|size|mime|mediatype|metadata",
+        titles: normalizedFiles.join("|"),
+        format: "json",
+        origin: "*",
+      })}`,
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch media metadata: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const mediaInfo: Record<string, WikidataMediaInfo> = {};
+
+    Object.values(data.query?.pages || {}).forEach((page: any) => {
+      if (page.imageinfo?.[0]) {
+        const info = page.imageinfo[0];
+        mediaInfo[page.title] = {
+          mediatype: info.mediatype || "OTHER",
+          mime: info.mime,
+          url: info.url,
+          title: page.title,
+          size: info.size,
+          width: info.width,
+          height: info.height,
+          duration: info.duration,
+        };
+      }
+    });
+
+    return mediaInfo;
+  }
+
+  async fetchAvailableLanguages(): Promise<Record<string, WikidataLanguage>> {
+    const response = await fetch(
+      `https://www.wikidata.org/w/api.php?${new URLSearchParams({
+        action: "query",
+        meta: "wbcontentlanguages",
+        wbclprop: "code|name",
+        format: "json",
+        origin: "*",
+      })}`,
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Wikidata languages: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.query?.wbcontentlanguages || {};
+  }
+
+  getAllIdsFromItem(item: WikidataItem): string[] {
+    const ids = new Set<string>([item.id]);
+
+    Object.entries(item.statements || {}).forEach(([propId, claims]) => {
+      ids.add(propId);
+      claims.forEach((claim) => {
+        if (claim.value.content?.id) ids.add(claim.value.content.id);
+        claim.qualifiers.forEach((qualifier) => {
+          ids.add(qualifier.property.id);
+          if (qualifier.value.content?.id) ids.add(qualifier.value.content.id);
+        });
+      });
+    });
+
+    return Array.from(ids);
+  }
+
+  async getLabels(ids: string[], lang: string = "en"): Promise<Record<string, string>> {
+    const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+    if (!uniqueIds.length) return {};
+
+    const chunks: string[][] = [];
+    for (let i = 0; i < uniqueIds.length; i += 50) {
+      chunks.push(uniqueIds.slice(i, i + 50));
+    }
+
+    const labelEntries = await Promise.all(
+      chunks.map(async (chunk) => {
+        const response = await fetch(
+          `https://www.wikidata.org/w/api.php?${new URLSearchParams({
+            action: "wbgetentities",
+            ids: chunk.join("|"),
+            props: "labels",
+            languages: lang,
+            format: "json",
+            origin: "*",
+          })}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch labels: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return Object.entries(data.entities || {}).map(([entityId, entity]: [string, any]) => [
+          entityId,
+          entity?.labels?.[lang]?.value || entityId,
+        ]);
+      }),
+    );
+
+    return Object.fromEntries(labelEntries.flat());
+  }
+}
+
+export async function searchWikidata(searchTerm: string): Promise<WikidataItem[]> {
+  const client = new WikidataClient();
+  return client.searchEntities(searchTerm);
 }

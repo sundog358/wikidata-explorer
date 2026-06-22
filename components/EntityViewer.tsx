@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { WikidataClient } from "@/lib/wikidata";
+import { WikidataClient, type WikidataItem, type WikidataStatement } from "@/lib/wikidata";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function EntityViewer() {
   const [entityId, setEntityId] = useState("");
-  const [entity, setEntity] = useState<any>(null);
+  const [entity, setEntity] = useState<WikidataItem | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +83,7 @@ export function EntityViewer() {
 
             <TabsContent value="statements" className="mt-4">
               <div className="space-y-4">
-                {Object.entries(entity.statements).map(([pid, statements]) => (
+                {(Object.entries(entity.statements) as Array<[string, WikidataStatement[]]>).map(([pid, statements]) => (
                   <div key={pid} className="border-b pb-4">
                     <h3 className="font-semibold mb-2">{pid}</h3>
                     <ul className="space-y-2">

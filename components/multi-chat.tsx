@@ -22,7 +22,7 @@ const defaultSystemMessages = [
 const AVATAR_IMAGES = {
   user: "/images/default-user.png",
   assistant: "/images/socrates.png",
-  system: "/images/system-avatar.png",
+  system: "/images/default.jpg",
 };
 
 export function MultiChat() {

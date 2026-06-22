@@ -1,131 +1,105 @@
 "use client";
 
-import { Search, Database, Share2, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { FormEvent, useState } from "react";
+import { ArrowRight, Database, Network, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
+const examples = ["Douglas Adams", "Q42", "P31", "linked open data"];
 
 export default function Home() {
-  const { addToast } = useToast();
+  const [query, setQuery] = useState("");
   const router = useRouter();
 
-  const handleExploreClick = () => {
-    addToast({
-      title: "Welcome aboard! 🚀",
-      description: "Start exploring Wikidata's vast knowledge graph.",
-      variant: "success",
-    });
-    router.push("/search");
-  };
+  function openExplorer(nextQuery: string) {
+    const trimmed = nextQuery.trim();
+    router.push(trimmed ? `/search?q=${encodeURIComponent(trimmed)}` : "/search");
+  }
 
-  const handleLearnMoreClick = () => {
-    addToast({
-      title: "Learn More",
-      description:
-        "Discover all the features and capabilities of Wikidata Explorer.",
-      variant: "default",
-    });
-    router.push("/about");
-  };
-
-  const handleGetStartedClick = () => {
-    addToast({
-      title: "Let's get started! ✨",
-      description:
-        "Welcome to your journey through the world's knowledge base.",
-      variant: "success",
-    });
-    router.push("/search");
-  };
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    openExplorer(query);
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-100 dark:from-gray-900 dark:via-gray-800 dark:to-sky-950">
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 pt-20 pb-16">
-        <div className="text-center space-y-6">
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-sky-500 to-cyan-400 dark:from-sky-400 dark:to-cyan-300 text-transparent bg-clip-text">
-            Wikidata Explorer
-          </h1>
-          <p className="text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
-            Discover and explore the vast knowledge graph of Wikidata with our
-            intuitive interface.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 text-white transition-all duration-300"
-              onClick={handleExploreClick}
-            >
-              Start Exploring
+    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
+      <section className="container mx-auto grid min-h-[calc(100vh-3.5rem)] gap-8 px-4 py-10 lg:grid-cols-[1fr_420px] lg:items-center">
+        <div className="max-w-4xl space-y-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <Sparkles className="h-4 w-4 text-sky-500" />
+            Wikidata graph exploration
+          </div>
+
+          <div className="space-y-4">
+            <h1 className="max-w-3xl text-5xl font-semibold tracking-tight md:text-6xl">
+              Wikidata Explorer
+            </h1>
+            <p className="max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+              Search entities, inspect statements, follow linked items, compare labels across languages, and open the source record without leaving your flow.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row">
+            <Input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search a topic or enter Q/P ID"
+              className="h-12 border-0 bg-transparent text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <Button type="submit" size="lg" className="h-12 gap-2">
+              Explore
+              <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-2 border-sky-500 text-sky-600 hover:text-sky-700 hover:border-sky-600 dark:text-sky-400 dark:hover:text-sky-300 dark:border-sky-400 dark:hover:border-sky-300 transition-all duration-300"
-              onClick={handleLearnMoreClick}
-            >
-              Learn More
-            </Button>
+          </form>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-slate-500 dark:text-slate-400">Try</span>
+            {examples.map((example) => (
+              <button key={example} type="button" onClick={() => openExplorer(example)}>
+                <Badge variant="outline" className="cursor-pointer bg-white hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800">
+                  {example}
+                </Badge>
+              </button>
+            ))}
           </div>
         </div>
-      </section>
 
-      {/* Features Grid */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-sky-50 to-sky-100 dark:from-gray-800 dark:to-gray-700 backdrop-blur-sm border border-sky-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <Search className="w-12 h-12 text-sky-500 dark:text-sky-300 mb-4" />
-            <h3 className="text-xl font-semibold mb-2 text-sky-800 dark:text-sky-200">
-              Intuitive Search
-            </h3>
-            <p className="text-sky-700 dark:text-sky-300">
-              Find entities and relationships with our powerful search
-              capabilities.
-            </p>
+        <Card className="overflow-hidden border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 p-5 dark:border-slate-800">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-sky-700 dark:text-sky-300">
+              <Network className="h-4 w-4" />
+              Explorer workflow
+            </div>
+            <h2 className="text-xl font-semibold">From search to graph context</h2>
           </div>
-
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-teal-50 to-teal-100 dark:from-gray-800 dark:to-gray-700 backdrop-blur-sm border border-teal-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <Database className="w-12 h-12 text-teal-500 dark:text-teal-300 mb-4" />
-            <h3 className="text-xl font-semibold mb-2 text-teal-800 dark:text-teal-200">
-              Rich Data
-            </h3>
-            <p className="text-teal-700 dark:text-teal-300">
-              Access millions of structured data points from Wikidata.
-            </p>
+          <div className="divide-y divide-slate-200 dark:divide-slate-800">
+            <div className="flex gap-3 p-5">
+              <Search className="mt-1 h-5 w-5 shrink-0 text-slate-500" />
+              <div>
+                <h3 className="font-medium">Find an entity</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Search by natural language or jump straight to a Q/P identifier.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 p-5">
+              <Database className="mt-1 h-5 w-5 shrink-0 text-slate-500" />
+              <div>
+                <h3 className="font-medium">Inspect statements</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Review property labels, values, media, sitelinks, aliases, and languages.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 p-5">
+              <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-slate-500" />
+              <div>
+                <h3 className="font-medium">Follow linked data</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Branch into related entities and properties without starting over.</p>
+              </div>
+            </div>
           </div>
-
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-gray-800 dark:to-gray-700 backdrop-blur-sm border border-indigo-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <Share2 className="w-12 h-12 text-indigo-500 dark:text-indigo-300 mb-4" />
-            <h3 className="text-xl font-semibold mb-2 text-indigo-800 dark:text-indigo-200">
-              Easy Sharing
-            </h3>
-            <p className="text-indigo-700 dark:text-indigo-300">
-              Share your discoveries with others through simple links.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="relative p-8 rounded-3xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 dark:from-cyan-600 dark:via-sky-600 dark:to-blue-600">
-          <div className="absolute inset-0 bg-white/20 dark:bg-black/10 rounded-3xl backdrop-blur-xl"></div>
-          <div className="relative z-10 text-center space-y-4">
-            <Sparkles className="w-12 h-12 mx-auto mb-4 text-white animate-pulse" />
-            <h2 className="text-3xl font-bold text-white">Ready to Start?</h2>
-            <p className="max-w-2xl mx-auto text-lg text-white/90">
-              Begin your journey through the world&apos;s largest knowledge
-              base.
-            </p>
-            <Button
-              size="lg"
-              className="bg-white hover:bg-gray-50 text-cyan-600 hover:text-cyan-700 mt-4 border-2 border-transparent hover:border-cyan-200 transition-all duration-300"
-              onClick={handleGetStartedClick}
-            >
-              Get Started Now
-            </Button>
-          </div>
-        </div>
+        </Card>
       </section>
     </div>
   );

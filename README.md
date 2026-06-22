@@ -1,61 +1,72 @@
 # Wikidata Explorer
 
-A web application for exploring and visualizing Wikidata entities and their relationships.
+A Next.js application for searching Wikidata, inspecting entity statements, and following linked entities through the knowledge graph.
 
-## Description
+## What Works
 
-Wikidata Explorer is a tool that allows users to search, explore, and visualize data from Wikidata, the free knowledge base. It provides an intuitive interface for discovering connections between entities and understanding complex relationships in the data.
+- Search Wikidata by keyword or by direct entity/property ID such as `Q42` or `P31`
+- Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
+- Follow related items and properties from the selected entity without restarting the search
+- Launch directly into a query with `/search?q=Douglas%20Adams`
+- Use the AI chat workspace when server-side OpenAI credentials are available
 
-## Features
+## Tech Stack
 
-- Search Wikidata entities by name or ID
-- View detailed information about entities
-- Explore relationships between different entities
-- Interactive visualization of entity connections
-- Export data in various formats
+- Next.js 15 App Router
+- React 19 release candidate
+- Tailwind CSS
+- Radix UI primitives for app controls
+- Wikidata Action API and Wikibase REST API
+- Vercel AI SDK for chat streaming
 
-## Getting Started
 
-### Prerequisites
+## Environment
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
+Create `.env` from `.env.example` for local chat support:
 
-### Installation
+```powershell
+Copy-Item .env.example .env
+```
 
-1. Clone the repository:
+Set `OPENAI_API_KEY` to a valid project key. `OPENAI_MODEL` is optional and defaults to `gpt-4o-mini`.
 
-## Usage
+## Local Development
 
-1. Enter a search term or Wikidata ID in the search bar
-2. Select an entity from the search results
-3. Explore the entity's properties and relationships
-4. Use the visualization tools to discover connections
+Prerequisites:
 
-## Technologies Used
+- Node.js 20 or newer is recommended
+- npm
 
-- React.js
-- Next.js
-- SPARQL
-- Wikidata API
-- D3.js for visualizations
+Install and launch:
 
-## Contributing
+```powershell
+npm install
+npm run dev -- --port 3002
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Open [http://localhost:3002](http://localhost:3002).
 
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Useful commands:
 
-## License
+```powershell
+npm run lint
+npm run build
+npm run verify`r`nnpm run smoke
+```
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Project Structure
 
-## Acknowledgments
+- `app/page.tsx`: first-screen search entry point
+- `app/search/page.tsx`: main Wikidata explorer workflow
+- `app/chat/page.tsx`: multi-agent chat workspace
+- `app/api/chat/route.ts`: server-side chat streaming endpoint
+- `lib/wikidata.ts`: Wikidata API client and normalization helpers
+- `components/ui/`: small set of UI primitives used by the app
 
-- Wikidata for providing the open knowledge base
-- The Wikimedia Foundation
-- All contributors to this project
+## Data And Secrets
+
+Local research files, Pywikibot runtime files, caches, and environment files are ignored by default. Keep API keys and local Wikidata credentials out of git.
+
+## Verification Status
+
+The app should pass `npm run lint` and `npm run build` before changes are considered ready. `npm run verify`r`nnpm run smoke` runs both.
