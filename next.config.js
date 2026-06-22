@@ -5,10 +5,8 @@ const nextConfig = {
     unoptimized: true,
   },
   transpilePackages: [
-    "@radix-ui/react-avatar",
     "@radix-ui/react-slot",
     "@radix-ui/react-tabs",
-    "@radix-ui/react-toast",
   ],
 };
 

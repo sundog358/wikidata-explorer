@@ -22,12 +22,12 @@ const navItems = [
     icon: SearchIcon,
   },
   {
-    name: "AI Chat",
+    name: "Research Assistant",
     href: "/chat",
     icon: MessageSquareIcon,
   },
   {
-    name: "Documentation",
+    name: "Docs",
     href: "/docs",
     icon: BookIcon,
   },
@@ -37,7 +37,7 @@ export function MainNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center space-x-6">
+    <nav className="flex flex-wrap items-center gap-1 sm:gap-3">
       {navItems.map((item) => {
         const Icon = item.icon;
         return (
@@ -45,14 +45,15 @@ export function MainNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center text-sm font-medium transition-colors hover:text-blue-800 dark:hover:text-blue-400",
+              "inline-flex h-9 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors hover:bg-sky-50 hover:text-sky-800 dark:hover:bg-slate-800 dark:hover:text-sky-300 sm:px-3",
               pathname === item.href
-                ? "text-green-700 dark:text-green-500"
+                ? "text-sky-700 dark:text-sky-300"
                 : "text-muted-foreground",
             )}
+            title={item.name}
           >
-            <Icon className="h-4 w-4 mr-2" />
-            {item.name}
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">{item.name}</span>
           </Link>
         );
       })}

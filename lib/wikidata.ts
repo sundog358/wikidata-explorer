@@ -1,3 +1,5 @@
+import { entityIdFromDatavalue, sitelinkUrl } from "@/lib/wikidata-utils.mjs";
+
 const API_BASE_URL = "https://www.wikidata.org/w/api.php";
 const REST_BASE_URL = "https://www.wikidata.org/w/rest.php/wikibase/v1";
 
@@ -98,19 +100,6 @@ function normalizeAliases(value: Record<string, any[]> = {}): Record<string, str
   );
 }
 
-function sitelinkUrl(site: string, title: string): string {
-  if (site === "commonswiki") {
-    return `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
-  }
-
-  const match = site.match(/^([a-z-]+)wiki$/);
-  if (match) {
-    return `https://${match[1]}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
-  }
-
-  return `https://www.wikidata.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
-}
-
 function normalizeSitelinks(value: Record<string, any> = {}): Record<string, WikidataSitelink> {
   return Object.fromEntries(
     Object.entries(value).map(([site, link]) => [
@@ -122,14 +111,6 @@ function normalizeSitelinks(value: Record<string, any> = {}): Record<string, Wik
       },
     ]),
   );
-}
-
-function entityIdFromDatavalue(value: any): string | null {
-  if (!value) return null;
-  if (value.id) return value.id;
-  if (value["entity-type"] === "item" && value["numeric-id"]) return `Q${value["numeric-id"]}`;
-  if (value["entity-type"] === "property" && value["numeric-id"]) return `P${value["numeric-id"]}`;
-  return null;
 }
 
 function collectEntityIdsFromSnak(snak: any, ids: Set<string>) {
@@ -383,19 +364,49 @@ export class WikidataClient {
       throw new Error(`No Wikidata entity found for ${id}`);
     }
 
-    const labels = await this.getLabels(collectIdsFromClaims(entity.claims));
+    const [labels, englishTerms] = await Promise.all([
+      this.getLabels(collectIdsFromClaims(entity.claims)),
+      this.getEntityEnglishTerms(id),
+    ]);
 
     return {
       id: entity.id,
       type: entity.type,
-      labels: normalizeLanguageMap(entity.labels),
-      descriptions: normalizeLanguageMap(entity.descriptions),
-      aliases: normalizeAliases(entity.aliases),
+      labels: {
+        ...normalizeLanguageMap(entity.labels),
+        ...normalizeLanguageMap(englishTerms?.labels),
+      },
+      descriptions: {
+        ...normalizeLanguageMap(entity.descriptions),
+        ...normalizeLanguageMap(englishTerms?.descriptions),
+      },
+      aliases: {
+        ...normalizeAliases(entity.aliases),
+        ...normalizeAliases(englishTerms?.aliases),
+      },
       statements: normalizeClaims(entity.claims, labels),
       sitelinks: normalizeSitelinks(entity.sitelinks),
     };
   }
 
+  private async getEntityEnglishTerms(id: string) {
+    const response = await fetch(
+      `${API_BASE_URL}?${new URLSearchParams({
+        action: "wbgetentities",
+        ids: id,
+        format: "json",
+        origin: "*",
+        props: "labels|descriptions|aliases",
+        languages: "en",
+        languagefallback: "1",
+      })}`,
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data.entities?.[id] || null;
+  }
   async getItemLabels(id: string): Promise<Record<string, string>> {
     const response = await fetch(`${REST_BASE_URL}/entities/items/${id}/labels`);
     if (!response.ok) {
@@ -505,6 +516,7 @@ export class WikidataClient {
             ids: chunk.join("|"),
             props: "labels",
             languages: lang,
+            languagefallback: "1",
             format: "json",
             origin: "*",
           })}`,

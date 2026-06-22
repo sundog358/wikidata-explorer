@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Database, ExternalLink, FileAudio, FileVideo, Globe, Image as ImageIcon, Info, Search } from "lucide-react";
+import { Database, FileAudio, FileVideo, Globe, Image as ImageIcon, Info, Network, Search } from "lucide-react";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
+import { RelationshipGraph } from "@/components/relationship-graph";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -321,7 +322,7 @@ export default function SearchPage() {
                   <div className="flex gap-2">
                     <Button type="button" variant="outline" className="gap-2" onClick={loadLinkedData} disabled={detailLoading}>
                       <Database className="h-4 w-4" />
-                      Links
+                      Collect Links
                     </Button>
                     <Button asChild variant="outline" className="gap-2">
                       <a href={`https://www.wikidata.org/wiki/${selectedItem.id}`} target="_blank" rel="noopener noreferrer">
@@ -332,14 +333,22 @@ export default function SearchPage() {
                   </div>
                 </div>
 
-                <Tabs defaultValue="statements">
+                <Tabs defaultValue="graph">
                   <TabsList className="mb-4 flex h-auto flex-wrap justify-start">
+                    <TabsTrigger value="graph">
+                      <Network className="mr-2 h-4 w-4" />
+                      Graph
+                    </TabsTrigger>
                     <TabsTrigger value="statements">Statements</TabsTrigger>
                     <TabsTrigger value="aliases">Aliases</TabsTrigger>
                     <TabsTrigger value="media">Media</TabsTrigger>
                     <TabsTrigger value="languages">Languages</TabsTrigger>
                     <TabsTrigger value="links">Linked Data</TabsTrigger>
                   </TabsList>
+
+                  <TabsContent value="graph">
+                    <RelationshipGraph item={selectedItem} onEntityClick={loadEntity} />
+                  </TabsContent>
 
                   <TabsContent value="statements" className="space-y-3">
                     {statementGroups.length === 0 && <p className="text-sm text-slate-600 dark:text-slate-300">No statements found.</p>}

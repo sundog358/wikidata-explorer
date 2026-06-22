@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText } from "ai";
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
@@ -63,9 +63,15 @@ function toSafeChatError(error: unknown) {
   return "The chat service could not complete the response.";
 }
 
+const textPartSchema = z.object({
+  type: z.literal("text"),
+  text: z.string().trim().min(1).max(8000),
+});
+
 const messageSchema = z.object({
+  id: z.string().optional(),
   role: z.enum(["system", "user", "assistant"]),
-  content: z.string().trim().min(1).max(8000),
+  parts: z.array(textPartSchema).min(1).max(20),
 });
 
 const requestSchema = z.object({
@@ -101,18 +107,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    const openai = createOpenAI({ apiKey, compatibility: "strict" });
+    const openai = createOpenAI({ apiKey });
     const result = streamText({
       model: openai(process.env.OPENAI_MODEL || "gpt-4o-mini"),
       system:
         "You are a concise assistant inside Wikidata Explorer. Help users reason about Wikidata, linked data, and the current conversation without fabricating facts.",
-      messages: parsed.data.messages,
+      messages: await convertToModelMessages(parsed.data.messages as UIMessage[]),
       temperature: 0.4,
-      maxTokens: 700,
+      maxOutputTokens: 700,
     });
 
-    return result.toDataStreamResponse({
-      getErrorMessage: toSafeChatError,
+    return result.toUIMessageStreamResponse({
+      onError: toSafeChatError,
     });
   } catch (error) {
     console.error("Chat route failed:", error);
