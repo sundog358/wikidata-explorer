@@ -24,6 +24,12 @@ try {
     throw new Error(`Expected Q42 to be selected initially, got ${initialEntity}`);
   }
 
+  await page.getByTestId("data-quality-summary").waitFor({ state: "visible" });
+  const qualitySummary = await page.getByTestId("data-quality-summary").innerText();
+  if (!qualitySummary.includes("Data quality summary")) {
+    throw new Error(`Expected data quality summary to render, got ${qualitySummary}`);
+  }
+
   await page.getByTestId("graph-filters").waitFor({ state: "visible" });
   await page.getByLabel("Target type").selectOption("item");
   const filterSummary = await page.getByTestId("graph-filter-summary").innerText();
@@ -61,6 +67,7 @@ try {
     throw new Error(`Expected direct PID lookup to select P31, got ${selectedProperty}`);
   }
 
+  console.log("PASS search data quality summary renders for Q42");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log("PASS search graph interaction selects Q5 from Q42");
   console.log("PASS direct PID lookup selects P31");

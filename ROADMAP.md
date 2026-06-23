@@ -27,7 +27,7 @@ The project already has a strong base:
 - Clickable relationship graph for selected entities with filters, hover previews, rank badges, and selected-edge details
 - Stable English label fallback for multilingual Wikidata records
 - Expandable statement evidence for ranks, qualifiers, and references
-- Evidence review queue seeded from deprecated and unreferenced visible statements
+- Entity-level data-quality summary plus evidence review queue seeded from deprecated and unreferenced visible statements
 - Bot-ready draft exports for review findings as safe QuickStatements comments and Markdown curation notes
 - Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
 - Route smoke checks, API contract checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots, and GitHub Actions CI
@@ -72,7 +72,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Surface statement ranks: preferred, normal, deprecated
 - Add badges for referenced vs unreferenced claims
 - Add source links where references include URLs, identifiers, or stated-in records
-- Add a data-quality summary for each entity
+- Expand data-quality summaries with source-link coverage and persisted curation task status
 - Promote review queue findings into persisted, source-backed curation tasks
 
 ## 🧪 Testing And Quality Roadmap

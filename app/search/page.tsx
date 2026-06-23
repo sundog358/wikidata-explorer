@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
+import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
 import { RelationshipGraph } from "@/components/relationship-graph";
@@ -172,6 +173,11 @@ function getSeverityClass(severity: ReviewQueueItem["severity"]) {
   return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200";
 }
 
+function dataQualityClass(rating: string) {
+  if (rating === "Strong") return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200";
+  if (rating === "Mixed") return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200";
+  return "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200";
+}
 function readJsonArray<T>(key: string): T[] {
   if (typeof window === "undefined") return [];
 
@@ -393,6 +399,7 @@ export default function SearchPage() {
     return savedAgentRuns.filter((run) => run.entityId === selectedItem.id);
   }, [savedAgentRuns, selectedItem]);
 
+  const dataQuality = useMemo(() => selectedItem ? summarizeEntityDataQuality(selectedItem) : null, [selectedItem]);
   const reviewQueue = useMemo(() => buildReviewQueue(selectedItem, dismissedReviewIds), [dismissedReviewIds, selectedItem]);
   const draftSafety = useMemo<DraftSafetyState>(() => evaluateAutonomyAction({
     action: "quickstatements_draft",
@@ -712,6 +719,71 @@ export default function SearchPage() {
                   </div>
                 </div>
 
+                {dataQuality && (
+                  <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900" data-testid="data-quality-summary">
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                          <ShieldCheck className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                          Data quality summary
+                        </div>
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                          Evidence coverage and curation risk across the visible statement set for {selectedItem.id}.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${dataQualityClass(dataQuality.rating)}`}>{dataQuality.rating}</span>
+                        <Badge variant="outline">{dataQuality.score}/100</Badge>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 text-sm md:grid-cols-4">
+                      <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Statements</div>
+                        <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{dataQuality.statementCount}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{dataQuality.propertyCount} properties</div>
+                      </div>
+                      <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">References</div>
+                        <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{dataQuality.referencedStatementCount}/{dataQuality.statementCount}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{dataQuality.referenceCount} reference blocks</div>
+                      </div>
+                      <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Qualifier Context</div>
+                        <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{dataQuality.qualifiedStatementCount}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{dataQuality.qualifierCount} qualifiers</div>
+                      </div>
+                      <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ranks</div>
+                        <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{dataQuality.preferredStatementCount}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{dataQuality.deprecatedStatementCount} deprecated</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid gap-3 text-sm lg:grid-cols-2">
+                      <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Review focus</div>
+                        {dataQuality.issues.length ? (
+                          <ul className="space-y-1 text-slate-700 dark:text-slate-200">
+                            {dataQuality.issues.slice(0, 3).map((issue) => <li key={issue}>{issue}</li>)}
+                          </ul>
+                        ) : (
+                          <p className="text-slate-700 dark:text-slate-200">No immediate evidence flags in the visible statement set.</p>
+                        )}
+                      </div>
+                      <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Trust signals</div>
+                        {dataQuality.strengths.length ? (
+                          <ul className="space-y-1 text-slate-700 dark:text-slate-200">
+                            {dataQuality.strengths.slice(0, 3).map((strength) => <li key={strength}>{strength}</li>)}
+                          </ul>
+                        ) : (
+                          <p className="text-slate-700 dark:text-slate-200">Add references, qualifiers, or preferred ranks to strengthen this entity.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {aiSummary?.entityId === selectedItem.id && (
                   <div className="mb-5 rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-slate-700 dark:border-sky-900 dark:bg-sky-950 dark:text-slate-200" data-testid="entity-ai-summary">
                     <div className="mb-2 flex items-center gap-2 font-semibold text-slate-950 dark:text-slate-50">
