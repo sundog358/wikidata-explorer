@@ -26,9 +26,33 @@ const checks = [
     viewport: { width: 1440, height: 1000 },
   },
   {
-    name: "04-search-q42-mobile.png",
+    name: "04-agents-desktop.png",
+    path: "/agents",
+    waitText: "Agent Workbench",
+    viewport: { width: 1440, height: 1000 },
+  },
+  {
+    name: "05-docs-desktop.png",
+    path: "/docs",
+    waitText: "Developer Commands",
+    viewport: { width: 1440, height: 1000 },
+  },
+  {
+    name: "06-search-q42-mobile.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    viewport: { width: 390, height: 844 },
+  },
+  {
+    name: "07-agents-mobile.png",
+    path: "/agents",
+    waitText: "Agent Workbench",
+    viewport: { width: 390, height: 844 },
+  },
+  {
+    name: "08-docs-mobile.png",
+    path: "/docs",
+    waitText: "Developer Commands",
     viewport: { width: 390, height: 844 },
   },
 ];
@@ -48,6 +72,24 @@ async function findHorizontalOverflow(page) {
     }
     return offenders.slice(0, 10);
   });
+}
+
+function trackBrowserErrors(page) {
+  const browserErrors = [];
+
+  page.on("console", (message) => {
+    if (message.type() !== "error") {
+      return;
+    }
+
+    browserErrors.push(`console error: ${message.text()}`.slice(0, 500));
+  });
+
+  page.on("pageerror", (error) => {
+    browserErrors.push(`page error: ${error.message}`.slice(0, 500));
+  });
+
+  return browserErrors;
 }
 
 await rm(outDir, { recursive: true, force: true });
@@ -71,6 +113,8 @@ try {
     page.setDefaultTimeout(20000);
     page.setDefaultNavigationTimeout(20000);
 
+    const browserErrors = trackBrowserErrors(page);
+
     try {
       await page.goto(new URL(check.path, baseUrl).toString(), {
         waitUntil: "commit",
@@ -86,7 +130,7 @@ try {
       await page.screenshot({ path: screenshotPath, fullPage: false, timeout: 20000 });
 
       const overflow = await findHorizontalOverflow(page);
-      results.push({ ...check, file: screenshotPath, overflow });
+      results.push({ ...check, file: screenshotPath, overflow, browserErrors });
       console.log(`DONE ${check.name}`);
     } finally {
       await page.close().catch(() => {});
@@ -94,17 +138,21 @@ try {
   }
 
   for (const result of results) {
-    const marker = result.overflow.length ? "WARN" : "PASS";
+    const hasFailures = result.overflow.length > 0 || result.browserErrors.length > 0;
+    const marker = hasFailures ? "FAIL" : "PASS";
     console.log(`${marker} ${result.name} ${result.file}`);
     for (const offender of result.overflow) {
       console.log(`  overflow ${offender.tag} width=${offender.width} class=${offender.className}`);
+    }
+    for (const browserError of result.browserErrors) {
+      console.log(`  ${browserError}`);
     }
   }
 
   console.log(`Saved ${results.length} screenshot(s) to ${outDir}`);
   console.log((await readdir(outDir)).join("\n"));
 
-  if (results.some((result) => result.overflow.length > 0)) {
+  if (results.some((result) => result.overflow.length > 0 || result.browserErrors.length > 0)) {
     process.exitCode = 1;
   }
 } finally {

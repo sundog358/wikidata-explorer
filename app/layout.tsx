@@ -10,6 +10,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Wikidata Explorer",
   description: "Explore and learn about Wikidata entities and their relationships",
+  icons: {
+    icon: "/images/favicon-32x32.png",
+    shortcut: "/images/favicon-32x32.png",
+    apple: "/images/favicon-32x32.png",
+  },
 };
 
 export default function RootLayout({
@@ -28,3 +33,4 @@ export default function RootLayout({
     </html>
   );
 }
+

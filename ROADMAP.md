@@ -30,7 +30,7 @@ The project already has a strong base:
 - Entity-level data-quality summary plus evidence review queue with browser-local task status, source-link coverage, and formatter-aware reference source hints seeded from deprecated and unreferenced visible statements
 - Bot-ready draft exports for review findings, task status, formatter-aware source hints, and clickable source-link context as safe QuickStatements comments and Markdown curation notes
 - Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
-- Route smoke checks, API contract checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots, and GitHub Actions CI
+- Route smoke checks, API contract checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots with console/page-error detection, and GitHub Actions CI
 - Cleaned repo presentation with tracked portfolio screenshots and production trace checks that exclude repo clutter and local bot files
 
 ## 🚦 Near-Term Priorities
@@ -156,6 +156,7 @@ The project should answer one question beautifully:
 > “How can I start with one Wikidata entity and quickly understand the trustworthy graph around it?”
 
 Every future feature should make that path clearer, faster, more grounded, or easier to share.
+
 
 
 
