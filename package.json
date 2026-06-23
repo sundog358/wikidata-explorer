@@ -13,7 +13,7 @@
     "visual:qa": "node scripts/visual-qa.mjs",
     "trace:check": "node scripts/test-deployment-trace.mjs",
     "api:contracts": "node scripts/test-api-contracts.mjs",
-    "e2e": "node scripts/test-search-interaction.mjs",
+    "e2e": "node scripts/test-homepage-proof-paths.mjs && node scripts/test-search-interaction.mjs",
     "deploy:check": "node scripts/check-deploy-env.mjs"
   },
   "dependencies": {

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { ArrowRight, Database, Network, Search, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,22 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 const examples = ["Douglas Adams", "Q42", "P31", "linked open data"];
+const proofPaths = [
+  {
+    title: "Graph context",
+    body: "Open Douglas Adams with relationship filters ready for inspection.",
+    href: "/search?q=Q42",
+    icon: Network,
+    testId: "home-proof-path-graph",
+  },
+  {
+    title: "Evidence review",
+    body: "Jump to references, qualifiers, ranks, and curation draft exports.",
+    href: "/search?q=Q42&tab=review",
+    icon: Database,
+    testId: "home-proof-path-review",
+  },
+];
 
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -87,8 +104,8 @@ export default function Home() {
             <div className="flex gap-3 p-5">
               <Database className="mt-1 h-5 w-5 shrink-0 text-slate-500" />
               <div>
-                <h3 className="font-medium">Inspect statements</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300">Review property labels, values, media, sitelinks, aliases, and languages.</p>
+                <h3 className="font-medium">Inspect evidence</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Review property labels, values, references, qualifiers, ranks, media, and languages.</p>
               </div>
             </div>
             <div className="flex gap-3 p-5">
@@ -97,6 +114,35 @@ export default function Home() {
                 <h3 className="font-medium">Follow linked data</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-300">Branch into related entities and properties without starting over.</p>
               </div>
+            </div>
+          </div>
+          <div className="border-t border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950">
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">Proof paths</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Open a seeded workbench that shows the graph and evidence workflow immediately.</p>
+            </div>
+            <div className="grid gap-3">
+              {proofPaths.map((path) => {
+                const Icon = path.icon;
+
+                return (
+                  <div key={path.href} className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="mb-3 flex gap-3">
+                      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-300" />
+                      <div>
+                        <p className="text-sm font-medium">{path.title}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">{path.body}</p>
+                      </div>
+                    </div>
+                    <Button asChild variant="outline" size="sm" className="w-full gap-2">
+                      <Link href={path.href} aria-label={`Open ${path.title}`} data-testid={path.testId}>
+                        Open
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </Card>
