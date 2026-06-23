@@ -54,10 +54,11 @@ export function MainNav() {
             key={item.href}
             href={item.href}
             aria-label={item.name}
+            data-primary-nav={item.href === "/agents" ? "agents" : undefined}
             className={cn(
-              "inline-flex h-9 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors hover:bg-sky-50 hover:text-sky-800 dark:hover:bg-slate-800 dark:hover:text-sky-300 sm:px-3",
-              item.persistentLabel && "bg-sky-50 text-sky-800 dark:bg-slate-800 dark:text-sky-300",
+              "inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors hover:bg-sky-50 hover:text-sky-800 dark:hover:bg-slate-800 dark:hover:text-sky-300 sm:px-3",
               isActive ? "text-sky-700 dark:text-sky-300" : "text-muted-foreground",
+              item.persistentLabel && "border border-sky-200 bg-sky-50 text-sky-800 dark:border-slate-700 dark:bg-slate-800 dark:text-sky-300",
             )}
             title={item.name}
           >

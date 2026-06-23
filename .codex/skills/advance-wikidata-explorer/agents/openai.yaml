@@ -1,0 +1,4 @@
+interface:
+  display_name: "Advance Wikidata Explorer"
+  short_description: "Run focused roadmap slices with the right checks"
+  default_prompt: "Use $advance-wikidata-explorer to move Wikidata Explorer forward with a focused, verified roadmap slice."

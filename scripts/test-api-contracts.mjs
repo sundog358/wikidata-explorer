@@ -32,6 +32,7 @@ await check("chat rejects empty messages", "/api/chat", { messages: [] }, 400, "
 await check("entity summary rejects missing entity", "/api/entity-summary", { entity: null }, 400, "Invalid entity summary request");
 await check("workflow rejects unsupported action", "/api/ag2-workflow", { action: "delete", entityId: "Q42" }, 400, "Invalid AG2 workflow request");
 await check("workflow graph requires visible entity", "/api/ag2-workflow", { action: "graph", entityId: "Q42" }, 400, "requires visible entity context");
+await check("workflow suggest requires visible entity", "/api/ag2-workflow", { action: "suggest", entityId: "Q42" }, 400, "requires visible entity context");
 await check("workflow compare requires second entity", "/api/ag2-workflow", {
   action: "compare",
   entity: {

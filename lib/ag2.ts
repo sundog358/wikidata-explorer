@@ -19,7 +19,7 @@ type Ag2Payload =
     }
   | {
       mode: "workflow";
-      action: "research" | "graph" | "verify" | "compare" | "report";
+      action: "research" | "graph" | "suggest" | "verify" | "compare" | "report";
       entity?: unknown;
       entityId?: string;
       compareEntityId?: string;

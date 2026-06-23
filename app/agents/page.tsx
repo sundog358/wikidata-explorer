@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrainCircuit, FileText, GitCompareArrows, Network, Search, ShieldCheck } from "lucide-react";
+import { BrainCircuit, FileText, GitCompareArrows, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 
 const primaryLinkClass = "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const outlineLinkClass = "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
@@ -16,6 +16,12 @@ const agents = [
     icon: Network,
     name: "Graph Analyst Agent",
     body: "Reads the selected entity context and explains relationship neighborhoods, weak edges, and the most useful next graph clicks.",
+  },
+  {
+    action: "suggest",
+    icon: Sparkles,
+    name: "Next Entity Suggestions Agent",
+    body: "Turns visible relationships and evidence signals into concrete next Q/P IDs to inspect, with reasons and caveats for each recommendation.",
   },
   {
     action: "verify",

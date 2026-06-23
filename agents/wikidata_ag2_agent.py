@@ -361,6 +361,18 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
             800,
         )
 
+    if action == "suggest":
+        return (
+            "wikidata_next_entity_suggester",
+            "You are a Next Entity Suggestions Agent. Recommend concrete Wikidata Q/P IDs to inspect next using only supplied entity context.",
+            "\n".join([
+                *entity_context_lines(entity),
+                "",
+                "Suggest 5 next entities or properties to inspect. For each, include the exact Q/P ID if present in context, the relationship/property that led to it, why it matters, and one evidence or data-quality caveat. Do not invent IDs that are not in the supplied context.",
+            ]),
+            850,
+        )
+
     if action == "verify":
         return (
             "wikidata_citation_verifier",

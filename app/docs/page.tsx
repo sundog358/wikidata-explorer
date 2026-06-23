@@ -24,7 +24,7 @@ const sections = [
   {
     icon: BrainCircuit,
     title: "Ask",
-    body: "The AG2 research assistant and specialist workbench help with Wikidata workflow questions, graph analysis, verification, comparison, and reporting while keeping provider keys on the server.",
+    body: "The AG2 research assistant and specialist workbench help with Wikidata workflow questions, graph analysis, next-entity suggestions, verification, comparison, and reporting while keeping provider keys on the server.",
   },
   {
     icon: ShieldCheck,

@@ -24,7 +24,7 @@ type AiSummaryState = {
   summary: string;
 } | null;
 
-type AgentAction = "research" | "graph" | "verify" | "compare" | "report";
+type AgentAction = "research" | "graph" | "suggest" | "verify" | "compare" | "report";
 
 type AgentSafetyState = {
   decisionLabel: string;
@@ -276,7 +276,7 @@ function getInitialSearchTerm() {
 function getInitialAgentAction(): AgentAction | null {
   if (typeof window === "undefined") return null;
   const action = new URLSearchParams(window.location.search).get("agent");
-  return action === "research" || action === "graph" || action === "verify" || action === "compare" || action === "report" ? action : null;
+  return action === "research" || action === "graph" || action === "suggest" || action === "verify" || action === "compare" || action === "report" ? action : null;
 }
 
 function collectCommonsFiles(item: WikidataItem | null): string[] {
@@ -555,6 +555,7 @@ export default function SearchPage() {
     const titles: Record<AgentAction, string> = {
       research: "Wikidata Research Agent",
       graph: "Graph Analyst Agent",
+      suggest: "Next Entity Suggestions Agent",
       verify: "Citation/Verifier Agent",
       compare: "Comparison Agent",
       report: "Report Agent",
@@ -805,13 +806,13 @@ export default function SearchPage() {
                         AG2 specialist agents
                       </div>
                       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                        Run focused agents against this entity: fetched research, graph analysis, citation checks, comparison, and Markdown reporting.
+                        Run focused agents against this entity: fetched research, graph analysis, next-entity suggestions, citation checks, comparison, and Markdown reporting.
                       </p>
                     </div>
                     {agentLoading && <Badge variant="secondary">{agentLoading} running</Badge>}
                   </div>
 
-                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
                     <Button type="button" variant="outline" className="gap-2" onClick={() => runAgentWorkflow("research")} disabled={!!agentLoading}>
                       <Search className="h-4 w-4" />
                       Research
@@ -819,6 +820,10 @@ export default function SearchPage() {
                     <Button type="button" variant="outline" className="gap-2" onClick={() => runAgentWorkflow("graph")} disabled={!!agentLoading}>
                       <Network className="h-4 w-4" />
                       Graph
+                    </Button>
+                    <Button type="button" variant="outline" className="gap-2" onClick={() => runAgentWorkflow("suggest")} disabled={!!agentLoading}>
+                      <Sparkles className="h-4 w-4" />
+                      Suggest
                     </Button>
                     <Button type="button" variant="outline" className="gap-2" onClick={() => runAgentWorkflow("verify")} disabled={!!agentLoading}>
                       <ShieldCheck className="h-4 w-4" />
@@ -828,7 +833,7 @@ export default function SearchPage() {
                       <FileText className="h-4 w-4" />
                       Report
                     </Button>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 md:col-span-2 xl:col-span-2">
                       <Input
                         value={compareEntityId}
                         onChange={(event) => setCompareEntityId(event.currentTarget.value.toUpperCase())}

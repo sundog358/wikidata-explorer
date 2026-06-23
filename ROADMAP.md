@@ -22,7 +22,7 @@ The project already has a strong base:
 - AG2-backed research assistant with server-side OpenAI key handling
 - Grounded AG2 entity summaries and specialist workflows generated from visible or fetched Wikidata context
 - Bounded AG2 bridge missing-key guard and retry/backoff for provider/runtime failures
-- Browser-local AG2 agent run history for revisiting research, graph, verifier, comparison, and report outputs
+- Browser-local AG2 agent run history for revisiting research, graph, next-entity suggestions, verifier, comparison, and report outputs
 - Wikidata Action API, Wikibase REST API, and Commons media integration
 - Clickable relationship graph for selected entities with filters, hover previews, rank badges, and selected-edge details
 - Stable English label fallback for multilingual Wikidata records
@@ -61,7 +61,7 @@ Goal: make AG2 assistance grounded in visible and fetched Wikidata context throu
 - Send selected graph nodes and selected statements into the full AG2 chat surface
 - Add citation-style references to Wikidata IDs in AI responses
 - Persist agent result history beyond browser-local storage when a database layer is introduced
-- Add a “suggest next entities to inspect” action from the graph
+- Expand “suggest next entities to inspect” with graph-node selection context and saved recommendation paths
 - Expand safety copy and policy UI for future live bot-ready actions, source requirements, and human approval states
 
 ### 4. Evidence And Trust
@@ -134,7 +134,7 @@ Goal: help users evaluate data quality, not just browse facts.
 
 - Context-aware prompts from selected entity
 - Wikidata ID references in assistant responses
-- “Summarize entity” and “suggest next nodes” actions
+- “Summarize entity” and stronger graph-grounded “suggest next nodes” actions
 
 ### Milestone 3: Shareable Research Outputs
 
@@ -156,3 +156,4 @@ The project should answer one question beautifully:
 > “How can I start with one Wikidata entity and quickly understand the trustworthy graph around it?”
 
 Every future feature should make that path clearer, faster, more grounded, or easier to share.
+

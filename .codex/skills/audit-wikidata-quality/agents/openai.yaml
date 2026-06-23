@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit Wikidata Quality"
+  short_description: "Audit UX, tests, safety, and portfolio polish"
+  default_prompt: "Use $audit-wikidata-quality to audit this project and harden the weakest quality risks."

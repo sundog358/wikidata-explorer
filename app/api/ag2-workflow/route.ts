@@ -32,7 +32,7 @@ const entitySchema = z.object({
 });
 
 const requestSchema = z.object({
-  action: z.enum(["research", "graph", "verify", "compare", "report"]),
+  action: z.enum(["research", "graph", "suggest", "verify", "compare", "report"]),
   entity: entitySchema.optional(),
   entityId: z.string().regex(/^[QP]\d+$/).optional(),
   compareEntityId: z.string().regex(/^[QP]\d+$/).optional(),

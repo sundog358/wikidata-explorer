@@ -11,6 +11,16 @@ assert.equal(readOnly.allowed, true);
 assert.equal(readOnly.risk, "low");
 assert.equal(readOnly.mode, "read_only");
 
+const suggestReadOnly = evaluateAutonomyAction({
+  action: "suggest",
+  mode: "read_only",
+  entityId: "Q42",
+  dryRun: true,
+});
+assert.equal(suggestReadOnly.allowed, true);
+assert.equal(suggestReadOnly.actionLabel, "Next Entity Suggestions Agent");
+assert.match(suggestReadOnly.requiredControls.join(" "), /Q\/P IDs/);
+
 const compareWithoutTarget = evaluateAutonomyAction({
   action: "compare",
   mode: "read_only",
