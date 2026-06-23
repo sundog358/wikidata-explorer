@@ -8,13 +8,15 @@ import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const siteIcon = "/images/8sprocket.jpg";
+
 export const metadata: Metadata = {
   title: "Wikidata Explorer",
   description: "Explore and learn about Wikidata entities and their relationships",
   icons: {
-    icon: "/images/favicon-32x32.png",
-    shortcut: "/images/favicon-32x32.png",
-    apple: "/images/favicon-32x32.png",
+    icon: [{ url: siteIcon, type: "image/jpeg" }],
+    shortcut: [{ url: siteIcon, type: "image/jpeg" }],
+    apple: [{ url: siteIcon, type: "image/jpeg" }],
   },
 };
 
