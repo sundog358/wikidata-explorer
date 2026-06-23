@@ -803,7 +803,7 @@ export default function SearchPage() {
                       </div>
                     </div>
 
-                    <div className="grid gap-3 text-sm md:grid-cols-4">
+                    <div className="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-5">
                       <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
                         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Statements</div>
                         <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{dataQuality.statementCount}</div>
@@ -813,6 +813,11 @@ export default function SearchPage() {
                         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">References</div>
                         <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{dataQuality.referencedStatementCount}/{dataQuality.statementCount}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">{dataQuality.referenceCount} reference blocks</div>
+                      </div>
+                      <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Source Links</div>
+                        <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{dataQuality.sourceLinkedStatementCount}/{dataQuality.referencedStatementCount}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{dataQuality.sourceLinkCount} clickable links</div>
                       </div>
                       <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
                         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Qualifier Context</div>
@@ -1199,7 +1204,13 @@ export default function SearchPage() {
                                   {item.sourceHints.map((hint, index) => (
                                     <li key={`${hint.propertyId}-${hint.value}-${index}`} className="break-words text-slate-600 dark:text-slate-300">
                                       <span className="font-medium text-slate-800 dark:text-slate-100">{sourceHintKindLabel(hint.kind)}</span>
-                                      <span className="text-slate-500 dark:text-slate-400"> - {hint.propertyLabel || hint.propertyId}</span>: {hint.value}
+                                      <span className="text-slate-500 dark:text-slate-400"> - {hint.propertyLabel || hint.propertyId}</span>: {hint.url ? (
+                                        <a className="text-sky-700 underline-offset-2 hover:underline dark:text-sky-300" href={hint.url} target="_blank" rel="noopener noreferrer">
+                                          {hint.value}
+                                        </a>
+                                      ) : (
+                                        <span>{hint.value}</span>
+                                      )}
                                     </li>
                                   ))}
                                 </ul>
@@ -1273,6 +1284,7 @@ export default function SearchPage() {
     </div>
   );
 }
+
 
 
 

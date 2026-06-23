@@ -10,7 +10,11 @@ export type EntityDataQualitySummary = {
   qualifiedStatementCount: number;
   referenceCount: number;
   qualifierCount: number;
+  sourceHintCount: number;
+  sourceLinkCount: number;
+  sourceLinkedStatementCount: number;
   referencedCoverage: number;
+  sourceLinkCoverage: number;
   score: number;
   rating: "Strong" | "Mixed" | "Needs review";
   issues: string[];

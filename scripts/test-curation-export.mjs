@@ -30,6 +30,7 @@ const items = [
         propertyLabel: "stated in",
         value: "Encyclopaedia Britannica (Q455)",
         kind: "stated-in",
+        url: "https://www.wikidata.org/wiki/Q455",
         referenceHash: "abc123",
       },
       {
@@ -37,6 +38,7 @@ const items = [
         propertyLabel: "reference URL",
         value: "https://example.org/source",
         kind: "source-url",
+        url: "https://example.org/source",
         referenceHash: "abc123",
       },
     ],
@@ -49,17 +51,20 @@ assert.match(quickStatements, /QuickStatements review draft/);
 assert.match(quickStatements, /draft-only/);
 assert.match(quickStatements, /# Q42\tP106\twriter \(Q36180\)\tS248\tSOURCE_TO_ADD\tChecking sources; medium: Claim has no references/);
 assert.match(quickStatements, /# status: Ready to draft/);
-assert.match(quickStatements, /# source hints: Stated in: stated in \(P248\) = Encyclopaedia Britannica \(Q455\); Source URL: reference URL \(P854\) = https:\/\/example\.org\/source/);
+assert.match(quickStatements, /# source hints: Stated in: stated in \(P248\) = Encyclopaedia Britannica \(Q455\) \(https:\/\/www\.wikidata\.org\/wiki\/Q455\); Source URL: reference URL \(P854\) = https:\/\/example\.org\/source/);
 assert.equal(quickStatements.split("\n").filter((line) => line.trim() && !line.startsWith("#")).length, 0);
 
 const markdown = buildReviewMarkdownExport(items, { entityId: "Q42", entityLabel: "Douglas Adams", createdAt });
 assert.match(markdown, /# Wikidata Review Queue: Douglas Adams \(Q42\)/);
 assert.match(markdown, /\| Status \| Severity \| Property \| Value \| Finding \| Source hints \| Next action \|/);
 assert.match(markdown, /\| Checking sources \| medium \| occupation \(P106\) \| writer \(Q36180\) \| Claim has no references \| No source hints available \|/);
-assert.match(markdown, /\| Ready to draft \| high \| instance of \(P31\).*Stated in: stated in \(P248\) = Encyclopaedia Britannica \(Q455\); Source URL: reference URL \(P854\) = https:\/\/example\.org\/source/);
+assert.match(markdown, /\| Ready to draft \| high \| instance of \(P31\).*Stated in: stated in \(P248\) = Encyclopaedia Britannica \(Q455\) \(https:\/\/www\.wikidata\.org\/wiki\/Q455\); Source URL: reference URL \(P854\) = https:\/\/example\.org\/source/);
 assert.match(markdown, /Safety Checklist/);
 
 const emptyDraft = buildQuickStatementsReviewDraft([], { entityId: "Q1", createdAt });
 assert.match(emptyDraft, /No review queue items/);
 
 console.log("PASS curation export tests");
+
+
+

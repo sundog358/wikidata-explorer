@@ -3,6 +3,7 @@ export type CurationExportSourceHint = {
   propertyLabel: string;
   value: string;
   kind: string;
+  url?: string;
   referenceHash?: string;
 };
 

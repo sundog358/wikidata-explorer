@@ -27,8 +27,8 @@ The project already has a strong base:
 - Clickable relationship graph for selected entities with filters, hover previews, rank badges, and selected-edge details
 - Stable English label fallback for multilingual Wikidata records
 - Expandable statement evidence for ranks, qualifiers, and references
-- Entity-level data-quality summary plus evidence review queue with browser-local task status and extracted reference source hints seeded from deprecated and unreferenced visible statements
-- Bot-ready draft exports for review findings, task status, and source hints as safe QuickStatements comments and Markdown curation notes
+- Entity-level data-quality summary plus evidence review queue with browser-local task status, source-link coverage, and extracted reference source hints seeded from deprecated and unreferenced visible statements
+- Bot-ready draft exports for review findings, task status, source hints, and clickable source-link context as safe QuickStatements comments and Markdown curation notes
 - Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
 - Route smoke checks, API contract checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots, and GitHub Actions CI
 - Cleaned repo presentation with tracked portfolio screenshots and production trace checks that exclude repo clutter and local bot files
@@ -71,8 +71,8 @@ Goal: help users evaluate data quality, not just browse facts.
 - Render references and qualifiers in a clearer statement detail drawer
 - Surface statement ranks: preferred, normal, deprecated
 - Add badges for referenced vs unreferenced claims
-- Promote extracted source hints into clickable source links where references include URLs, identifiers, or stated-in records
-- Expand data-quality summaries with source-link coverage beyond the current review-task source hints
+- Add formatter-aware external-ID source links for identifier references
+- Extend source-link coverage into the full statement detail drawer and future persisted curation tasks
 - Promote review queue findings into persisted, source-backed curation tasks
 
 ## 🧪 Testing And Quality Roadmap
@@ -156,5 +156,6 @@ The project should answer one question beautifully:
 > “How can I start with one Wikidata entity and quickly understand the trustworthy graph around it?”
 
 Every future feature should make that path clearer, faster, more grounded, or easier to share.
+
 
 
