@@ -26,7 +26,7 @@ type RelationshipGraphNode = {
   statement: WikidataStatement;
 };
 
-type RelationshipGraphFilters = {
+export type RelationshipGraphFilters = {
   kind: "all" | "item" | "property";
   rank: "all" | WikidataStatement["rank"];
   propertyId: string;
@@ -56,11 +56,13 @@ type RelationshipGraphProps = {
   item: WikidataItem;
   onEntityClick: (id: string) => void;
   onGraphFocus?: (focus: RelationshipGraphFocus | null) => void;
+  filters?: RelationshipGraphFilters;
+  onFiltersChange?: (filters: RelationshipGraphFilters) => void;
 };
 
 const CENTER = { x: 50, y: 50 };
 const RADIUS = 34;
-const DEFAULT_FILTERS: RelationshipGraphFilters = {
+export const DEFAULT_RELATIONSHIP_GRAPH_FILTERS: RelationshipGraphFilters = {
   kind: "all",
   rank: "all",
   propertyId: "all",
@@ -123,10 +125,11 @@ function SelectControl({
   );
 }
 
-export function RelationshipGraph({ item, onEntityClick, onGraphFocus }: RelationshipGraphProps) {
+export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: controlledFilters, onFiltersChange }: RelationshipGraphProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [internalFilters, setInternalFilters] = useState(DEFAULT_RELATIONSHIP_GRAPH_FILTERS);
+  const filters = controlledFilters || internalFilters;
   const allNodes = useMemo(() => collectRelationshipGraphNodes(item), [item]);
   const matchingNodes = useMemo(() => filterRelationshipGraphNodes(allNodes, filters), [allNodes, filters]);
   const nodes = useMemo(() => positionNodes(matchingNodes.slice(0, 14)), [matchingNodes]);
@@ -134,15 +137,23 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus }: Relatio
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
   const hoveredNode = nodes.find((node) => node.id === hoveredNodeId) || null;
   const previewNode = hoveredNode || selectedNode;
-  const hasActiveFilters = Object.entries(filters).some(([key, value]) => DEFAULT_FILTERS[key as keyof typeof DEFAULT_FILTERS] !== value);
+  const hasActiveFilters = Object.entries(filters).some(([key, value]) => DEFAULT_RELATIONSHIP_GRAPH_FILTERS[key as keyof typeof DEFAULT_RELATIONSHIP_GRAPH_FILTERS] !== value);
 
   function selectNode(node: RelationshipGraphNode | null) {
     setSelectedNodeId(node?.id || null);
     onGraphFocus?.(node ? graphFocusFromNode(node) : null);
   }
 
+  function setGraphFilters(nextFilters: RelationshipGraphFilters) {
+    if (onFiltersChange) {
+      onFiltersChange(nextFilters);
+    } else {
+      setInternalFilters(nextFilters);
+    }
+  }
+
   function updateFilter<Key extends keyof Required<RelationshipGraphFilters>>(key: Key, value: Required<RelationshipGraphFilters>[Key]) {
-    setFilters((current) => ({ ...current, [key]: value }));
+    setGraphFilters({ ...filters, [key]: value });
     setHoveredNodeId(null);
     selectNode(null);
   }
@@ -169,7 +180,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus }: Relatio
             </p>
           </div>
           <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => {
-            setFilters(DEFAULT_FILTERS);
+            setGraphFilters(DEFAULT_RELATIONSHIP_GRAPH_FILTERS);
             selectNode(null);
           }} disabled={!hasActiveFilters}>
             <RotateCcw className="h-4 w-4" />
@@ -363,3 +374,5 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus }: Relatio
     </div>
   );
 }
+
+

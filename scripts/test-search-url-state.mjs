@@ -1,0 +1,36 @@
+import assert from "node:assert/strict";
+import { readSearchWorkbenchState, writeSearchWorkbenchState } from "../lib/search-url-state.mjs";
+
+const defaultState = readSearchWorkbenchState("?q=Q42");
+assert.equal(defaultState.tab, "graph");
+assert.deepEqual(defaultState.graphFilters, { kind: "all", rank: "all", propertyId: "all", evidence: "all" });
+
+const state = readSearchWorkbenchState("?q=Q42&tab=review&gkind=item&grank=normal&gprop=p31&gevidence=referenced");
+assert.equal(state.tab, "review");
+assert.deepEqual(state.graphFilters, { kind: "item", rank: "normal", propertyId: "P31", evidence: "referenced" });
+
+const invalid = readSearchWorkbenchState("?tab=bad&gkind=unknown&grank=old&gprop=Q42&gevidence=nope");
+assert.equal(invalid.tab, "graph");
+assert.deepEqual(invalid.graphFilters, { kind: "all", rank: "all", propertyId: "all", evidence: "all" });
+
+const updated = writeSearchWorkbenchState("?q=Q42&agent=graph", {
+  tab: "statements",
+  graphFilters: { kind: "property", rank: "preferred", propertyId: "P279", evidence: "qualified" },
+});
+assert.equal(updated.get("q"), "Q42");
+assert.equal(updated.get("agent"), "graph");
+assert.equal(updated.get("tab"), "statements");
+assert.equal(updated.get("gkind"), "property");
+assert.equal(updated.get("grank"), "preferred");
+assert.equal(updated.get("gprop"), "P279");
+assert.equal(updated.get("gevidence"), "qualified");
+
+const cleaned = writeSearchWorkbenchState(updated, { tab: "graph", graphFilters: { kind: "all", rank: "all", propertyId: "all", evidence: "all" } });
+assert.equal(cleaned.get("q"), "Q42");
+assert.equal(cleaned.has("tab"), false);
+assert.equal(cleaned.has("gkind"), false);
+assert.equal(cleaned.has("grank"), false);
+assert.equal(cleaned.has("gprop"), false);
+assert.equal(cleaned.has("gevidence"), false);
+
+console.log("PASS search URL state tests");

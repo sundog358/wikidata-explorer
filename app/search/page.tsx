@@ -6,9 +6,10 @@ import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrow
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
 import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-source-hints.mjs";
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
+import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/search-url-state.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
-import { RelationshipGraph, type RelationshipGraphFocus } from "@/components/relationship-graph";
+import { RelationshipGraph, type RelationshipGraphFilters, type RelationshipGraphFocus } from "@/components/relationship-graph";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,6 +27,7 @@ type AiSummaryState = {
 } | null;
 
 type AgentAction = "research" | "graph" | "suggest" | "verify" | "compare" | "report";
+type SearchWorkbenchTab = "graph" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
 
 type AgentSafetyState = {
   decisionLabel: string;
@@ -323,6 +325,27 @@ function getInitialAgentAction(): AgentAction | null {
   return action === "research" || action === "graph" || action === "suggest" || action === "verify" || action === "compare" || action === "report" ? action : null;
 }
 
+function getInitialWorkbenchState() {
+  if (typeof window === "undefined") return readSearchWorkbenchState("");
+  return readSearchWorkbenchState(window.location.search);
+}
+
+function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters }) {
+  if (typeof window === "undefined") return;
+  const params = new URLSearchParams(window.location.search);
+  if (updates.q !== undefined) {
+    const query = updates.q.trim();
+    if (query) params.set("q", query);
+    else params.delete("q");
+  }
+  const currentState = readSearchWorkbenchState(params);
+  const nextParams = writeSearchWorkbenchState(params, {
+    tab: updates.tab || currentState.tab,
+    graphFilters: updates.graphFilters || currentState.graphFilters,
+  });
+  const query = nextParams.toString();
+  window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+}
 function collectCommonsFiles(item: WikidataItem | null): string[] {
   if (!item) return [];
 
@@ -349,6 +372,8 @@ export default function SearchPage() {
   const [agentLoading, setAgentLoading] = useState<AgentAction | null>(null);
   const [compareEntityId, setCompareEntityId] = useState("Q80");
   const [selectedGraphFocus, setSelectedGraphFocus] = useState<RelationshipGraphFocus | null>(null);
+  const [activeTab, setActiveTab] = useState<SearchWorkbenchTab>(() => getInitialWorkbenchState().tab as SearchWorkbenchTab);
+  const [graphFilters, setGraphFilters] = useState<RelationshipGraphFilters>(() => getInitialWorkbenchState().graphFilters as RelationshipGraphFilters);
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
   const [reviewTaskStatuses, setReviewTaskStatuses] = useState<Record<string, ReviewTaskStatus>>({});
@@ -503,11 +528,14 @@ export default function SearchPage() {
 
     try {
       if (/^[QP]\d+$/i.test(query)) {
-        const entity = await client.getDetailedEntity(query.toUpperCase());
+        const entityId = query.toUpperCase();
+        const entity = await client.getDetailedEntity(entityId);
+        replaceWorkbenchUrlState({ q: entityId });
         setResults([entity]);
         setSelectedItem(entity);
       } else {
         const searchResults = await searchWikidata(query);
+        replaceWorkbenchUrlState({ q: query });
         setResults(searchResults);
         setSelectedItem(null);
         if (!searchResults.length) setError("No Wikidata entities matched that search.");
@@ -545,7 +573,10 @@ export default function SearchPage() {
     setSelectedGraphFocus(null);
 
     try {
-      const entity = await client.getDetailedEntity(id);
+      const entityId = id.toUpperCase();
+      const entity = await client.getDetailedEntity(entityId);
+      replaceWorkbenchUrlState({ q: entityId });
+      setSearchTerm(entityId);
       setSelectedItem(entity);
     } catch (err) {
       setError(err instanceof Error ? err.message : `Could not load ${id}.`);
@@ -953,7 +984,11 @@ export default function SearchPage() {
                   )}
                 </div>
 
-                <Tabs defaultValue="graph">
+                <Tabs value={activeTab} onValueChange={(value) => {
+                  const tab = value as SearchWorkbenchTab;
+                  setActiveTab(tab);
+                  replaceWorkbenchUrlState({ tab });
+                }}>
                   <TabsList className="mb-4 flex h-auto flex-wrap justify-start">
                     <TabsTrigger value="graph">
                       <Network className="mr-2 h-4 w-4" />
@@ -969,7 +1004,16 @@ export default function SearchPage() {
                   </TabsList>
 
                   <TabsContent value="graph">
-                    <RelationshipGraph item={selectedItem} onEntityClick={loadEntity} onGraphFocus={setSelectedGraphFocus} />
+                    <RelationshipGraph
+                      item={selectedItem}
+                      onEntityClick={loadEntity}
+                      onGraphFocus={setSelectedGraphFocus}
+                      filters={graphFilters}
+                      onFiltersChange={(nextFilters) => {
+                        setGraphFilters(nextFilters);
+                        replaceWorkbenchUrlState({ graphFilters: nextFilters });
+                      }}
+                    />
                   </TabsContent>
 
                   <TabsContent value="statements" className="space-y-3">
@@ -1284,6 +1328,9 @@ export default function SearchPage() {
     </div>
   );
 }
+
+
+
 
 
 

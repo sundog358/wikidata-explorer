@@ -9,7 +9,7 @@
     "lint": "eslint . --max-warnings=0",
     "verify": "npm run lint && npm run test && npm run build",
     "smoke": "node scripts/smoke-routes.mjs",
-    "test": "node scripts/test-wikidata-utils.mjs && node scripts/test-autonomy-safety.mjs && node scripts/test-curation-export.mjs && node scripts/test-review-source-hints.mjs && node scripts/test-data-quality.mjs && node scripts/test-ag2-reliability.mjs && node scripts/test-ag2-config.mjs && node scripts/test-main-nav.mjs && node scripts/test-relationship-graph-utils.mjs",
+    "test": "node scripts/test-wikidata-utils.mjs && node scripts/test-autonomy-safety.mjs && node scripts/test-curation-export.mjs && node scripts/test-review-source-hints.mjs && node scripts/test-data-quality.mjs && node scripts/test-ag2-reliability.mjs && node scripts/test-ag2-config.mjs && node scripts/test-main-nav.mjs && node scripts/test-relationship-graph-utils.mjs && node scripts/test-search-url-state.mjs",
     "visual:qa": "node scripts/visual-qa.mjs",
     "trace:check": "node scripts/test-deployment-trace.mjs",
     "api:contracts": "node scripts/test-api-contracts.mjs",
@@ -41,4 +41,5 @@
     "typescript": "^5.7.3"
   }
 }
+
 
