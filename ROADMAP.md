@@ -24,7 +24,7 @@ The project already has a strong base:
 - Bounded AG2 bridge retry/backoff for transient provider/runtime failures
 - Browser-local AG2 agent run history for revisiting research, graph, verifier, comparison, and report outputs
 - Wikidata Action API, Wikibase REST API, and Commons media integration
-- Clickable relationship graph for selected entities with hover previews, rank badges, and selected-edge details
+- Clickable relationship graph for selected entities with filters, hover previews, rank badges, and selected-edge details
 - Stable English label fallback for multilingual Wikidata records
 - Expandable statement evidence for ranks, qualifiers, and references
 - Evidence review queue seeded from deprecated and unreferenced visible statements
@@ -40,7 +40,7 @@ The project already has a strong base:
 Goal: make the graph the signature feature.
 
 - Add richer graph node descriptions from secondary entity lookups
-- Add graph filters for relationship type, statement rank, item/property type, and media presence
+- Expand graph filters with media-aware relationship handling and saved filter URL state
 - Add graph depth controls: 1-hop, 2-hop, and selected-property expansion
 - Add multi-edge history and pinned comparison for selected graph relationships
 - Add layout modes: radial, grouped by property, and timeline-like for date-heavy entities

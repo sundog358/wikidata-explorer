@@ -24,6 +24,13 @@ try {
     throw new Error(`Expected Q42 to be selected initially, got ${initialEntity}`);
   }
 
+  await page.getByTestId("graph-filters").waitFor({ state: "visible" });
+  await page.getByLabel("Target type").selectOption("item");
+  const filterSummary = await page.getByTestId("graph-filter-summary").innerText();
+  if (!filterSummary.includes("Showing")) {
+    throw new Error(`Expected graph filter summary after item filter, got ${filterSummary}`);
+  }
+
   const graphTarget = page
     .locator('button[title*="human"]')
     .filter({ hasText: "Q5" })
@@ -54,6 +61,7 @@ try {
     throw new Error(`Expected direct PID lookup to select P31, got ${selectedProperty}`);
   }
 
+  console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log("PASS search graph interaction selects Q5 from Q42");
   console.log("PASS direct PID lookup selects P31");
 } finally {
