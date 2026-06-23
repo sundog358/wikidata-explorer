@@ -20,6 +20,8 @@ The project already has a strong base:
 
 - Next.js 16 App Router and React 19 stable
 - AG2-backed research assistant with server-side OpenAI key handling
+- Public-first Vercel deployment mode with AI links, pages, and API routes hidden behind explicit feature flags
+- Container-ready AG2 FastAPI service for hosting agents outside Vercel through `AG2_SERVICE_URL`
 - Grounded AG2 entity summaries and specialist workflows generated from visible, fetched, or selected graph-edge Wikidata context
 - Bounded AG2 bridge missing-key guard and retry/backoff for provider/runtime failures
 - Browser-local AG2 agent run history for revisiting research, graph, next-entity suggestions, verifier, comparison, and report outputs
@@ -99,13 +101,20 @@ Goal: help users evaluate data quality, not just browse facts.
 
 ## 🚀 Deployment Roadmap
 
-### Vercel Or Similar Hosting
+### Public Vercel Launch
 
-- Configure production environment variables for `OPENAI_API_KEY` and optional `OPENAI_MODEL`
+- Deploy the Next.js app with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false` and `ENABLE_AI_AGENTS=false` for the first public demo
 - Add a deployment badge and production URL to the README
 - Add basic metadata and social preview image
 - Confirm Wikidata and Commons API calls behave correctly from deployed origin
 - Keep `npm run trace:check` green so deployed API route traces include the AG2 bridge without bundling local repo clutter
+
+### Containerized AG2 Agents
+
+- Deploy `agents/Dockerfile` to a container host such as Render, Railway, Fly, or a private VM
+- Store provider credentials in the agent service environment, not in public client code
+- Enable `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, and `AG2_SERVICE_URL=https://...` for AI-enabled demos
+- Add a mocked success contract test for the remote AG2 bridge before using the service in production demos
 
 ### Observability
 
@@ -116,7 +125,7 @@ Goal: help users evaluate data quality, not just browse facts.
 ## 🧹 Maintenance Roadmap
 
 - Monitor Next.js audit advisories; avoid npm’s bad forced downgrade path for the current internal PostCSS advisory
-- Keep React, Next, AG2, Python dependencies, and Playwright Core current on a regular schedule
+- Keep React, Next, AG2, Python container dependencies, and Playwright Core current on a regular schedule
 - Monitor retry metrics/failure categories before enabling any higher-autonomy write workflows
 - Keep screenshots fresh after visual design changes
 - Keep ignored local research artifacts out of git
@@ -144,10 +153,11 @@ Goal: help users evaluate data quality, not just browse facts.
 
 ### Milestone 4: Public Portfolio Launch
 
-- Production deployment
+- Public Vercel deployment with AI safely disabled by default
 - README badges and deployment link
-- Short case-study section explaining architecture, tradeoffs, and testing strategy
+- Short case-study section explaining public-first feature flags, AG2 container tradeoffs, and testing strategy
 - CI artifacts and screenshots linked from README
+- Optional AI-enabled demo backed by the containerized AG2 service
 
 ## 📌 Product North Star
 

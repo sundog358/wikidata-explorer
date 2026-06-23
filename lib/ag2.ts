@@ -101,7 +101,47 @@ function ag2RetryOptions() {
   });
 }
 
+function ag2ServiceUrl(): string | null {
+  const rawUrl = process.env.AG2_SERVICE_URL?.trim();
+  if (!rawUrl) return null;
+  return rawUrl.replace(/\/+$/, "");
+}
+
+async function runRemoteAg2Agent(payload: Ag2Payload, timeoutMs: number): Promise<Ag2Result> {
+  const baseUrl = ag2ServiceUrl();
+  if (!baseUrl) throw new Ag2BridgeError("AG2 service URL is not configured.", 500);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(new URL("run", baseUrl + "/").toString(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ payload }),
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({ error: "AG2 service returned an unreadable response." })) as Ag2Result;
+
+    if (!response.ok || data.ok === false) {
+      throw new Ag2BridgeError(data.error || "AG2 service failed.", data.status || response.status || 502);
+    }
+
+    return data;
+  } catch (error) {
+    if (error instanceof Ag2BridgeError) throw error;
+    const message = error instanceof Error ? error.message : "AG2 service request failed.";
+    throw new Ag2BridgeError("Could not reach AG2 service: " + message, 502);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function runAg2AgentOnce(payload: Ag2Payload, timeoutMs = 45000): Promise<Ag2Result> {
+  if (ag2ServiceUrl()) {
+    return await runRemoteAg2Agent(payload, timeoutMs);
+  }
+
   if (!hasOpenAiApiKey()) {
     throw new Ag2BridgeError(missingOpenAiApiKeyMessage(), 503);
   }

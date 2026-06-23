@@ -1,10 +1,12 @@
 import { mkdir, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright-core";
+import { aiAgentsEnabled } from "../lib/ai-feature-flags.mjs";
 
 const baseUrl = process.env.VISUAL_QA_BASE_URL || "http://localhost:3000";
 const chromePath = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const outDir = path.resolve(".tmp/visual-qa");
+const aiEnabled = aiAgentsEnabled(process.env);
 
 const checks = [
   {
@@ -22,13 +24,13 @@ const checks = [
   {
     name: "03-chat-desktop.png",
     path: "/chat",
-    waitText: "Wikidata Research Chat",
+    waitText: aiEnabled ? "Wikidata Research Chat" : "Research Assistant is disabled",
     viewport: { width: 1440, height: 1000 },
   },
   {
     name: "04-agents-desktop.png",
     path: "/agents",
-    waitText: "Agent Workbench",
+    waitText: aiEnabled ? "Agent Workbench" : "AI agents are disabled",
     viewport: { width: 1440, height: 1000 },
   },
   {
@@ -46,7 +48,7 @@ const checks = [
   {
     name: "07-agents-mobile.png",
     path: "/agents",
-    waitText: "Agent Workbench",
+    waitText: aiEnabled ? "Agent Workbench" : "AI agents are disabled",
     viewport: { width: 390, height: 844 },
   },
   {

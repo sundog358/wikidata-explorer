@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrainCircuit, FileText, GitCompareArrows, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 
 const primaryLinkClass = "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const outlineLinkClass = "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
@@ -44,6 +45,33 @@ const agents = [
 ];
 
 export default function AgentsPage() {
+  if (!aiAgentsEnabled(process.env)) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
+        <div className="container mx-auto px-4 py-10">
+          <div className="max-w-3xl space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+              <BrainCircuit className="h-4 w-4 text-sky-500" />
+              Feature flagged
+            </div>
+            <h1 className="text-4xl font-semibold tracking-tight">AI agents are disabled for this public demo</h1>
+            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{AI_DISABLED_MESSAGE}</p>
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Link href="/search?q=Q42" className={primaryLinkClass}>
+                <Search className="h-4 w-4" />
+                Open Q42 Workbench
+              </Link>
+              <Link href="/docs" className={outlineLinkClass}>
+                <Network className="h-4 w-4" />
+                Read Developer Docs
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
       <div className="container mx-auto px-4 py-10">

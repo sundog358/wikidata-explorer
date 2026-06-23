@@ -9,6 +9,7 @@ import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-sour
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/search-url-state.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
+import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
 import { RelationshipGraph, type RelationshipGraphFilters, type RelationshipGraphFocus } from "@/components/relationship-graph";
 import { Badge } from "@/components/ui/badge";
@@ -93,6 +94,10 @@ type ReviewQueueItemWithStatus = ReviewQueueItem & {
 const AGENT_RUNS_STORAGE_KEY = "wikidata-explorer.agentRuns.v1";
 const DISMISSED_REVIEW_STORAGE_KEY = "wikidata-explorer.dismissedReviewItems.v1";
 const REVIEW_TASK_STATUS_STORAGE_KEY = "wikidata-explorer.reviewTaskStatus.v1";
+
+const AI_AGENTS_ENABLED = aiAgentsEnabled({
+  NEXT_PUBLIC_ENABLE_AI_AGENTS: process.env.NEXT_PUBLIC_ENABLE_AI_AGENTS,
+});
 
 const REVIEW_TASK_STATUS_OPTIONS: Array<{ value: ReviewTaskStatus; label: string }> = [
   { value: "needs_review", label: "Needs review" },
@@ -321,7 +326,7 @@ function getInitialSearchTerm() {
 }
 
 function getInitialAgentAction(): AgentAction | null {
-  if (typeof window === "undefined") return null;
+  if (!AI_AGENTS_ENABLED || typeof window === "undefined") return null;
   const action = new URLSearchParams(window.location.search).get("agent");
   return action === "research" || action === "graph" || action === "suggest" || action === "verify" || action === "compare" || action === "report" ? action : null;
 }
@@ -329,6 +334,11 @@ function getInitialAgentAction(): AgentAction | null {
 function getInitialWorkbenchState() {
   if (typeof window === "undefined") return readSearchWorkbenchState("");
   return readSearchWorkbenchState(window.location.search);
+}
+
+function normalizeWorkbenchTab(tab: SearchWorkbenchTab): SearchWorkbenchTab {
+  if (!AI_AGENTS_ENABLED && tab === "agent-runs") return "graph";
+  return tab;
 }
 
 function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null }) {
@@ -374,7 +384,7 @@ export default function SearchPage() {
   const [agentLoading, setAgentLoading] = useState<AgentAction | null>(null);
   const [compareEntityId, setCompareEntityId] = useState("Q80");
   const [selectedGraphFocus, setSelectedGraphFocus] = useState<RelationshipGraphFocus | null>(null);
-  const [activeTab, setActiveTab] = useState<SearchWorkbenchTab>(() => getInitialWorkbenchState().tab as SearchWorkbenchTab);
+  const [activeTab, setActiveTab] = useState<SearchWorkbenchTab>(() => normalizeWorkbenchTab(getInitialWorkbenchState().tab as SearchWorkbenchTab));
   const [graphFilters, setGraphFilters] = useState<RelationshipGraphFilters>(() => getInitialWorkbenchState().graphFilters as RelationshipGraphFilters);
   const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(() => getInitialWorkbenchState().graphFocusId);
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
@@ -619,6 +629,10 @@ export default function SearchPage() {
   }
 
   async function summarizeEntity() {
+    if (!AI_AGENTS_ENABLED) {
+      setError(AI_DISABLED_MESSAGE);
+      return;
+    }
     if (!selectedItem || summaryLoading) return;
 
     setSummaryLoading(true);
@@ -650,6 +664,10 @@ export default function SearchPage() {
     }
   }
   const runAgentWorkflow = useCallback(async (action: AgentAction) => {
+    if (!AI_AGENTS_ENABLED) {
+      setError(AI_DISABLED_MESSAGE);
+      return;
+    }
     if (!selectedItem || agentLoading) return;
 
     const normalizedCompareId = compareEntityId.trim().toUpperCase();
@@ -812,10 +830,12 @@ export default function SearchPage() {
                     <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">{getEntityDescription(selectedItem)}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" className="gap-2" onClick={summarizeEntity} disabled={summaryLoading}>
-                      <Sparkles className="h-4 w-4" />
-                      {summaryLoading ? "Summarizing" : "Summarize"}
-                    </Button>
+                    {AI_AGENTS_ENABLED && (
+                      <Button type="button" variant="outline" className="gap-2" onClick={summarizeEntity} disabled={summaryLoading}>
+                        <Sparkles className="h-4 w-4" />
+                        {summaryLoading ? "Summarizing" : "Summarize"}
+                      </Button>
+                    )}
                     <Button type="button" variant="outline" className="gap-2" onClick={loadLinkedData} disabled={detailLoading}>
                       <Database className="h-4 w-4" />
                       Collect Links
@@ -899,7 +919,7 @@ export default function SearchPage() {
                     </div>
                   </div>
                 )}
-                {aiSummary?.entityId === selectedItem.id && (
+                {AI_AGENTS_ENABLED && aiSummary?.entityId === selectedItem.id && (
                   <div className="mb-5 rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-slate-700 dark:border-sky-900 dark:bg-sky-950 dark:text-slate-200" data-testid="entity-ai-summary">
                     <div className="mb-2 flex items-center gap-2 font-semibold text-slate-950 dark:text-slate-50">
                       <BrainCircuit className="h-4 w-4 text-sky-600 dark:text-sky-300" />
@@ -912,6 +932,7 @@ export default function SearchPage() {
                   </div>
                 )}
 
+                {AI_AGENTS_ENABLED && (
                 <div className="mb-5 rounded-md border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950" data-testid="ag2-agent-panel">
                   <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div>
@@ -996,6 +1017,7 @@ export default function SearchPage() {
                     </div>
                   )}
                 </div>
+                )}
 
                 <Tabs value={activeTab} onValueChange={(value) => {
                   const tab = value as SearchWorkbenchTab;
@@ -1012,7 +1034,7 @@ export default function SearchPage() {
                     <TabsTrigger value="media">Media</TabsTrigger>
                     <TabsTrigger value="languages">Languages</TabsTrigger>
                     <TabsTrigger value="links">Linked Data</TabsTrigger>
-                    <TabsTrigger value="agent-runs">Agent Runs{!!selectedAgentRuns.length && <Badge variant="secondary" className="ml-2">{selectedAgentRuns.length}</Badge>}</TabsTrigger>
+                    {AI_AGENTS_ENABLED && <TabsTrigger value="agent-runs">Agent Runs{!!selectedAgentRuns.length && <Badge variant="secondary" className="ml-2">{selectedAgentRuns.length}</Badge>}</TabsTrigger>}
                     <TabsTrigger value="review">Review Queue{!!reviewQueue.length && <Badge variant="secondary" className="ml-2">{reviewQueue.length}</Badge>}</TabsTrigger>
                   </TabsList>
 
@@ -1196,7 +1218,7 @@ export default function SearchPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="agent-runs" className="space-y-3">
+                  {AI_AGENTS_ENABLED && <TabsContent value="agent-runs" className="space-y-3">
                     {selectedAgentRuns.length === 0 ? (
                       <div className="rounded-md border border-dashed border-slate-300 p-5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
                         Run an AG2 specialist agent to save research history for {selectedItem.id}.
@@ -1232,7 +1254,7 @@ export default function SearchPage() {
                         ))}
                       </div>
                     )}
-                  </TabsContent>
+                  </TabsContent>}
 
                   <TabsContent value="review" className="space-y-3">
                     {reviewQueue.length === 0 ? (
@@ -1332,9 +1354,11 @@ export default function SearchPage() {
                               </select>
                             </label>
                             <div className="mt-3 flex flex-wrap gap-2">
-                              <Button type="button" variant="outline" size="sm" onClick={() => runAgentWorkflow("verify")} disabled={!!agentLoading}>
-                                Run Verifier
-                              </Button>
+                              {AI_AGENTS_ENABLED && (
+                                <Button type="button" variant="outline" size="sm" onClick={() => runAgentWorkflow("verify")} disabled={!!agentLoading}>
+                                  Run Verifier
+                                </Button>
+                              )}
                               <Button type="button" variant="outline" size="sm" onClick={() => setDismissedReviewIds((ids) => ids.includes(item.id) ? ids : [...ids, item.id])}>
                                 Dismiss
                               </Button>

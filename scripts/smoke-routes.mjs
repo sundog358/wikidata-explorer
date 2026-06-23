@@ -1,4 +1,8 @@
+import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "../lib/ai-feature-flags.mjs";
+
 const baseUrl = process.env.SMOKE_BASE_URL || "http://localhost:3000";
+const aiUiEnabled = aiAgentsEnabled({ NEXT_PUBLIC_ENABLE_AI_AGENTS: process.env.NEXT_PUBLIC_ENABLE_AI_AGENTS });
+const aiApiEnabled = aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS });
 
 const routeChecks = [
   { route: "/", includes: "Wikidata Explorer" },
@@ -6,8 +10,12 @@ const routeChecks = [
   { route: "/search?q=Q42", includes: "Wikidata Explorer" },
   { route: "/docs", includes: "Developer Commands" },
   { route: "/about", includes: "Portfolio project" },
-  { route: "/chat", includes: "Wikidata Research Chat" },
-  { route: "/agents", includes: "Agent Workbench" },
+  aiUiEnabled
+    ? { route: "/chat", includes: "Wikidata Research Chat" }
+    : { route: "/chat", includes: "Research Assistant is disabled" },
+  aiUiEnabled
+    ? { route: "/agents", includes: "Agent Workbench" }
+    : { route: "/agents", includes: "AI agents are disabled" },
 ];
 
 async function checkRoute({ route, includes }) {
@@ -24,6 +32,14 @@ async function checkRoute({ route, includes }) {
   };
 }
 
+function expectedAiApiStatus(response) {
+  return aiApiEnabled ? response.status === 400 || response.status === 503 : response.status === 404;
+}
+
+function expectedAiApiReason() {
+  return aiApiEnabled ? "expected validation or missing-key response" : `expected disabled AI response containing ${JSON.stringify(AI_DISABLED_MESSAGE)}`;
+}
+
 async function checkInvalidChatRequest() {
   const url = new URL("/api/chat", baseUrl).toString();
   const response = await fetch(url, {
@@ -31,15 +47,16 @@ async function checkInvalidChatRequest() {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ messages: [] }),
   });
+  const body = await response.json().catch(() => ({}));
+  const ok = expectedAiApiStatus(response) && (aiApiEnabled || String(body.error || "").includes(AI_DISABLED_MESSAGE));
 
   return {
-    ok: response.status === 400 || response.status === 503,
+    ok,
     route: "/api/chat invalid request",
     status: response.status,
-    reason: response.status === 400 || response.status === 503 ? "" : "expected validation or missing-key response",
+    reason: ok ? "" : expectedAiApiReason(),
   };
 }
-
 
 async function checkInvalidEntitySummaryRequest() {
   const url = new URL("/api/entity-summary", baseUrl).toString();
@@ -48,12 +65,14 @@ async function checkInvalidEntitySummaryRequest() {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ entity: null }),
   });
+  const body = await response.json().catch(() => ({}));
+  const ok = expectedAiApiStatus(response) && (aiApiEnabled || String(body.error || "").includes(AI_DISABLED_MESSAGE));
 
   return {
-    ok: response.status === 400 || response.status === 503,
+    ok,
     route: "/api/entity-summary invalid request",
     status: response.status,
-    reason: response.status === 400 || response.status === 503 ? "" : "expected validation or missing-key response",
+    reason: ok ? "" : expectedAiApiReason(),
   };
 }
 
@@ -64,14 +83,17 @@ async function checkInvalidAg2WorkflowRequest() {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ action: "compare", entity: null }),
   });
+  const body = await response.json().catch(() => ({}));
+  const ok = expectedAiApiStatus(response) && (aiApiEnabled || String(body.error || "").includes(AI_DISABLED_MESSAGE));
 
   return {
-    ok: response.status === 400 || response.status === 503,
+    ok,
     route: "/api/ag2-workflow invalid request",
     status: response.status,
-    reason: response.status === 400 || response.status === 503 ? "" : "expected validation or missing-key response",
+    reason: ok ? "" : expectedAiApiReason(),
   };
 }
+
 const results = [
   ...(await Promise.all(routeChecks.map(checkRoute))),
   await checkInvalidChatRequest(),

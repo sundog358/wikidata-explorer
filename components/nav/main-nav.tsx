@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { aiAgentsEnabled } from "@/lib/ai-feature-flags.mjs";
 import { cn } from "@/lib/utils";
 import {
   MessageSquareIcon,
@@ -9,9 +10,21 @@ import {
   HomeIcon,
   BookIcon,
   BrainCircuitIcon,
+  type LucideIcon,
 } from "lucide-react";
 
-export const navItems = [
+const AI_AGENTS_ENABLED = aiAgentsEnabled({
+  NEXT_PUBLIC_ENABLE_AI_AGENTS: process.env.NEXT_PUBLIC_ENABLE_AI_AGENTS,
+});
+
+type NavItem = {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  persistentLabel?: boolean;
+};
+
+const coreNavItems: NavItem[] = [
   {
     name: "Home",
     href: "/",
@@ -22,6 +35,9 @@ export const navItems = [
     href: "/search",
     icon: SearchIcon,
   },
+];
+
+const aiNavItems: NavItem[] = [
   {
     name: "Agents",
     href: "/agents",
@@ -33,11 +49,18 @@ export const navItems = [
     href: "/chat",
     icon: MessageSquareIcon,
   },
-  {
-    name: "Docs",
-    href: "/docs",
-    icon: BookIcon,
-  },
+];
+
+const docsNavItem: NavItem = {
+  name: "Docs",
+  href: "/docs",
+  icon: BookIcon,
+};
+
+export const navItems = [
+  ...coreNavItems,
+  ...(AI_AGENTS_ENABLED ? aiNavItems : []),
+  docsNavItem,
 ];
 
 export function MainNav() {

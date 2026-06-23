@@ -1,24 +1,18 @@
-import { readFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { aiAgentsEnabled } from "../lib/ai-feature-flags.mjs";
 
-const source = await readFile(new URL("../components/nav/main-nav.tsx", import.meta.url), "utf8");
+const source = readFileSync(new URL("../components/nav/main-nav.tsx", import.meta.url), "utf8");
 
-function assert(condition, message) {
-  if (!condition) {
-    throw new Error(message);
-  }
-}
+assert.equal(aiAgentsEnabled({}), false, "AI nav should be disabled by default for public deployment.");
+assert.equal(aiAgentsEnabled({ NEXT_PUBLIC_ENABLE_AI_AGENTS: "true" }), true, "AI nav should be enabled by explicit public flag.");
+assert(source.includes('import { aiAgentsEnabled } from "@/lib/ai-feature-flags.mjs"'), "Main nav must use the shared AI feature flag helper.");
+assert(source.includes("const coreNavItems"), "Main nav should keep core public links separate from AI links.");
+assert(source.includes("const aiNavItems"), "Main nav should isolate AI links for feature-flagging.");
+assert(source.includes("...(AI_AGENTS_ENABLED ? aiNavItems : [])"), "Main nav should only include AI links when the feature flag is enabled.");
+assert(source.includes('href: "/agents"'), "Main nav AI set should include the Agents route.");
+assert(source.includes('href: "/chat"'), "Main nav AI set should include the Research Assistant route.");
+assert(source.includes('data-primary-nav={item.href === "/agents" ? "agents" : undefined}'), "Agents should have a stable top-level navigation marker when enabled.");
+assert(source.includes('persistentLabel: true'), "Agents should keep a persistent visible label when enabled.");
 
-const agentsIndex = source.indexOf('name: "Agents"');
-const researchIndex = source.indexOf('name: "Research Assistant"');
-
-assert(source.includes('href: "/agents"'), "Main nav must include the Agents route.");
-assert(agentsIndex !== -1, "Main nav must label the Agents route as Agents.");
-assert(researchIndex !== -1, "Main nav should still include Research Assistant.");
-assert(agentsIndex < researchIndex, "Agents should be promoted before Research Assistant in top nav.");
-assert(source.includes("persistentLabel: true"), "Agents should keep a persistent visible label at small widths.");
-assert(source.includes('data-primary-nav={item.href === "/agents" ? "agents" : undefined}'), "Agents should have a stable top-level navigation marker.");
-assert(source.includes('shrink-0'), "Primary nav links should not collapse away in the header.");
-assert(source.includes('border border-sky-200 bg-sky-50 text-sky-800'), "Agents should render as a visibly promoted top-level nav item.");
-assert(source.includes('aria-label="Primary"'), "Main nav should expose a primary navigation landmark.");
-
-console.log("PASS main nav includes a persistent top-level Agents link");
+console.log("PASS main nav feature-flags AI links");

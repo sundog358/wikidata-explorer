@@ -1,7 +1,9 @@
 import { chromium } from "playwright-core";
+import { aiAgentsEnabled } from "../lib/ai-feature-flags.mjs";
 
 const baseUrl = process.env.E2E_BASE_URL || "http://localhost:3000";
 const chromePath = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
+const aiEnabled = aiAgentsEnabled(process.env);
 
 const browser = await chromium.launch({
   executablePath: chromePath,
@@ -47,9 +49,16 @@ try {
   }
 
   await page.getByTestId("graph-focus-Q5").click();
-  const graphFocus = await page.getByTestId("agent-graph-focus").innerText();
-  if (!graphFocus.includes("P31") || !graphFocus.includes("Q5")) {
-    throw new Error(`Expected AG2 graph focus to include P31 and Q5, got ${graphFocus}`);
+  if (aiEnabled) {
+    const graphFocus = await page.getByTestId("agent-graph-focus").innerText();
+    if (!graphFocus.includes("P31") || !graphFocus.includes("Q5")) {
+      throw new Error(`Expected AG2 graph focus to include P31 and Q5, got ${graphFocus}`);
+    }
+  } else {
+    const graphFocusCount = await page.getByTestId("agent-graph-focus").count();
+    if (graphFocusCount !== 0) {
+      throw new Error("Expected AG2 graph focus panel to be hidden in public AI-off mode.");
+    }
   }
 
   const graphPathSummary = await page.getByTestId("graph-path-export-summary").innerText();
@@ -92,7 +101,7 @@ try {
   console.log("PASS search tab and graph filter state update the URL");
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
-  console.log("PASS search graph focus grounds AG2 agent panel");
+  console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");
   console.log("PASS selected graph path export summarizes the chosen edge");
   console.log("PASS search graph interaction selects Q5 from Q42");
   console.log("PASS direct PID lookup selects P31");
