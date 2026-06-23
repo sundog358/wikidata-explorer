@@ -330,7 +330,7 @@ function getInitialWorkbenchState() {
   return readSearchWorkbenchState(window.location.search);
 }
 
-function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters }) {
+function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null }) {
   if (typeof window === "undefined") return;
   const params = new URLSearchParams(window.location.search);
   if (updates.q !== undefined) {
@@ -342,6 +342,7 @@ function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTa
   const nextParams = writeSearchWorkbenchState(params, {
     tab: updates.tab || currentState.tab,
     graphFilters: updates.graphFilters || currentState.graphFilters,
+      graphFocusId: Object.prototype.hasOwnProperty.call(updates, "graphFocusId") ? updates.graphFocusId || null : currentState.graphFocusId,
   });
   const query = nextParams.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
@@ -374,6 +375,7 @@ export default function SearchPage() {
   const [selectedGraphFocus, setSelectedGraphFocus] = useState<RelationshipGraphFocus | null>(null);
   const [activeTab, setActiveTab] = useState<SearchWorkbenchTab>(() => getInitialWorkbenchState().tab as SearchWorkbenchTab);
   const [graphFilters, setGraphFilters] = useState<RelationshipGraphFilters>(() => getInitialWorkbenchState().graphFilters as RelationshipGraphFilters);
+  const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(() => getInitialWorkbenchState().graphFocusId);
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
   const [reviewTaskStatuses, setReviewTaskStatuses] = useState<Record<string, ReviewTaskStatus>>({});
@@ -525,17 +527,18 @@ export default function SearchPage() {
     setAiSummary(null);
     setAgentResult(null);
     setSelectedGraphFocus(null);
+    setSelectedGraphNodeId(null);
 
     try {
       if (/^[QP]\d+$/i.test(query)) {
         const entityId = query.toUpperCase();
         const entity = await client.getDetailedEntity(entityId);
-        replaceWorkbenchUrlState({ q: entityId });
+        replaceWorkbenchUrlState({ q: entityId, graphFocusId: null });
         setResults([entity]);
         setSelectedItem(entity);
       } else {
         const searchResults = await searchWikidata(query);
-        replaceWorkbenchUrlState({ q: query });
+        replaceWorkbenchUrlState({ q: query, graphFocusId: null });
         setResults(searchResults);
         setSelectedItem(null);
         if (!searchResults.length) setError("No Wikidata entities matched that search.");
@@ -571,11 +574,12 @@ export default function SearchPage() {
     setAiSummary(null);
     setAgentResult(null);
     setSelectedGraphFocus(null);
+    setSelectedGraphNodeId(null);
 
     try {
       const entityId = id.toUpperCase();
       const entity = await client.getDetailedEntity(entityId);
-      replaceWorkbenchUrlState({ q: entityId });
+      replaceWorkbenchUrlState({ q: entityId, graphFocusId: null });
       setSearchTerm(entityId);
       setSelectedItem(entity);
     } catch (err) {
@@ -1009,6 +1013,11 @@ export default function SearchPage() {
                       onEntityClick={loadEntity}
                       onGraphFocus={setSelectedGraphFocus}
                       filters={graphFilters}
+                      selectedNodeId={selectedGraphNodeId}
+                      onSelectedNodeIdChange={(nextId) => {
+                        setSelectedGraphNodeId(nextId);
+                        replaceWorkbenchUrlState({ graphFocusId: nextId });
+                      }}
                       onFiltersChange={(nextFilters) => {
                         setGraphFilters(nextFilters);
                         replaceWorkbenchUrlState({ graphFilters: nextFilters });
@@ -1328,6 +1337,8 @@ export default function SearchPage() {
     </div>
   );
 }
+
+
 
 
 

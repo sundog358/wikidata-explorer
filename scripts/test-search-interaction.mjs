@@ -85,6 +85,7 @@ try {
   console.log("PASS search data quality summary renders for Q42");
   console.log("PASS search review queue status persists in the workbench");
   console.log("PASS search tab and graph filter state update the URL");
+  console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log("PASS search graph focus grounds AG2 agent panel");
   console.log("PASS search graph interaction selects Q5 from Q42");
@@ -92,3 +93,4 @@ try {
 } finally {
   await browser.close().catch(() => {});
 }
+

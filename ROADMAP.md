@@ -24,7 +24,7 @@ The project already has a strong base:
 - Bounded AG2 bridge missing-key guard and retry/backoff for provider/runtime failures
 - Browser-local AG2 agent run history for revisiting research, graph, next-entity suggestions, verifier, comparison, and report outputs
 - Wikidata Action API, Wikibase REST API, and Commons media integration
-- Clickable relationship graph for selected entities with shareable URL-backed filters, hover previews, rank badges, and selected-edge details
+- Clickable relationship graph for selected entities with shareable URL-backed filters and selected graph focus, hover previews, rank badges, and selected-edge details
 - Stable English label fallback for multilingual Wikidata records
 - Expandable statement evidence for ranks, qualifiers, and references
 - Entity-level data-quality summary plus evidence review queue with browser-local task status, source-link coverage, and formatter-aware reference source hints seeded from deprecated and unreferenced visible statements
@@ -140,7 +140,7 @@ Goal: help users evaluate data quality, not just browse facts.
 
 - Export selected entity summary as Markdown
 - Export graph path as Markdown or JSON
-- Shareable URL state beyond selected entity, tab, and graph filters, including selected graph focus and export views
+- Shareable URL state beyond selected entity, tab, graph filters, and selected graph focus, including export views
 
 ### Milestone 4: Public Portfolio Launch
 
@@ -156,6 +156,7 @@ The project should answer one question beautifully:
 > “How can I start with one Wikidata entity and quickly understand the trustworthy graph around it?”
 
 Every future feature should make that path clearer, faster, more grounded, or easier to share.
+
 
 
 

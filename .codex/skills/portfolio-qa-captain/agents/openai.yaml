@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portfolio QA Captain"
+  short_description: "Visual QA and portfolio polish gate"
+  default_prompt: "Use $portfolio-qa-captain to run a recruiter-facing visual QA pass on Wikidata Explorer."

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Filter, GitBranch, Network, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,8 @@ type RelationshipGraphProps = {
   onGraphFocus?: (focus: RelationshipGraphFocus | null) => void;
   filters?: RelationshipGraphFilters;
   onFiltersChange?: (filters: RelationshipGraphFilters) => void;
+  selectedNodeId?: string | null;
+  onSelectedNodeIdChange?: (id: string | null) => void;
 };
 
 const CENTER = { x: 50, y: 50 };
@@ -125,10 +127,11 @@ function SelectControl({
   );
 }
 
-export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: controlledFilters, onFiltersChange }: RelationshipGraphProps) {
+export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: controlledFilters, onFiltersChange, selectedNodeId: controlledSelectedNodeId, onSelectedNodeIdChange }: RelationshipGraphProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [internalSelectedNodeId, setInternalSelectedNodeId] = useState<string | null>(null);
   const [internalFilters, setInternalFilters] = useState(DEFAULT_RELATIONSHIP_GRAPH_FILTERS);
+  const selectedNodeId = controlledSelectedNodeId ?? internalSelectedNodeId;
   const filters = controlledFilters || internalFilters;
   const allNodes = useMemo(() => collectRelationshipGraphNodes(item), [item]);
   const matchingNodes = useMemo(() => filterRelationshipGraphNodes(allNodes, filters), [allNodes, filters]);
@@ -139,10 +142,21 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
   const previewNode = hoveredNode || selectedNode;
   const hasActiveFilters = Object.entries(filters).some(([key, value]) => DEFAULT_RELATIONSHIP_GRAPH_FILTERS[key as keyof typeof DEFAULT_RELATIONSHIP_GRAPH_FILTERS] !== value);
 
-  function selectNode(node: RelationshipGraphNode | null) {
-    setSelectedNodeId(node?.id || null);
-    onGraphFocus?.(node ? graphFocusFromNode(node) : null);
+  function setSelectedGraphNodeId(nextId: string | null) {
+    if (onSelectedNodeIdChange) {
+      onSelectedNodeIdChange(nextId);
+    } else {
+      setInternalSelectedNodeId(nextId);
+    }
   }
+
+  function selectNode(node: RelationshipGraphNode | null) {
+    setSelectedGraphNodeId(node?.id || null);
+  }
+
+  useEffect(() => {
+    onGraphFocus?.(selectedNode ? graphFocusFromNode(selectedNode) : null);
+  }, [onGraphFocus, selectedNode]);
 
   function setGraphFilters(nextFilters: RelationshipGraphFilters) {
     if (onFiltersChange) {
@@ -374,5 +388,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
     </div>
   );
 }
+
+
 
 
