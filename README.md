@@ -8,14 +8,14 @@ The project is built to show practical full-stack product judgment: real public 
 
 - 🔎 Search Wikidata by keyword or direct entity/property ID such as `Q42` or `P31`
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
-- 🕸️ Explore a clickable relationship graph with shareable rank, target-type, relationship, evidence, and selected-focus URL state plus hover previews and selected-edge details
+- 🕸️ Explore a clickable relationship graph with shareable rank, target-type, relationship, evidence, and selected-focus URL state plus hover previews, selected-edge details, and selected-path Markdown/JSON exports
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`
 - 🤖 Generate grounded AG2 outputs through specialist agents for research, graph analysis, selected-edge next-entity suggestions, citation verification, comparison, and Markdown reports
 - 🧾 Inspect statement ranks, qualifiers, and references in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity through browser-local workbench history
 - 🧑‍⚖️ Review an entity-level data-quality summary plus a persisted local task queue for deprecated and unreferenced visible statements, including source-link coverage and extracted source hints when references exist
-- 📤 Export review findings, task status, source hints, and clickable source-link context as safe QuickStatements draft comments and Markdown curation notes
+- 📤 Export selected graph paths, review findings, task status, source hints, and clickable source-link context as Markdown/JSON notes plus safe QuickStatements draft comments
 - 🔁 Retry transient AG2/OpenAI bridge failures with bounded backoff while preserving validation/auth failures and failing fast when server-side keys are missing
 - 🛡️ Classify specialist workflows through a tested autonomy safety layer before future bot/draft actions
 - ✅ Verify changes with lint, unit tests, production build, clean production trace checks, route smoke tests, API contract tests, e2e interaction tests, visual QA, and GitHub Actions
@@ -72,7 +72,7 @@ npm run e2e
 npm run visual:qa
 ```
 
-`npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` expect the app to be running locally. `npm run trace:check` expects a completed `npm run build` and asserts API route traces keep the AG2 bridge while excluding repo clutter and local bot files. `npm run e2e` clicks through the `Q42` relationship graph and asserts tab/filter/focus URL state, and `npm run visual:qa` captures portfolio screenshots for home, search, chat, agents, and docs while checking for horizontal overflow plus browser console/page errors. Curation export tests assert QuickStatements drafts remain comment-only until a human adds sources and approval, while source-hint tests keep reference URL, stated-in Wikidata links, retrieved-date, and formatter-aware external-ID summaries stable.
+`npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` expect the app to be running locally. `npm run trace:check` expects a completed `npm run build` and asserts API route traces keep the AG2 bridge while excluding repo clutter and local bot files. `npm run e2e` clicks through the `Q42` relationship graph and asserts tab/filter/focus URL state plus selected-path export visibility, and `npm run visual:qa` captures portfolio screenshots for home, search, chat, agents, and docs while checking for horizontal overflow plus browser console/page errors. Curation export tests assert QuickStatements drafts remain comment-only until a human adds sources and approval, while source-hint tests keep reference URL, stated-in Wikidata links, retrieved-date, and formatter-aware external-ID summaries stable.
 
 Override local targets when needed:
 
@@ -100,7 +100,7 @@ These tracked screenshots are refreshed from the visual QA flow. `npm run visual
 ## 🗂️ Project Structure
 
 - `app/page.tsx`: first-screen search entry point
-- `app/search/page.tsx`: main Wikidata explorer workflow, graph-focused AG2 runs, data-quality summary, saved agent runs, and persisted evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow, selected graph path exports, graph-focused AG2 runs, data-quality summary, saved agent runs, and persisted evidence review queue
 - `app/chat/page.tsx`: AG2 research assistant
 - `app/agents/page.tsx`: AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: AG2-backed server-side chat endpoint
@@ -111,14 +111,16 @@ These tracked screenshots are refreshed from the visual QA flow. `npm run visual
 - `lib/wikidata-utils.mjs`: unit-tested Wikidata ID and sitelink utilities
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
+- `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and formatter-aware external IDs
 - `lib/search-url-state.mjs`: tested shareable tab, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-api-contracts.mjs`: live API validation, safety, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, graph filtering, graph-focus URL restore, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, graph filtering, graph-focus URL restore, selected-path export, traversal, and direct PID lookup
 - `scripts/test-autonomy-safety.mjs`: autonomy safety policy tests
 - `scripts/test-curation-export.mjs`: safe curation draft export tests
+- `scripts/test-graph-path-export.mjs`: selected graph path Markdown/JSON export tests
 - `scripts/test-review-source-hints.mjs`: source-hint extraction and summary tests
 - `scripts/test-ag2-reliability.mjs`: AG2 retry/backoff classification tests
 - `agents/wikidata_ag2_agent.py`: bounded AG2 agent bridge for chat, research, graph analysis, next-entity suggestions, citation verification, comparison, and reports
@@ -138,6 +140,8 @@ CI also runs install, verify, production trace checks, smoke, API contracts, e2e
 ## 🗺️ Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the recommended development path toward a stronger research tool, richer graph exploration, stronger AI context, and production deployment readiness.
+
+
 
 
 

@@ -52,6 +52,11 @@ try {
     throw new Error(`Expected AG2 graph focus to include P31 and Q5, got ${graphFocus}`);
   }
 
+  const graphPathSummary = await page.getByTestId("graph-path-export-summary").innerText();
+  if (!graphPathSummary.includes("Douglas Adams") || !graphPathSummary.includes("P31") || !graphPathSummary.includes("human")) {
+    throw new Error(`Expected graph path export to summarize Q42 -> Q5, got ${graphPathSummary}`);
+  }
+
   const graphTarget = page
     .locator('button[title*="human"]')
     .filter({ hasText: "Q5" })
@@ -88,9 +93,11 @@ try {
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log("PASS search graph focus grounds AG2 agent panel");
+  console.log("PASS selected graph path export summarizes the chosen edge");
   console.log("PASS search graph interaction selects Q5 from Q42");
   console.log("PASS direct PID lookup selects P31");
 } finally {
   await browser.close().catch(() => {});
 }
+
 

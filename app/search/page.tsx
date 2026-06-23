@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
+import { buildGraphPathJsonExport, buildGraphPathMarkdownExport } from "@/lib/graph-path-export.mjs";
 import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-source-hints.mjs";
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/search-url-state.mjs";
@@ -500,6 +501,14 @@ export default function SearchPage() {
     entityId: selectedItem?.id,
     entityLabel: getEntityLabel(selectedItem),
   }), [reviewQueueWithStatus, selectedItem]);
+  const graphPathMarkdownDraft = useMemo(() => buildGraphPathMarkdownExport({
+    entityId: selectedItem?.id,
+    entityLabel: getEntityLabel(selectedItem),
+  }, selectedGraphFocus), [selectedGraphFocus, selectedItem]);
+  const graphPathJsonDraft = useMemo(() => buildGraphPathJsonExport({
+    entityId: selectedItem?.id,
+    entityLabel: getEntityLabel(selectedItem),
+  }, selectedGraphFocus), [selectedGraphFocus, selectedItem]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
     setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
@@ -1007,7 +1016,7 @@ export default function SearchPage() {
                     <TabsTrigger value="review">Review Queue{!!reviewQueue.length && <Badge variant="secondary" className="ml-2">{reviewQueue.length}</Badge>}</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="graph">
+                  <TabsContent value="graph" className="space-y-4">
                     <RelationshipGraph
                       item={selectedItem}
                       onEntityClick={loadEntity}
@@ -1023,6 +1032,46 @@ export default function SearchPage() {
                         replaceWorkbenchUrlState({ graphFilters: nextFilters });
                       }}
                     />
+
+                    {selectedGraphFocus && (
+                      <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900" data-testid="graph-path-export">
+                        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="font-semibold text-slate-950 dark:text-slate-50">Selected path export</div>
+                            <p className="mt-1 text-slate-600 dark:text-slate-300" data-testid="graph-path-export-summary">
+                              {getEntityLabel(selectedItem)} -&gt; {selectedGraphFocus.label} through {selectedGraphFocus.property} ({selectedGraphFocus.propertyId}).
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline">{selectedGraphFocus.id}</Badge>
+                            <Badge variant="secondary">{selectedGraphFocus.referenceCount} ref</Badge>
+                          </div>
+                        </div>
+                        <p className="mb-3 text-xs text-slate-600 dark:text-slate-300">
+                          Export this edge as a draft research artifact for reports, handoff notes, or future graph-path sharing. Verify references and qualifiers before using it as evidence.
+                        </p>
+                        <div className="grid gap-3 xl:grid-cols-2">
+                          <div>
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Markdown path note</span>
+                              <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Graph path Markdown", graphPathMarkdownDraft)}>
+                                {copiedDraft === "Graph path Markdown" ? "Copied" : "Copy"}
+                              </Button>
+                            </div>
+                            <textarea readOnly value={graphPathMarkdownDraft} className="h-44 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Graph path Markdown export" />
+                          </div>
+                          <div>
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">JSON path context</span>
+                              <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Graph path JSON", graphPathJsonDraft)}>
+                                {copiedDraft === "Graph path JSON" ? "Copied" : "Copy"}
+                              </Button>
+                            </div>
+                            <textarea readOnly value={graphPathJsonDraft} className="h-44 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Graph path JSON export" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="statements" className="space-y-3">
