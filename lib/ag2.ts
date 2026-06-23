@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { ag2RetryDelayMs, normalizeAg2RetryOptions, shouldRetryAg2Error } from "@/lib/ag2-reliability.mjs";
 
 export class Ag2BridgeError extends Error {
   status: number;
@@ -72,7 +73,19 @@ function parseAg2Json(stdout: string): Ag2Result {
   throw new Ag2BridgeError("AG2 returned an unreadable response.", 502);
 }
 
-export async function runAg2Agent(payload: Ag2Payload, timeoutMs = 45000): Promise<Ag2Result> {
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function ag2RetryOptions() {
+  return normalizeAg2RetryOptions({
+    maxAttempts: process.env.AG2_AGENT_MAX_ATTEMPTS,
+    baseDelayMs: process.env.AG2_AGENT_RETRY_BASE_MS,
+    maxDelayMs: process.env.AG2_AGENT_RETRY_MAX_MS,
+  });
+}
+
+async function runAg2AgentOnce(payload: Ag2Payload, timeoutMs = 45000): Promise<Ag2Result> {
   const { command, args } = pythonCommand();
   const scriptPath = "agents/wikidata_ag2_agent.py";
   const child = spawn(command, [...args, scriptPath], {
@@ -127,3 +140,22 @@ export async function runAg2Agent(payload: Ag2Payload, timeoutMs = 45000): Promi
   });
 }
 
+export async function runAg2Agent(payload: Ag2Payload, timeoutMs = 45000): Promise<Ag2Result> {
+  const retryOptions = ag2RetryOptions();
+  let attempt = 1;
+
+  while (true) {
+    try {
+      return await runAg2AgentOnce(payload, timeoutMs);
+    } catch (error) {
+      if (!(error instanceof Ag2BridgeError) || !shouldRetryAg2Error(error, attempt, retryOptions)) {
+        throw error;
+      }
+
+      const delayMs = ag2RetryDelayMs(attempt, retryOptions);
+      console.warn(`AG2 bridge retry ${attempt + 1}/${retryOptions.maxAttempts} after ${delayMs}ms: ${error.message}`);
+      await sleep(delayMs);
+      attempt += 1;
+    }
+  }
+}

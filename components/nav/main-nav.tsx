@@ -11,7 +11,7 @@ import {
   BrainCircuitIcon,
 } from "lucide-react";
 
-const navItems = [
+export const navItems = [
   {
     name: "Home",
     href: "/",
@@ -23,14 +23,15 @@ const navItems = [
     icon: SearchIcon,
   },
   {
-    name: "Research Assistant",
-    href: "/chat",
-    icon: MessageSquareIcon,
-  },
-  {
     name: "Agents",
     href: "/agents",
     icon: BrainCircuitIcon,
+    persistentLabel: true,
+  },
+  {
+    name: "Research Assistant",
+    href: "/chat",
+    icon: MessageSquareIcon,
   },
   {
     name: "Docs",
@@ -43,23 +44,25 @@ export function MainNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-wrap items-center gap-1 sm:gap-3">
+    <nav aria-label="Primary" className="flex flex-wrap items-center gap-1 sm:gap-3">
       {navItems.map((item) => {
         const Icon = item.icon;
+        const isActive = pathname === item.href;
+
         return (
           <Link
             key={item.href}
             href={item.href}
+            aria-label={item.name}
             className={cn(
               "inline-flex h-9 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors hover:bg-sky-50 hover:text-sky-800 dark:hover:bg-slate-800 dark:hover:text-sky-300 sm:px-3",
-              pathname === item.href
-                ? "text-sky-700 dark:text-sky-300"
-                : "text-muted-foreground",
+              item.persistentLabel && "bg-sky-50 text-sky-800 dark:bg-slate-800 dark:text-sky-300",
+              isActive ? "text-sky-700 dark:text-sky-300" : "text-muted-foreground",
             )}
             title={item.name}
           >
             <Icon className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{item.name}</span>
+            <span className={item.persistentLabel ? "inline" : "hidden sm:inline"}>{item.name}</span>
           </Link>
         );
       })}

@@ -21,6 +21,7 @@ The project already has a strong base:
 - Next.js 16 App Router and React 19 stable
 - AG2-backed research assistant with server-side OpenAI key handling
 - Grounded AG2 entity summaries and specialist workflows generated from visible or fetched Wikidata context
+- Bounded AG2 bridge retry/backoff for transient provider/runtime failures
 - Browser-local AG2 agent run history for revisiting research, graph, verifier, comparison, and report outputs
 - Wikidata Action API, Wikibase REST API, and Commons media integration
 - Clickable relationship graph for selected entities with hover previews, rank badges, and selected-edge details
@@ -115,6 +116,7 @@ Goal: help users evaluate data quality, not just browse facts.
 
 - Monitor Next.js audit advisories; avoid npm’s bad forced downgrade path for the current internal PostCSS advisory
 - Keep React, Next, AG2, Python dependencies, and Playwright Core current on a regular schedule
+- Monitor retry metrics/failure categories before enabling any higher-autonomy write workflows
 - Keep screenshots fresh after visual design changes
 - Keep ignored local research artifacts out of git
 
