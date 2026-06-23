@@ -1,9 +1,27 @@
 import { z } from "zod";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
+import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
 import { Ag2BridgeError, runAg2Agent } from "@/lib/ag2";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+function aiRateLimitResponse(req: Request) {
+  const limit = checkAiRateLimit({
+    key: aiRateLimitKey(req.headers),
+    env: process.env,
+  });
+
+  if (limit.allowed) return null;
+
+  return Response.json(
+    { error: AI_RATE_LIMIT_MESSAGE },
+    {
+      status: 429,
+      headers: { "Retry-After": String(Math.max(1, Math.ceil(limit.retryAfterMs / 1000))) },
+    },
+  );
+}
 
 const textPartSchema = z.object({
   type: z.literal("text"),
@@ -34,6 +52,9 @@ export async function POST(req: Request) {
   if (!aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS })) {
     return Response.json({ error: AI_DISABLED_MESSAGE }, { status: 404 });
   }
+
+  const limited = aiRateLimitResponse(req);
+  if (limited) return limited;
 
   let body: unknown;
   try {

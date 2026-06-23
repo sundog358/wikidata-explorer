@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { ag2ServiceAuthorizationHeader } from "@/lib/ag2-service-auth.mjs";
 import { missingOpenAiApiKeyMessage, hasOpenAiApiKey } from "@/lib/ag2-config.mjs";
 import { ag2RetryDelayMs, normalizeAg2RetryOptions, shouldRetryAg2Error } from "@/lib/ag2-reliability.mjs";
 
@@ -48,6 +49,7 @@ type Ag2Result = {
   ok?: boolean;
   status?: number;
   error?: string;
+  detail?: string;
   summary?: string;
   message?: string;
   result?: string;
@@ -110,6 +112,12 @@ function ag2ServiceUrl(): string | null {
 async function runRemoteAg2Agent(payload: Ag2Payload, timeoutMs: number): Promise<Ag2Result> {
   const baseUrl = ag2ServiceUrl();
   if (!baseUrl) throw new Ag2BridgeError("AG2 service URL is not configured.", 500);
+  const authorization = ag2ServiceAuthorizationHeader(process.env);
+  if (!("header" in authorization)) {
+    const message = "error" in authorization && authorization.error ? authorization.error : "AG2 service token is invalid.";
+    const status = "status" in authorization && authorization.status ? authorization.status : 503;
+    throw new Ag2BridgeError(message, status);
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -117,14 +125,17 @@ async function runRemoteAg2Agent(payload: Ag2Payload, timeoutMs: number): Promis
   try {
     const response = await fetch(new URL("run", baseUrl + "/").toString(), {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        authorization: authorization.header,
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ payload }),
       signal: controller.signal,
     });
     const data = await response.json().catch(() => ({ error: "AG2 service returned an unreadable response." })) as Ag2Result;
 
     if (!response.ok || data.ok === false) {
-      throw new Ag2BridgeError(data.error || "AG2 service failed.", data.status || response.status || 502);
+      throw new Ag2BridgeError(data.error || data.detail || "AG2 service failed.", data.status || response.status || 502);
     }
 
     return data;
@@ -219,3 +230,4 @@ export async function runAg2Agent(payload: Ag2Payload, timeoutMs = 45000): Promi
     }
   }
 }
+

@@ -21,7 +21,7 @@ The project already has a strong base:
 - Next.js 16 App Router and React 19 stable
 - AG2-backed research assistant with server-side OpenAI key handling
 - Public-first Vercel deployment mode with AI links, pages, and API routes hidden behind explicit feature flags
-- Container-ready AG2 FastAPI service for hosting agents outside Vercel through `AG2_SERVICE_URL`
+- Container-ready AG2 FastAPI service for hosting agents outside Vercel through `AG2_SERVICE_URL`, protected by a shared bearer token
 - Grounded AG2 entity summaries and specialist workflows generated from visible, fetched, or selected graph-edge Wikidata context
 - Bounded AG2 bridge missing-key guard and retry/backoff for provider/runtime failures
 - Browser-local AG2 agent run history for revisiting research, graph, next-entity suggestions, verifier, comparison, and report outputs
@@ -113,7 +113,9 @@ Goal: help users evaluate data quality, not just browse facts.
 
 - Deploy `agents/Dockerfile` to a container host such as Render, Railway, Fly, or a private VM
 - Store provider credentials in the agent service environment, not in public client code
+- Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the AG2 service host
 - Enable `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, and `AG2_SERVICE_URL=https://...` for AI-enabled demos
+- Keep FastAPI docs disabled in production with `AG2_ENABLE_DOCS=false`
 - Add a mocked success contract test for the remote AG2 bridge before using the service in production demos
 
 ### Observability

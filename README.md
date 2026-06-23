@@ -13,7 +13,7 @@ The public demo is designed to ship safely on Vercel with AI disabled by default
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
 - 🤖 Enable AG2 specialist agents for research, graph analysis, next-entity suggestions, citation verification, comparison, and Markdown reports
-- 🐳 Run agents through local conda or a containerized FastAPI AG2 service
+- 🐳 Run agents through local conda or a token-protected containerized FastAPI AG2 service
 - 🧾 Inspect statement ranks, qualifiers, and references in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
 - 🧑‍⚖️ Review entity data-quality findings with persisted browser-local task status and source-link hints
@@ -80,9 +80,10 @@ Container-backed AI mode:
 NEXT_PUBLIC_ENABLE_AI_AGENTS=true
 ENABLE_AI_AGENTS=true
 AG2_SERVICE_URL=http://localhost:8000
+AG2_SERVICE_TOKEN=generate-a-random-32-plus-character-secret
 ```
 
-`OPENAI_MODEL` is optional and defaults to `gpt-4o-mini`. If `AG2_SERVICE_URL` is unset, the Next.js API routes run the Python bridge through `AG2_CONDA_ENV=wikidata` or `AG2_PYTHON`. If `AG2_SERVICE_URL` is set, the container service owns the provider credentials and Next.js calls `/run` on that service.
+`OPENAI_MODEL` is optional and defaults to `gpt-4o-mini`. If `AG2_SERVICE_URL` is unset, the Next.js API routes run the Python bridge through `AG2_CONDA_ENV=wikidata` or `AG2_PYTHON`. If `AG2_SERVICE_URL` is set, the container service owns the provider credentials and Next.js calls `/run` on that service with `Authorization: Bearer $AG2_SERVICE_TOKEN`. The token must be present on both Vercel and the AG2 service host and must be at least 32 characters.
 
 Local environment files, provider keys, Pywikibot credentials, runtime files, caches, and research artifacts are ignored by default.
 
@@ -101,7 +102,7 @@ Health check:
 curl http://localhost:8000/health
 ```
 
-The Vercel app can stay public and static-friendly while the AG2 service runs on a Docker host such as Render, Railway, Fly, or a private VM.
+The Vercel app can stay public and static-friendly while the AG2 service runs on a Docker host such as Render, Railway, Fly, or a private VM. The container runs as a non-root user, disables FastAPI docs by default, and rejects `/run` requests unless the bearer token matches `AG2_SERVICE_TOKEN`.
 
 ## 🧪 Useful Commands
 
@@ -147,7 +148,8 @@ These tracked screenshots are refreshed from the visual QA flow. `npm run visual
 1. Deploy the Next.js app to Vercel with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false` and `ENABLE_AI_AGENTS=false`.
 2. Add the public Vercel URL and badge to this README after the first successful deploy.
 3. Deploy `agents/Dockerfile` to a container host when ready to demo live AG2 agents.
-4. Enable AI by setting `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, and `AG2_SERVICE_URL=https://...`, then redeploy the Next.js app.
+4. Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the container host.
+5. Enable AI by setting `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, `AG2_SERVICE_URL=https://...`, and rate limits such as `AI_AGENT_RATE_LIMIT_MAX=20`, then redeploy the Next.js app.
 
 ## 🗂️ Project Structure
 
@@ -168,11 +170,15 @@ These tracked screenshots are refreshed from the visual QA flow. `npm run visual
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and formatter-aware external IDs
 - `lib/search-url-state.mjs`: tested shareable tab, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
-- `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
+- `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, token-authenticated remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
+- `lib/ag2-service-auth.mjs`: shared AG2 service bearer-token validation helper
+- `lib/ai-rate-limit.mjs`: in-memory public AI route throttling helper
 - `agents/wikidata_ag2_agent.py`: bounded AG2 agent bridge for chat, research, graph analysis, suggestions, verification, comparison, and reports
-- `agents/ag2_service.py`: FastAPI wrapper for the containerized AG2 runtime
+- `agents/ag2_service.py`: token-protected FastAPI wrapper for the containerized AG2 runtime
 - `agents/Dockerfile`: Docker image for hosting the AG2 service outside Vercel
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
+- `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
+- `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
 - `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, graph filtering, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
