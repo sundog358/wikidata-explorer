@@ -20,7 +20,22 @@ export type RelationshipGraphFilters = {
   evidence?: "all" | "referenced" | "unreferenced" | "qualified";
 };
 
+export type RelationshipGraphFocus = {
+  id: string;
+  label: string;
+  property: string;
+  propertyId: string;
+  kind: "item" | "property";
+  rank: WikidataStatement["rank"];
+  dataType: string | null;
+  qualifierCount: number;
+  referenceCount: number;
+  statementId: string | null;
+  value: string;
+};
+
 export function collectRelationshipGraphNodes(item: WikidataItem, limit?: number): RelationshipGraphNode[];
 export function graphPropertyOptions(nodes: RelationshipGraphNode[]): Array<{ id: string; label: string }>;
 export function filterRelationshipGraphNodes(nodes: RelationshipGraphNode[], filters?: RelationshipGraphFilters): RelationshipGraphNode[];
+export function graphFocusFromNode(node: RelationshipGraphNode | null | undefined): RelationshipGraphFocus | null;
 export function relationshipGraphSummary(item: WikidataItem, nodes: RelationshipGraphNode[], filteredNodes: RelationshipGraphNode[]): string;

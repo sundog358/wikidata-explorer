@@ -31,11 +31,26 @@ const entitySchema = z.object({
   statements: z.array(statementSchema).min(1).max(20),
 });
 
+const graphFocusSchema = z.object({
+  id: z.string().regex(/^[QP]\d+$/),
+  label: z.string().min(1).max(200),
+  property: z.string().min(1).max(200),
+  propertyId: z.string().regex(/^P\d+$/),
+  kind: z.enum(["item", "property"]),
+  rank: z.enum(["deprecated", "normal", "preferred"]),
+  dataType: z.string().max(80).nullable(),
+  qualifierCount: z.number().int().min(0).max(999),
+  referenceCount: z.number().int().min(0).max(999),
+  statementId: z.string().max(200).nullable(),
+  value: z.string().min(1).max(500),
+}).strict();
+
 const requestSchema = z.object({
   action: z.enum(["research", "graph", "suggest", "verify", "compare", "report"]),
   entity: entitySchema.optional(),
   entityId: z.string().regex(/^[QP]\d+$/).optional(),
   compareEntityId: z.string().regex(/^[QP]\d+$/).optional(),
+  graphFocus: graphFocusSchema.optional(),
 });
 
 export async function POST(req: Request) {
@@ -57,7 +72,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { action, entity, entityId, compareEntityId } = parsed.data;
+  const { action, entity, entityId, compareEntityId, graphFocus } = parsed.data;
   const safety = evaluateAutonomyAction({
     action,
     mode: "read_only",
@@ -94,6 +109,7 @@ export async function POST(req: Request) {
       entity,
       entityId: entityId || entity?.id,
       compareEntityId,
+      graphFocus,
     });
     return Response.json({ result: result.result, safety });
   } catch (error) {

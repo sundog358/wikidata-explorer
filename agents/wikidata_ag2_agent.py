@@ -307,6 +307,29 @@ def entity_context_lines(entity: dict[str, Any]) -> list[str]:
     return lines
 
 
+def graph_focus_lines(focus: Any) -> list[str]:
+    if not isinstance(focus, dict):
+        return []
+
+    property_label = focus.get("property") or focus.get("propertyId") or "unknown property"
+    property_id = focus.get("propertyId") or "unknown property ID"
+    target_label = focus.get("label") or focus.get("id") or "unknown target"
+    target_id = focus.get("id") or "unknown target ID"
+    rank = focus.get("rank") or "normal"
+    qualifier_count = focus.get("qualifierCount", 0)
+    reference_count = focus.get("referenceCount", 0)
+    statement_id = focus.get("statementId") or "not supplied"
+    value = focus.get("value") or target_label
+
+    return [
+        "",
+        "Selected graph focus:",
+        f"- Edge: {property_label} ({property_id}) -> {target_label} ({target_id}) [{rank}]",
+        f"- Target kind: {focus.get('kind') or 'unknown'} | datatype: {focus.get('dataType') or 'unknown'}",
+        f"- Evidence: qualifiers={qualifier_count} references={reference_count} statement={statement_id}",
+        f"- Value: {value}",
+    ]
+
 def build_entity_summary_prompt(entity: dict[str, Any]) -> str:
     return "\n".join(
         [
@@ -355,8 +378,9 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
             "You are a Graph Analyst Agent. Explain relationship structure and useful traversal paths from Wikidata statements.",
             "\n".join([
                 *entity_context_lines(entity),
+                *graph_focus_lines(payload.get("graphFocus")),
                 "",
-                "Explain the most important graph neighborhoods, relationship clusters, weak edges, and 3 suggested next clicks.",
+                "Explain the most important graph neighborhoods, relationship clusters, weak edges, and 3 suggested next clicks. If a selected graph focus is supplied, start with why that edge matters and which adjacent IDs to inspect next.",
             ]),
             800,
         )
@@ -367,8 +391,9 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
             "You are a Next Entity Suggestions Agent. Recommend concrete Wikidata Q/P IDs to inspect next using only supplied entity context.",
             "\n".join([
                 *entity_context_lines(entity),
+                *graph_focus_lines(payload.get("graphFocus")),
                 "",
-                "Suggest 5 next entities or properties to inspect. For each, include the exact Q/P ID if present in context, the relationship/property that led to it, why it matters, and one evidence or data-quality caveat. Do not invent IDs that are not in the supplied context.",
+                "Suggest 5 next entities or properties to inspect. Prioritize the selected graph focus when supplied. For each recommendation, include the exact Q/P ID if present in context, the relationship/property that led to it, why it matters, and one evidence or data-quality caveat. Do not invent IDs that are not in the supplied context.",
             ]),
             850,
         )

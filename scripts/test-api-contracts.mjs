@@ -31,6 +31,7 @@ await check("chat rejects malformed JSON", "/api/chat", "{", 400, "valid JSON");
 await check("chat rejects empty messages", "/api/chat", { messages: [] }, 400, "Invalid chat request");
 await check("entity summary rejects missing entity", "/api/entity-summary", { entity: null }, 400, "Invalid entity summary request");
 await check("workflow rejects unsupported action", "/api/ag2-workflow", { action: "delete", entityId: "Q42" }, 400, "Invalid AG2 workflow request");
+await check("workflow graph rejects invalid graph focus", "/api/ag2-workflow", { action: "graph", entityId: "Q42", graphFocus: { id: "bad" } }, 400, "Invalid AG2 workflow request");
 await check("workflow graph requires visible entity", "/api/ag2-workflow", { action: "graph", entityId: "Q42" }, 400, "requires visible entity context");
 await check("workflow suggest requires visible entity", "/api/ag2-workflow", { action: "suggest", entityId: "Q42" }, 400, "requires visible entity context");
 await check("workflow compare requires second entity", "/api/ag2-workflow", {

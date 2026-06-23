@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   collectRelationshipGraphNodes,
   filterRelationshipGraphNodes,
+  graphFocusFromNode,
   graphPropertyOptions,
   relationshipGraphSummary,
 } from "@/lib/relationship-graph-utils.mjs";
@@ -37,9 +38,24 @@ type PositionedGraphNode = RelationshipGraphNode & {
   y: number;
 };
 
+export type RelationshipGraphFocus = {
+  id: string;
+  label: string;
+  property: string;
+  propertyId: string;
+  kind: "item" | "property";
+  rank: WikidataStatement["rank"];
+  dataType: string | null;
+  qualifierCount: number;
+  referenceCount: number;
+  statementId: string | null;
+  value: string;
+};
+
 type RelationshipGraphProps = {
   item: WikidataItem;
   onEntityClick: (id: string) => void;
+  onGraphFocus?: (focus: RelationshipGraphFocus | null) => void;
 };
 
 const CENTER = { x: 50, y: 50 };
@@ -107,7 +123,7 @@ function SelectControl({
   );
 }
 
-export function RelationshipGraph({ item, onEntityClick }: RelationshipGraphProps) {
+export function RelationshipGraph({ item, onEntityClick, onGraphFocus }: RelationshipGraphProps) {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -120,10 +136,15 @@ export function RelationshipGraph({ item, onEntityClick }: RelationshipGraphProp
   const previewNode = hoveredNode || selectedNode;
   const hasActiveFilters = Object.entries(filters).some(([key, value]) => DEFAULT_FILTERS[key as keyof typeof DEFAULT_FILTERS] !== value);
 
+  function selectNode(node: RelationshipGraphNode | null) {
+    setSelectedNodeId(node?.id || null);
+    onGraphFocus?.(node ? graphFocusFromNode(node) : null);
+  }
+
   function updateFilter<Key extends keyof Required<RelationshipGraphFilters>>(key: Key, value: Required<RelationshipGraphFilters>[Key]) {
     setFilters((current) => ({ ...current, [key]: value }));
     setHoveredNodeId(null);
-    setSelectedNodeId(null);
+    selectNode(null);
   }
 
   if (!allNodes.length) {
@@ -147,7 +168,10 @@ export function RelationshipGraph({ item, onEntityClick }: RelationshipGraphProp
               {relationshipGraphSummary(item, allNodes, matchingNodes)} {matchingNodes.length > nodes.length ? `Showing the first ${nodes.length} matching nodes.` : ""}
             </p>
           </div>
-          <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setFilters(DEFAULT_FILTERS)} disabled={!hasActiveFilters}>
+          <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => {
+            setFilters(DEFAULT_FILTERS);
+            selectNode(null);
+          }} disabled={!hasActiveFilters}>
             <RotateCcw className="h-4 w-4" />
             Clear
           </Button>
@@ -227,7 +251,7 @@ export function RelationshipGraph({ item, onEntityClick }: RelationshipGraphProp
                   key={node.id}
                   type="button"
                   onClick={() => onEntityClick(node.id)}
-                  onFocus={() => setSelectedNodeId(node.id)}
+                  onFocus={() => selectNode(node)}
                   onMouseEnter={() => setHoveredNodeId(node.id)}
                   onMouseLeave={() => setHoveredNodeId(null)}
                   className={`absolute z-20 w-44 -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white p-2 text-left text-xs shadow-sm transition hover:border-sky-300 hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800 ${
@@ -320,8 +344,9 @@ export function RelationshipGraph({ item, onEntityClick }: RelationshipGraphProp
               <button
                 key={node.id}
                 type="button"
-                onClick={() => setSelectedNodeId(node.id)}
+                onClick={() => selectNode(node)}
                 onDoubleClick={() => onEntityClick(node.id)}
+                data-testid={`graph-focus-${node.id}`}
                 className="rounded-md border border-slate-200 p-3 text-left text-sm hover:bg-sky-50 dark:border-slate-800 dark:hover:bg-slate-800"
               >
                 <div className="mb-1 flex items-center justify-between gap-2">

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   collectRelationshipGraphNodes,
   filterRelationshipGraphNodes,
+  graphFocusFromNode,
   graphPropertyOptions,
   relationshipGraphSummary,
 } from "../lib/relationship-graph-utils.mjs";
@@ -53,6 +54,19 @@ assert.equal(filterRelationshipGraphNodes(nodes, { evidence: "referenced" })[0].
 assert.equal(filterRelationshipGraphNodes(nodes, { evidence: "qualified" })[0].id, "P361");
 assert.equal(filterRelationshipGraphNodes(nodes, { propertyId: "P31" })[0].label, "human");
 assert.deepEqual(graphPropertyOptions(nodes).map((property) => property.id), ["P31", "P279"]);
+assert.deepEqual(graphFocusFromNode(nodes[0]), {
+  id: "Q5",
+  label: "human",
+  property: "instance of",
+  propertyId: "P31",
+  kind: "item",
+  rank: "normal",
+  dataType: "wikibase-item",
+  qualifierCount: 0,
+  referenceCount: 1,
+  statementId: "s1",
+  value: "human (Q5)",
+});
 assert.match(relationshipGraphSummary(item, nodes, filterRelationshipGraphNodes(nodes, { kind: "item" })), /1 of 2 relationships/);
 
 console.log("PASS relationship graph filter tests");

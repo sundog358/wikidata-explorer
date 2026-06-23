@@ -12,6 +12,20 @@ export class Ag2BridgeError extends Error {
   }
 }
 
+type GraphFocusPayload = {
+  id: string;
+  label: string;
+  property: string;
+  propertyId: string;
+  kind: "item" | "property";
+  rank: "deprecated" | "normal" | "preferred";
+  dataType: string | null;
+  qualifierCount: number;
+  referenceCount: number;
+  statementId: string | null;
+  value: string;
+};
+
 type Ag2Payload =
   | {
       mode: "entity_summary";
@@ -23,6 +37,7 @@ type Ag2Payload =
       entity?: unknown;
       entityId?: string;
       compareEntityId?: string;
+      graphFocus?: GraphFocusPayload;
     }
   | {
       mode: "chat";

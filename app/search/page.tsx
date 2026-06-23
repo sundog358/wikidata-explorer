@@ -7,7 +7,7 @@ import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/li
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
-import { RelationshipGraph } from "@/components/relationship-graph";
+import { RelationshipGraph, type RelationshipGraphFocus } from "@/components/relationship-graph";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,6 +40,7 @@ type AgentResultState = {
   title: string;
   result: string;
   safety?: AgentSafetyState;
+  graphFocus?: RelationshipGraphFocus;
 } | null;
 
 type SavedAgentRun = {
@@ -51,6 +52,7 @@ type SavedAgentRun = {
   result: string;
   safety?: AgentSafetyState;
   compareEntityId?: string;
+  graphFocus?: RelationshipGraphFocus;
   createdAt: string;
 };
 
@@ -304,6 +306,7 @@ export default function SearchPage() {
   const [agentResult, setAgentResult] = useState<AgentResultState>(null);
   const [agentLoading, setAgentLoading] = useState<AgentAction | null>(null);
   const [compareEntityId, setCompareEntityId] = useState("Q80");
+  const [selectedGraphFocus, setSelectedGraphFocus] = useState<RelationshipGraphFocus | null>(null);
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
   const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
@@ -439,6 +442,7 @@ export default function SearchPage() {
     setLinkedData(null);
     setAiSummary(null);
     setAgentResult(null);
+    setSelectedGraphFocus(null);
 
     try {
       if (/^[QP]\d+$/i.test(query)) {
@@ -481,6 +485,7 @@ export default function SearchPage() {
     setLinkedData(null);
     setAiSummary(null);
     setAgentResult(null);
+    setSelectedGraphFocus(null);
 
     try {
       const entity = await client.getDetailedEntity(id);
@@ -572,6 +577,7 @@ export default function SearchPage() {
           action,
           entityId: selectedItem.id,
           compareEntityId: action === "compare" ? normalizedCompareId : undefined,
+          graphFocus: selectedGraphFocus || undefined,
           entity: {
             id: selectedItem.id,
             type: selectedItem.type,
@@ -591,12 +597,14 @@ export default function SearchPage() {
         title: titles[action],
         result: data.result,
         safety: data.safety,
+        graphFocus: selectedGraphFocus || undefined,
       };
       const savedRun: SavedAgentRun = {
         ...nextResult,
         id: `${selectedItem.id}-${action}-${Date.now()}`,
         entityLabel: getEntityLabel(selectedItem),
         compareEntityId: action === "compare" ? normalizedCompareId : undefined,
+        graphFocus: selectedGraphFocus || undefined,
         createdAt: new Date().toISOString(),
       };
 
@@ -607,7 +615,7 @@ export default function SearchPage() {
     } finally {
       setAgentLoading(null);
     }
-  }, [agentLoading, compareEntityId, selectedItem]);
+  }, [agentLoading, compareEntityId, selectedGraphFocus, selectedItem]);
 
   useEffect(() => {
     const action = queuedAgentActionRef.current;
@@ -812,6 +820,19 @@ export default function SearchPage() {
                     {agentLoading && <Badge variant="secondary">{agentLoading} running</Badge>}
                   </div>
 
+                  {selectedGraphFocus && (
+                    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-sky-200 bg-sky-50 p-3 text-xs text-sky-950 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-100" data-testid="agent-graph-focus">
+                      <span className="font-semibold">Graph focus</span>
+                      <Badge variant="outline">{selectedGraphFocus.propertyId}</Badge>
+                      <span>{selectedGraphFocus.property} -&gt; {selectedGraphFocus.label}</span>
+                      <Badge variant="secondary">{selectedGraphFocus.id}</Badge>
+                      <Badge variant="outline">{selectedGraphFocus.referenceCount} ref</Badge>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setSelectedGraphFocus(null)}>
+                        Clear
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
                     <Button type="button" variant="outline" className="gap-2" onClick={() => runAgentWorkflow("research")} disabled={!!agentLoading}>
                       <Search className="h-4 w-4" />
@@ -856,6 +877,7 @@ export default function SearchPage() {
                         <Badge variant="outline">{agentResult.action}</Badge>
                         {agentResult.safety && <Badge variant="secondary">{agentResult.safety.modeLabel}</Badge>}
                         {agentResult.safety && <Badge variant="outline">{agentResult.safety.risk} risk</Badge>}
+                        {agentResult.graphFocus && <Badge variant="outline">focus {agentResult.graphFocus.propertyId} -&gt; {agentResult.graphFocus.id}</Badge>}
                       </div>
                       {agentResult.safety && (
                         <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
@@ -885,7 +907,7 @@ export default function SearchPage() {
                   </TabsList>
 
                   <TabsContent value="graph">
-                    <RelationshipGraph item={selectedItem} onEntityClick={loadEntity} />
+                    <RelationshipGraph item={selectedItem} onEntityClick={loadEntity} onGraphFocus={setSelectedGraphFocus} />
                   </TabsContent>
 
                   <TabsContent value="statements" className="space-y-3">
@@ -1029,12 +1051,13 @@ export default function SearchPage() {
                               <span className="font-semibold text-slate-950 dark:text-slate-50">{run.title}</span>
                               <Badge variant="outline">{run.action}</Badge>
                               {run.compareEntityId && <Badge variant="secondary">vs {run.compareEntityId}</Badge>}
+                              {run.graphFocus && <Badge variant="outline">focus {run.graphFocus.propertyId} -&gt; {run.graphFocus.id}</Badge>}
                               {run.safety && <Badge variant="secondary">{run.safety.modeLabel}</Badge>}
                               <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(run.createdAt).toLocaleString()}</span>
                             </div>
                             <p className="line-clamp-3 text-slate-700 dark:text-slate-200">{run.result}</p>
                             <div className="mt-3 flex flex-wrap gap-2">
-                              <Button type="button" variant="outline" size="sm" onClick={() => setAgentResult({ entityId: run.entityId, action: run.action, title: run.title, result: run.result, safety: run.safety })}>
+                              <Button type="button" variant="outline" size="sm" onClick={() => setAgentResult({ entityId: run.entityId, action: run.action, title: run.title, result: run.result, safety: run.safety, graphFocus: run.graphFocus })}>
                                 Restore Result
                               </Button>
                               <Button type="button" variant="outline" size="sm" onClick={() => setSavedAgentRuns((runs) => runs.filter((item) => item.id !== run.id))}>

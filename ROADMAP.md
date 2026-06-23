@@ -20,7 +20,7 @@ The project already has a strong base:
 
 - Next.js 16 App Router and React 19 stable
 - AG2-backed research assistant with server-side OpenAI key handling
-- Grounded AG2 entity summaries and specialist workflows generated from visible or fetched Wikidata context
+- Grounded AG2 entity summaries and specialist workflows generated from visible, fetched, or selected graph-edge Wikidata context
 - Bounded AG2 bridge missing-key guard and retry/backoff for provider/runtime failures
 - Browser-local AG2 agent run history for revisiting research, graph, next-entity suggestions, verifier, comparison, and report outputs
 - Wikidata Action API, Wikibase REST API, and Commons media integration
@@ -61,7 +61,7 @@ Goal: make AG2 assistance grounded in visible and fetched Wikidata context throu
 - Send selected graph nodes and selected statements into the full AG2 chat surface
 - Add citation-style references to Wikidata IDs in AI responses
 - Persist agent result history beyond browser-local storage when a database layer is introduced
-- Expand “suggest next entities to inspect” with graph-node selection context and saved recommendation paths
+- Persist saved recommendation paths from graph-grounded “suggest next entities to inspect” outputs
 - Expand safety copy and policy UI for future live bot-ready actions, source requirements, and human approval states
 
 ### 4. Evidence And Trust

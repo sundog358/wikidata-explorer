@@ -37,6 +37,12 @@ try {
     throw new Error(`Expected graph filter summary after item filter, got ${filterSummary}`);
   }
 
+  await page.getByTestId("graph-focus-Q5").click();
+  const graphFocus = await page.getByTestId("agent-graph-focus").innerText();
+  if (!graphFocus.includes("P31") || !graphFocus.includes("Q5")) {
+    throw new Error(`Expected AG2 graph focus to include P31 and Q5, got ${graphFocus}`);
+  }
+
   const graphTarget = page
     .locator('button[title*="human"]')
     .filter({ hasText: "Q5" })
@@ -69,6 +75,7 @@ try {
 
   console.log("PASS search data quality summary renders for Q42");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
+  console.log("PASS search graph focus grounds AG2 agent panel");
   console.log("PASS search graph interaction selects Q5 from Q42");
   console.log("PASS direct PID lookup selects P31");
 } finally {
