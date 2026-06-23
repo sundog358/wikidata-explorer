@@ -65,6 +65,8 @@ type DraftSafetyState = {
   requiredControls: string[];
 };
 
+type ReviewTaskStatus = "needs_review" | "checking_sources" | "ready_to_draft" | "resolved";
+
 type ReviewQueueItem = {
   id: string;
   entityId: string;
@@ -77,8 +79,21 @@ type ReviewQueueItem = {
   value: string;
 };
 
+type ReviewQueueItemWithStatus = ReviewQueueItem & {
+  status: ReviewTaskStatus;
+  statusLabel: string;
+};
+
 const AGENT_RUNS_STORAGE_KEY = "wikidata-explorer.agentRuns.v1";
 const DISMISSED_REVIEW_STORAGE_KEY = "wikidata-explorer.dismissedReviewItems.v1";
+const REVIEW_TASK_STATUS_STORAGE_KEY = "wikidata-explorer.reviewTaskStatus.v1";
+
+const REVIEW_TASK_STATUS_OPTIONS: Array<{ value: ReviewTaskStatus; label: string }> = [
+  { value: "needs_review", label: "Needs review" },
+  { value: "checking_sources", label: "Checking sources" },
+  { value: "ready_to_draft", label: "Ready to draft" },
+  { value: "resolved", label: "Resolved" },
+];
 
 const client = new WikidataClient();
 
@@ -191,6 +206,27 @@ function readJsonArray<T>(key: string): T[] {
   } catch {
     return [];
   }
+}
+
+function readJsonRecord<T extends string>(key: string, allowedValues: readonly T[]): Record<string, T> {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const allowed = new Set(allowedValues);
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, T] => typeof entry[1] === "string" && allowed.has(entry[1] as T)),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function reviewStatusLabel(status: ReviewTaskStatus): string {
+  return REVIEW_TASK_STATUS_OPTIONS.find((option) => option.value === status)?.label || "Needs review";
 }
 
 function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): ReviewQueueItem[] {
@@ -309,6 +345,7 @@ export default function SearchPage() {
   const [selectedGraphFocus, setSelectedGraphFocus] = useState<RelationshipGraphFocus | null>(null);
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
+  const [reviewTaskStatuses, setReviewTaskStatuses] = useState<Record<string, ReviewTaskStatus>>({});
   const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const storageHydratedRef = useRef(false);
@@ -317,6 +354,7 @@ export default function SearchPage() {
     const timeout = window.setTimeout(() => {
       setSavedAgentRuns(readJsonArray<SavedAgentRun>(AGENT_RUNS_STORAGE_KEY).slice(0, 40));
       setDismissedReviewIds(readJsonArray<string>(DISMISSED_REVIEW_STORAGE_KEY));
+      setReviewTaskStatuses(readJsonRecord<ReviewTaskStatus>(REVIEW_TASK_STATUS_STORAGE_KEY, REVIEW_TASK_STATUS_OPTIONS.map((option) => option.value)));
       storageHydratedRef.current = true;
     }, 0);
 
@@ -332,6 +370,12 @@ export default function SearchPage() {
     if (!storageHydratedRef.current || typeof window === "undefined") return;
     window.localStorage.setItem(DISMISSED_REVIEW_STORAGE_KEY, JSON.stringify(dismissedReviewIds.slice(-250)));
   }, [dismissedReviewIds]);
+
+  useEffect(() => {
+    if (!storageHydratedRef.current || typeof window === "undefined") return;
+    const entries = Object.entries(reviewTaskStatuses).slice(-300);
+    window.localStorage.setItem(REVIEW_TASK_STATUS_STORAGE_KEY, JSON.stringify(Object.fromEntries(entries)));
+  }, [reviewTaskStatuses]);
 
   useEffect(() => {
     let cancelled = false;
@@ -404,22 +448,29 @@ export default function SearchPage() {
 
   const dataQuality = useMemo(() => selectedItem ? summarizeEntityDataQuality(selectedItem) : null, [selectedItem]);
   const reviewQueue = useMemo(() => buildReviewQueue(selectedItem, dismissedReviewIds), [dismissedReviewIds, selectedItem]);
+  const reviewQueueWithStatus = useMemo<ReviewQueueItemWithStatus[]>(() => reviewQueue.map((item) => {
+    const status = reviewTaskStatuses[item.id] || "needs_review";
+    return { ...item, status, statusLabel: reviewStatusLabel(status) };
+  }), [reviewQueue, reviewTaskStatuses]);
   const draftSafety = useMemo<DraftSafetyState>(() => evaluateAutonomyAction({
     action: "quickstatements_draft",
     mode: "draft_only",
     entityId: selectedItem?.id,
-    batchSize: Math.max(1, reviewQueue.length),
+    batchSize: Math.max(1, reviewQueueWithStatus.length),
     dryRun: true,
-  }), [reviewQueue.length, selectedItem?.id]);
-  const quickStatementsDraft = useMemo(() => buildQuickStatementsReviewDraft(reviewQueue, {
+  }), [reviewQueueWithStatus.length, selectedItem?.id]);
+  const quickStatementsDraft = useMemo(() => buildQuickStatementsReviewDraft(reviewQueueWithStatus, {
     entityId: selectedItem?.id,
     entityLabel: getEntityLabel(selectedItem),
-  }), [reviewQueue, selectedItem]);
-  const markdownDraft = useMemo(() => buildReviewMarkdownExport(reviewQueue, {
+  }), [reviewQueueWithStatus, selectedItem]);
+  const markdownDraft = useMemo(() => buildReviewMarkdownExport(reviewQueueWithStatus, {
     entityId: selectedItem?.id,
     entityLabel: getEntityLabel(selectedItem),
-  }), [reviewQueue, selectedItem]);
+  }), [reviewQueueWithStatus, selectedItem]);
 
+  function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
+    setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
+  }
   async function copyDraftToClipboard(label: string, value: string) {
     try {
       await navigator.clipboard.writeText(value);
@@ -1078,7 +1129,7 @@ export default function SearchPage() {
                     ) : (
                       <div className="space-y-3">
                         <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
-                          <span>{reviewQueue.length} evidence and trust item{reviewQueue.length === 1 ? "" : "s"} need attention.</span>
+                          <span>{reviewQueue.length} evidence and trust item{reviewQueue.length === 1 ? "" : "s"} need attention; {reviewQueueWithStatus.filter((item) => item.status === "ready_to_draft").length} ready to draft.</span>
                           <Button type="button" variant="outline" size="sm" onClick={() => setDismissedReviewIds((ids) => [...ids, ...reviewQueue.map((item) => item.id)])}>
                             Dismiss Visible
                           </Button>
@@ -1089,7 +1140,7 @@ export default function SearchPage() {
                             <div>
                               <div className="font-semibold text-slate-950 dark:text-slate-50">Bot-ready draft exports</div>
                               <p className="mt-1 text-slate-600 dark:text-slate-300">
-                                Export review findings as safe draft artifacts. QuickStatements rows are commented out until a human adds sources and approves live edits.
+                                Export review findings as safe draft artifacts. QuickStatements rows are commented out until a human adds sources and approves live edits. Persisted task statuses travel with the draft artifacts.
                               </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -1124,16 +1175,30 @@ export default function SearchPage() {
                           </div>
                         </div>
 
-                        {reviewQueue.map((item) => (
+                        {reviewQueueWithStatus.map((item) => (
                           <div key={item.id} className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
                             <div className="mb-2 flex flex-wrap items-center gap-2">
                               <span className="font-semibold text-slate-950 dark:text-slate-50">{item.title}</span>
                               <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${getSeverityClass(item.severity)}`}>{item.severity}</span>
                               <Badge variant="outline">{item.propertyLabel}</Badge>
                               <Badge variant="secondary">{item.propertyId}</Badge>
+                              <Badge variant="outline">{item.statusLabel}</Badge>
                             </div>
                             <p className="text-slate-700 dark:text-slate-200">{item.detail}</p>
                             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Value: {item.value}</p>
+                            <label className="mt-3 grid max-w-xs gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                              <span>Task status</span>
+                              <select
+                                value={item.status}
+                                onChange={(event) => updateReviewTaskStatus(item.id, event.currentTarget.value as ReviewTaskStatus)}
+                                className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-950 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50"
+                                aria-label={`Review status for ${item.propertyLabel}`}
+                              >
+                                {REVIEW_TASK_STATUS_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
+                            </label>
                             <div className="mt-3 flex flex-wrap gap-2">
                               <Button type="button" variant="outline" size="sm" onClick={() => runAgentWorkflow("verify")} disabled={!!agentLoading}>
                                 Run Verifier

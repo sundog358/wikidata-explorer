@@ -30,6 +30,15 @@ try {
     throw new Error(`Expected data quality summary to render, got ${qualitySummary}`);
   }
 
+  await page.getByRole("tab", { name: /Review Queue/ }).click();
+  const reviewStatusSelect = page.locator('select[aria-label^="Review status for"]').first();
+  await reviewStatusSelect.waitFor({ state: "visible" });
+  await reviewStatusSelect.selectOption("ready_to_draft");
+  const reviewPanel = await page.getByRole("tabpanel").filter({ hasText: "Ready to draft" }).first().innerText();
+  if (!reviewPanel.includes("Ready to draft")) {
+    throw new Error(`Expected review queue status to update to Ready to draft, got ${reviewPanel}`);
+  }
+  await page.getByRole("tab", { name: /Graph/ }).click();
   await page.getByTestId("graph-filters").waitFor({ state: "visible" });
   await page.getByLabel("Target type").selectOption("item");
   const filterSummary = await page.getByTestId("graph-filter-summary").innerText();
@@ -74,6 +83,7 @@ try {
   }
 
   console.log("PASS search data quality summary renders for Q42");
+  console.log("PASS search review queue status persists in the workbench");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log("PASS search graph focus grounds AG2 agent panel");
   console.log("PASS search graph interaction selects Q5 from Q42");
