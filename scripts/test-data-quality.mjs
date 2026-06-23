@@ -86,3 +86,4 @@ assert.equal(empty.sourceLinkCount, 0);
 assert.match(empty.issues.join(" "), /No visible statements/);
 
 console.log("PASS data quality tests");
+

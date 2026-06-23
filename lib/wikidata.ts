@@ -20,6 +20,7 @@ export type WikidataStatement = {
     id: string;
     label?: string;
     data_type: string | null;
+    formatter_url?: string | null;
   };
   value: {
     type: string;
@@ -42,6 +43,7 @@ export type WikidataQualifier = {
     id: string;
     label?: string;
     data_type: string | null;
+    formatter_url?: string | null;
   };
   value: {
     type: string;
@@ -56,6 +58,7 @@ export type WikidataReference = {
       id: string;
       label?: string;
       data_type: string | null;
+      formatter_url?: string | null;
     };
     value: {
       type: string;
@@ -81,6 +84,7 @@ export interface WikidataMediaInfo {
 }
 
 type LabelMap = Record<string, string>;
+type FormatterUrlMap = Record<string, string>;
 
 function normalizeLanguageMap(value: Record<string, any> = {}): Record<string, string> {
   return Object.fromEntries(
@@ -143,6 +147,21 @@ function collectIdsFromClaims(claims: Record<string, any[]> = {}): string[] {
   });
 
   return Array.from(ids);
+}
+function collectPropertyIdsFromClaims(claims: Record<string, any[]> = {}): string[] {
+  const ids = new Set<string>();
+
+  Object.entries(claims).forEach(([propertyId, propertyClaims]) => {
+    ids.add(propertyId);
+    propertyClaims.forEach((claim) => {
+      Object.keys(claim.qualifiers || {}).forEach((qualifierPropertyId) => ids.add(qualifierPropertyId));
+      (claim.references || []).forEach((reference: any) => {
+        Object.keys(reference.snaks || {}).forEach((referencePropertyId) => ids.add(referencePropertyId));
+      });
+    });
+  });
+
+  return Array.from(ids).filter((id) => /^P\d+$/.test(id));
 }
 
 function normalizeSnakValue(snak: any, labels: LabelMap) {
@@ -213,29 +232,31 @@ function normalizeSnakValue(snak: any, labels: LabelMap) {
   };
 }
 
-function normalizeQualifier(snak: any, labels: LabelMap): WikidataQualifier {
+function normalizeQualifier(snak: any, labels: LabelMap, formatterUrls: FormatterUrlMap = {}): WikidataQualifier {
   return {
     property: {
       id: snak.property,
       label: labels[snak.property] || snak.property,
       data_type: snak.datatype || null,
+      formatter_url: formatterUrls[snak.property] || null,
     },
     value: normalizeSnakValue(snak, labels),
   };
 }
 
-function normalizeReferencePart(snak: any, labels: LabelMap): WikidataReference["parts"][number] {
+function normalizeReferencePart(snak: any, labels: LabelMap, formatterUrls: FormatterUrlMap = {}): WikidataReference["parts"][number] {
   return {
     property: {
       id: snak.property,
       label: labels[snak.property] || snak.property,
       data_type: snak.datatype || null,
+      formatter_url: formatterUrls[snak.property] || null,
     },
     value: normalizeSnakValue(snak, labels),
   };
 }
 
-function normalizeClaims(claims: Record<string, any[]> = {}, labels: LabelMap): Record<string, WikidataStatement[]> {
+function normalizeClaims(claims: Record<string, any[]> = {}, labels: LabelMap, formatterUrls: FormatterUrlMap = {}): Record<string, WikidataStatement[]> {
   return Object.fromEntries(
     Object.entries(claims).map(([propertyId, propertyClaims]) => [
       propertyId,
@@ -248,16 +269,17 @@ function normalizeClaims(claims: Record<string, any[]> = {}, labels: LabelMap): 
           id: propertyId,
           label: labels[propertyId] || propertyId,
           data_type: claim.mainsnak?.datatype || null,
+          formatter_url: formatterUrls[propertyId] || null,
         },
         value: normalizeSnakValue(claim.mainsnak, labels),
         qualifiers: Object.values(claim.qualifiers || {})
           .flat()
-          .map((qualifier: any) => normalizeQualifier(qualifier, labels)),
+          .map((qualifier: any) => normalizeQualifier(qualifier, labels, formatterUrls)),
         references: (claim.references || []).map((reference: any) => ({
           hash: reference.hash,
           parts: Object.values(reference.snaks || {})
             .flat()
-            .map((snak: any) => normalizeReferencePart(snak, labels)),
+            .map((snak: any) => normalizeReferencePart(snak, labels, formatterUrls)),
         })),
       })),
     ]),
@@ -364,9 +386,10 @@ export class WikidataClient {
       throw new Error(`No Wikidata entity found for ${id}`);
     }
 
-    const [labels, englishTerms] = await Promise.all([
+    const [labels, englishTerms, formatterUrls] = await Promise.all([
       this.getLabels(collectIdsFromClaims(entity.claims)),
       this.getEntityEnglishTerms(id),
+      this.getPropertyFormatterUrls(collectPropertyIdsFromClaims(entity.claims)).catch(() => ({})),
     ]);
 
     return {
@@ -384,11 +407,48 @@ export class WikidataClient {
         ...normalizeAliases(entity.aliases),
         ...normalizeAliases(englishTerms?.aliases),
       },
-      statements: normalizeClaims(entity.claims, labels),
+      statements: normalizeClaims(entity.claims, labels, formatterUrls),
       sitelinks: normalizeSitelinks(entity.sitelinks),
     };
   }
 
+  private async getPropertyFormatterUrls(ids: string[]): Promise<FormatterUrlMap> {
+    const uniqueIds = Array.from(new Set(ids.filter((id) => /^P\d+$/.test(id))));
+    if (!uniqueIds.length) return {};
+
+    const chunks: string[][] = [];
+    for (let i = 0; i < uniqueIds.length; i += 50) {
+      chunks.push(uniqueIds.slice(i, i + 50));
+    }
+
+    const formatterEntries = await Promise.all(
+      chunks.map(async (chunk) => {
+        const response = await fetch(
+          `${API_BASE_URL}?${new URLSearchParams({
+            action: "wbgetentities",
+            ids: chunk.join("|"),
+            props: "claims",
+            format: "json",
+            origin: "*",
+          })}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch property formatter URLs: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return Object.entries(data.entities || {})
+          .map(([propertyId, entity]: [string, any]) => {
+            const formatter = entity?.claims?.P1630?.find((claim: any) => typeof claim?.mainsnak?.datavalue?.value === "string")?.mainsnak?.datavalue?.value;
+            return formatter ? [propertyId, formatter] : null;
+          })
+          .filter(Boolean) as [string, string][];
+      }),
+    );
+
+    return Object.fromEntries(formatterEntries.flat());
+  }
   private async getEntityEnglishTerms(id: string) {
     const response = await fetch(
       `${API_BASE_URL}?${new URLSearchParams({
@@ -542,3 +602,4 @@ export async function searchWikidata(searchTerm: string): Promise<WikidataItem[]
   const client = new WikidataClient();
   return client.searchEntities(searchTerm);
 }
+
