@@ -571,10 +571,15 @@ export default function SearchPage() {
 
   useEffect(() => {
     const initialQuery = getInitialSearchTerm();
-    if (!initialQuery) return;
+    const initialState = getInitialWorkbenchState();
 
     const timeout = window.setTimeout(() => {
-      void runSearch(initialQuery);
+      setActiveTab(normalizeWorkbenchTab(initialState.tab as SearchWorkbenchTab));
+      setGraphFilters(initialState.graphFilters as RelationshipGraphFilters);
+      setSelectedGraphNodeId(initialState.graphFocusId);
+      if (initialQuery) {
+        void runSearch(initialQuery);
+      }
     }, 0);
 
     return () => window.clearTimeout(timeout);
@@ -1410,13 +1415,3 @@ export default function SearchPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-

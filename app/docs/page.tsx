@@ -14,7 +14,7 @@ const sections = [
   {
     icon: Network,
     title: "Graph",
-    body: "The graph tab maps statement values into clickable related entities so exploration feels visual and directional, not just tabular.",
+    body: "The graph tab maps statement values into clickable related entities with selected-edge qualifier and reference summaries, so exploration feels visual, directional, and evidence-grounded.",
   },
   {
     icon: Link2,
@@ -29,8 +29,20 @@ const sections = [
   {
     icon: ShieldCheck,
     title: "Verify",
-    body: "Run lint, build, local smoke checks, and focused route/API tests before shipping portfolio changes.",
+    body: "Run lint, build, local smoke, metadata, e2e, visual QA, screenshot refresh, and route/API checks before shipping portfolio changes.",
   },
+];
+
+const commands = [
+  "npm run dev -- --port 3000",
+  "npm run lint",
+  "npm run build",
+  "npm run smoke",
+  "npm run metadata:check",
+  "npm run test",
+  "npm run e2e",
+  "npm run visual:qa",
+  "npm run screenshots:update",
 ];
 
 export default function DocsPage() {
@@ -66,11 +78,9 @@ export default function DocsPage() {
         <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h2 className="mb-3 text-lg font-semibold">Developer Commands</h2>
           <div className="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-4">
-            <code className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">npm run dev -- --port 3000</code>
-            <code className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">npm run lint</code>
-            <code className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">npm run build</code>
-            <code className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">npm run test</code>
-            <code className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">npm run visual:qa</code>
+            {commands.map((command) => (
+              <code key={command} className="rounded-md bg-slate-100 p-3 dark:bg-slate-800">{command}</code>
+            ))}
           </div>
         </section>
       </div>

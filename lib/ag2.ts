@@ -1,17 +1,11 @@
 import { spawn } from "node:child_process";
-import { ag2ServiceAuthorizationHeader } from "@/lib/ag2-service-auth.mjs";
+import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
+import { ag2ServiceUrl, runRemoteAg2Agent } from "@/lib/ag2-remote-service.mjs";
 import { missingOpenAiApiKeyMessage, hasOpenAiApiKey } from "@/lib/ag2-config.mjs";
 import { ag2RetryDelayMs, normalizeAg2RetryOptions, shouldRetryAg2Error } from "@/lib/ag2-reliability.mjs";
+export { Ag2BridgeError };
 
-export class Ag2BridgeError extends Error {
-  status: number;
 
-  constructor(message: string, status = 500) {
-    super(message);
-    this.name = "Ag2BridgeError";
-    this.status = status;
-  }
-}
 
 type GraphFocusPayload = {
   id: string;
@@ -103,54 +97,11 @@ function ag2RetryOptions() {
   });
 }
 
-function ag2ServiceUrl(): string | null {
-  const rawUrl = process.env.AG2_SERVICE_URL?.trim();
-  if (!rawUrl) return null;
-  return rawUrl.replace(/\/+$/, "");
-}
 
-async function runRemoteAg2Agent(payload: Ag2Payload, timeoutMs: number): Promise<Ag2Result> {
-  const baseUrl = ag2ServiceUrl();
-  if (!baseUrl) throw new Ag2BridgeError("AG2 service URL is not configured.", 500);
-  const authorization = ag2ServiceAuthorizationHeader(process.env);
-  if (!("header" in authorization)) {
-    const message = "error" in authorization && authorization.error ? authorization.error : "AG2 service token is invalid.";
-    const status = "status" in authorization && authorization.status ? authorization.status : 503;
-    throw new Ag2BridgeError(message, status);
-  }
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(new URL("run", baseUrl + "/").toString(), {
-      method: "POST",
-      headers: {
-        authorization: authorization.header,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ payload }),
-      signal: controller.signal,
-    });
-    const data = await response.json().catch(() => ({ error: "AG2 service returned an unreadable response." })) as Ag2Result;
-
-    if (!response.ok || data.ok === false) {
-      throw new Ag2BridgeError(data.error || data.detail || "AG2 service failed.", data.status || response.status || 502);
-    }
-
-    return data;
-  } catch (error) {
-    if (error instanceof Ag2BridgeError) throw error;
-    const message = error instanceof Error ? error.message : "AG2 service request failed.";
-    throw new Ag2BridgeError("Could not reach AG2 service: " + message, 502);
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 async function runAg2AgentOnce(payload: Ag2Payload, timeoutMs = 45000): Promise<Ag2Result> {
   if (ag2ServiceUrl()) {
-    return await runRemoteAg2Agent(payload, timeoutMs);
+    return await runRemoteAg2Agent(payload, { timeoutMs });
   }
 
   if (!hasOpenAiApiKey()) {

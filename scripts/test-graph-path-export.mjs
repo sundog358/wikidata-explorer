@@ -14,6 +14,12 @@ const focus = {
   referenceCount: 2,
   statementId: "Q42$abc",
   value: "human (Q5)",
+  evidenceSummary: {
+    qualifiers: ["statement is subject of: Q42 Q42395533"],
+    references: ["stated in: BnF authorities Q19938912"],
+    qualifierOverflow: 0,
+    referenceOverflow: 1,
+  },
 };
 const createdAt = "2026-06-23T12:00:00.000Z";
 
@@ -23,6 +29,10 @@ assert.match(markdown, /Generated: 2026-06-23T12:00:00.000Z/);
 assert.match(markdown, /Relationship: instance of \(P31\)/);
 assert.match(markdown, /Target: \[human \(Q5\)\]/);
 assert.match(markdown, /Evidence: 2 references; 1 qualifier/);
+assert.match(markdown, /## Evidence Details/);
+assert.match(markdown, /statement is subject of: Q42 Q42395533/);
+assert.match(markdown, /stated in: BnF authorities Q19938912/);
+assert.match(markdown, /\+1 more reference/);
 assert.match(markdown, /Run the graph, verifier, or report AG2 specialist agent/);
 
 const json = JSON.parse(buildGraphPathJsonExport(source, focus, { createdAt }));
@@ -30,6 +40,9 @@ assert.equal(json.artifactType, "selected-graph-path");
 assert.equal(json.source.id, "Q42");
 assert.equal(json.edge.propertyId, "P31");
 assert.equal(json.edge.referenceCount, 2);
+assert.deepEqual(json.edge.evidenceSummary.qualifiers, ["statement is subject of: Q42 Q42395533"]);
+assert.deepEqual(json.edge.evidenceSummary.references, ["stated in: BnF authorities Q19938912"]);
+assert.equal(json.edge.evidenceSummary.referenceOverflow, 1);
 assert.equal(json.target.id, "Q5");
 assert.equal(json.safety.mode, "draft-only");
 

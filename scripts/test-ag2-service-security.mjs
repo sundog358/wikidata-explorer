@@ -29,8 +29,11 @@ assert.deepEqual(ag2ServiceAuthorizationHeader({ AG2_SERVICE_TOKEN: strongToken 
 });
 
 const nextBridge = readFileSync(new URL("../lib/ag2.ts", import.meta.url), "utf8");
-assert.match(nextBridge, /ag2ServiceAuthorizationHeader\(process\.env\)/);
-assert.match(nextBridge, /authorization: authorization\.header/);
+assert.match(nextBridge, /runRemoteAg2Agent\(payload, \{ timeoutMs \}\)/);
+
+const remoteBridge = readFileSync(new URL("../lib/ag2-remote-service.mjs", import.meta.url), "utf8");
+assert.match(remoteBridge, /ag2ServiceAuthorizationHeader\(env\)/);
+assert.match(remoteBridge, /authorization: authorization\.header/);
 
 const service = readFileSync(new URL("../agents/ag2_service.py", import.meta.url), "utf8");
 assert.match(service, /hmac\.compare_digest/);

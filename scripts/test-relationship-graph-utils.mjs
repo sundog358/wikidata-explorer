@@ -3,6 +3,7 @@ import {
   collectRelationshipGraphNodes,
   filterRelationshipGraphNodes,
   graphFocusFromNode,
+  relationshipEvidenceSummary,
   graphPropertyOptions,
   relationshipGraphSummary,
 } from "../lib/relationship-graph-utils.mjs";
@@ -18,7 +19,7 @@ const item = {
         property: { id: "P31", label: "instance of", data_type: "wikibase-item" },
         value: { type: "wikibase-entityid", content: { id: "Q5", label: "human" } },
         qualifiers: [],
-        references: [{ hash: "r1", parts: [] }],
+        references: [{ hash: "r1", parts: [{ property: { id: "P248", label: "stated in", data_type: "wikibase-item" }, value: { type: "wikibase-entityid", content: { id: "Q1", label: "Source record" } } }] }],
       },
     ],
     P279: [
@@ -27,7 +28,7 @@ const item = {
         rank: "preferred",
         property: { id: "P279", label: "subclass of", data_type: "wikibase-item" },
         value: { type: "wikibase-entityid", content: { id: "P361", label: "part of" } },
-        qualifiers: [{ property: { id: "P580", label: "start time", data_type: "time" }, value: { type: "time" } }],
+        qualifiers: [{ property: { id: "P580", label: "start time", data_type: "time" }, value: { type: "time", content: { time: "+1952-03-11T00:00:00Z" } } }],
         references: [],
       },
     ],
@@ -66,7 +67,26 @@ assert.deepEqual(graphFocusFromNode(nodes[0]), {
   referenceCount: 1,
   statementId: "s1",
   value: "human (Q5)",
+  evidenceSummary: {
+    qualifiers: [],
+    references: ["stated in: Source record Q1"],
+    qualifierOverflow: 0,
+    referenceOverflow: 0,
+  },
 });
 assert.match(relationshipGraphSummary(item, nodes, filterRelationshipGraphNodes(nodes, { kind: "item" })), /1 of 2 relationships/);
+assert.deepEqual(relationshipEvidenceSummary(nodes[0]), {
+  qualifiers: [],
+  references: ["stated in: Source record Q1"],
+  qualifierOverflow: 0,
+  referenceOverflow: 0,
+});
+assert.deepEqual(relationshipEvidenceSummary(nodes[1], 0), {
+  qualifiers: [],
+  references: [],
+  qualifierOverflow: 1,
+  referenceOverflow: 0,
+});
+assert.deepEqual(relationshipEvidenceSummary(nodes[1]).qualifiers, ["start time: 1952-03-11"]);
 
 console.log("PASS relationship graph filter tests");

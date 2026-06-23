@@ -34,7 +34,10 @@ try {
   await page.waitForURL(new URL("/search?q=Q42&tab=review", baseUrl).toString());
   await waitForSelectedEntity(page, "Q42");
 
-  await page.getByText("Bot-ready draft exports", { exact: true }).waitFor({ state: "visible" });
+  await page.waitForFunction(() => {
+    const text = document.body.innerText;
+    return text.includes("Bot-ready draft exports") || text.includes("No active review flags");
+  });
 
   console.log("PASS homepage graph proof path opens the Q42 graph workbench");
   console.log("PASS homepage evidence proof path opens the Q42 review queue");

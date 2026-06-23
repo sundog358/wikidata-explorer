@@ -8,6 +8,7 @@ import {
   collectRelationshipGraphNodes,
   filterRelationshipGraphNodes,
   graphFocusFromNode,
+  relationshipEvidenceSummary,
   graphPropertyOptions,
   relationshipGraphSummary,
 } from "@/lib/relationship-graph-utils.mjs";
@@ -50,7 +51,14 @@ export type RelationshipGraphFocus = {
   referenceCount: number;
   statementId: string | null;
   value: string;
+  evidenceSummary?: {
+    qualifiers: string[];
+    references: string[];
+    qualifierOverflow: number;
+    referenceOverflow: number;
+  };
 };
+
 
 type RelationshipGraphProps = {
   item: WikidataItem;
@@ -138,6 +146,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
   const nodes = useMemo(() => positionNodes(matchingNodes.slice(0, 14)), [matchingNodes]);
   const propertyOptions = useMemo(() => graphPropertyOptions(allNodes), [allNodes]);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
+  const selectedEvidenceSummary = selectedNode ? relationshipEvidenceSummary(selectedNode) : null;
   const hoveredNode = nodes.find((node) => node.id === hoveredNodeId) || null;
   const previewNode = hoveredNode || selectedNode;
   const hasActiveFilters = Object.entries(filters).some(([key, value]) => DEFAULT_RELATIONSHIP_GRAPH_FILTERS[key as keyof typeof DEFAULT_RELATIONSHIP_GRAPH_FILTERS] !== value);
@@ -356,6 +365,33 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                     <div className="mt-1 text-slate-700 dark:text-slate-200">{evidenceLabel(selectedNode)}</div>
                   </div>
                 </div>
+
+                {selectedEvidenceSummary && (selectedEvidenceSummary.qualifiers.length > 0 || selectedEvidenceSummary.references.length > 0) && (
+                  <div className="mt-4 grid gap-3 text-sm lg:grid-cols-2" data-testid="graph-edge-evidence-summary">
+                    {selectedEvidenceSummary.qualifiers.length > 0 && (
+                      <div className="rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Qualifiers</div>
+                        <ul className="space-y-1 text-slate-700 dark:text-slate-200">
+                          {selectedEvidenceSummary.qualifiers.map((qualifier: string) => (
+                            <li key={qualifier}>{qualifier}</li>
+                          ))}
+                          {selectedEvidenceSummary.qualifierOverflow > 0 && <li className="text-slate-500 dark:text-slate-400">+{selectedEvidenceSummary.qualifierOverflow} more</li>}
+                        </ul>
+                      </div>
+                    )}
+                    {selectedEvidenceSummary.references.length > 0 && (
+                      <div className="rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">References</div>
+                        <ul className="space-y-1 text-slate-700 dark:text-slate-200">
+                          {selectedEvidenceSummary.references.map((reference: string) => (
+                            <li key={reference}>{reference}</li>
+                          ))}
+                          {selectedEvidenceSummary.referenceOverflow > 0 && <li className="text-slate-500 dark:text-slate-400">+{selectedEvidenceSummary.referenceOverflow} more</li>}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-sm text-slate-600 dark:text-slate-300">
@@ -388,7 +424,3 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
     </div>
   );
 }
-
-
-
-

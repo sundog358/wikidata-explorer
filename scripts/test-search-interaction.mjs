@@ -49,6 +49,11 @@ try {
   }
 
   await page.getByTestId("graph-focus-Q5").click();
+  const graphEdgeEvidence = await page.getByTestId("graph-edge-evidence-summary").innerText();
+  const graphEdgeEvidenceText = graphEdgeEvidence.toLowerCase();
+  if (!graphEdgeEvidenceText.includes("references") || !graphEdgeEvidenceText.includes("stated in")) {
+    throw new Error(`Expected selected graph edge evidence to show concrete references, got ${graphEdgeEvidence}`);
+  }
   if (aiEnabled) {
     const graphFocus = await page.getByTestId("agent-graph-focus").innerText();
     if (!graphFocus.includes("P31") || !graphFocus.includes("Q5")) {
@@ -64,6 +69,11 @@ try {
   const graphPathSummary = await page.getByTestId("graph-path-export-summary").innerText();
   if (!graphPathSummary.includes("Douglas Adams") || !graphPathSummary.includes("P31") || !graphPathSummary.includes("human")) {
     throw new Error(`Expected graph path export to summarize Q42 -> Q5, got ${graphPathSummary}`);
+  }
+
+  const graphMarkdownExport = await page.locator('textarea[aria-label="Graph path Markdown export"]').inputValue();
+  if (!graphMarkdownExport.includes("## Evidence Details") || !graphMarkdownExport.includes("stated in")) {
+    throw new Error(`Expected graph path Markdown export to include evidence details, got ${graphMarkdownExport}`);
   }
 
   const graphTarget = page
@@ -102,11 +112,11 @@ try {
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");
+  console.log("PASS selected graph edge evidence shows concrete references");
+  console.log("PASS selected graph path export includes evidence details");
   console.log("PASS selected graph path export summarizes the chosen edge");
   console.log("PASS search graph interaction selects Q5 from Q42");
   console.log("PASS direct PID lookup selects P31");
 } finally {
   await browser.close().catch(() => {});
 }
-
-

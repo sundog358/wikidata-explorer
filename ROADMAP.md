@@ -24,6 +24,7 @@ The project already has a strong base:
 - Container-ready AG2 FastAPI service for hosting agents outside Vercel through `AG2_SERVICE_URL`, protected by a shared bearer token
 - Grounded AG2 entity summaries and specialist workflows generated from visible, fetched, or selected graph-edge Wikidata context
 - Bounded AG2 bridge missing-key guard and retry/backoff for provider/runtime failures
+- Mocked remote AG2 service contract coverage for `/run` success responses, bearer auth, and sanitized service failures
 - Browser-local AG2 agent run history for revisiting research, graph, next-entity suggestions, verifier, comparison, and report outputs
 - Wikidata Action API, Wikibase REST API, and Commons media integration
 - Clickable relationship graph for selected entities with shareable URL-backed filters and selected graph focus, hover previews, rank badges, selected-edge details, and selected-path Markdown/JSON exports
@@ -33,7 +34,7 @@ The project already has a strong base:
 - Bot-ready draft exports for review findings, task status, formatter-aware source hints, and clickable source-link context as safe QuickStatements comments and Markdown curation notes, plus graph path exports for handoff/report context
 - Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
 - Route smoke checks, API contract checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots with console/page-error detection, and GitHub Actions CI
-- Cleaned repo presentation with tracked portfolio screenshots and production trace checks that exclude repo clutter and local bot files
+- Cleaned repo presentation with tracked portfolio screenshots, production trace checks, public metadata, robots/sitemap routes, and generated social preview coverage
 
 ## 🚦 Near-Term Priorities
 
@@ -82,6 +83,7 @@ Goal: help users evaluate data quality, not just browse facts.
 ### Immediate
 
 - Keep `npm run verify`, `npm run smoke`, `npm run e2e`, and `npm run visual:qa` green
+- Keep the mocked remote AG2 service contract green as container hosting changes
 - Add unit coverage for Wikidata normalization helpers beyond ID and sitelink utilities
 - Keep direct PID lookup e2e coverage for `/search?q=P31` green
 - Keep API contract coverage for chat validation, workflow safety, and missing-key behavior green
@@ -105,7 +107,7 @@ Goal: help users evaluate data quality, not just browse facts.
 
 - Deploy the Next.js app with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false` and `ENABLE_AI_AGENTS=false` for the first public demo
 - Add a deployment badge and production URL to the README
-- Add basic metadata and social preview image
+- Keep `NEXT_PUBLIC_SITE_URL`, robots, sitemap, and social-preview metadata accurate for the deployed origin
 - Confirm Wikidata and Commons API calls behave correctly from deployed origin
 - Keep `npm run trace:check` green so deployed API route traces include the AG2 bridge without bundling local repo clutter
 
@@ -116,7 +118,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the AG2 service host
 - Enable `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, and `AG2_SERVICE_URL=https://...` for AI-enabled demos
 - Keep FastAPI docs disabled in production with `AG2_ENABLE_DOCS=false`
-- Add a mocked success contract test for the remote AG2 bridge before using the service in production demos
+- Keep the mocked remote AG2 bridge success contract green before using the service in production demos
 
 ### Observability
 
@@ -156,7 +158,7 @@ Goal: help users evaluate data quality, not just browse facts.
 ### Milestone 4: Public Portfolio Launch
 
 - Public Vercel deployment with AI safely disabled by default
-- README badges and deployment link
+- README badges, deployment link, and deployed metadata check evidence
 - Short case-study section explaining public-first feature flags, AG2 container tradeoffs, and testing strategy
 - CI artifacts and screenshots linked from README
 - Optional AI-enabled demo backed by the containerized AG2 service

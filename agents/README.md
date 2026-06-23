@@ -45,3 +45,11 @@ AG2_SERVICE_TOKEN=replace-with-a-random-32-plus-character-secret
 - Set `AI_AGENT_RATE_LIMIT_MAX` and `AI_AGENT_RATE_LIMIT_WINDOW_MS` on the Next.js deployment for public AI-enabled demos.
 
 The service keeps provider credentials in the container environment, runs as a non-root user, disables FastAPI docs by default, and exposes only a bounded, bearer-token-protected `/run` endpoint for the validated payloads already used by the Next.js API routes.
+
+## Contract Proof
+
+Run the mocked remote bridge contract without provider credentials:
+
+```bash
+node scripts/test-ag2-remote-service.mjs
+```

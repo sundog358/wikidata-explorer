@@ -26,6 +26,9 @@ jobs:
       - name: Verify
         run: npm run verify
 
+      - name: Deploy environment check
+        run: npm run deploy:check
+
       - name: Check production trace
         run: npm run trace:check
 
@@ -50,6 +53,11 @@ jobs:
         run: npm run smoke
         env:
           SMOKE_BASE_URL: http://localhost:3000
+
+      - name: Public metadata
+        run: npm run metadata:check
+        env:
+          METADATA_BASE_URL: http://localhost:3000
 
       - name: API contract tests
         run: npm run api:contracts

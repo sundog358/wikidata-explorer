@@ -8,7 +8,7 @@ The public demo is designed to ship safely on Vercel with AI disabled by default
 
 - 🔎 Search Wikidata by keyword or direct entity/property ID such as `Q42` or `P31`
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
-- 🕸️ Explore a clickable relationship graph with URL-backed filters, hover previews, selected-edge details, and selected-path Markdown/JSON exports
+- 🕸️ Explore a clickable relationship graph with URL-backed filters, hover previews, selected-edge qualifier/reference summaries, and selected-path Markdown/JSON exports
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
@@ -17,9 +17,18 @@ The public demo is designed to ship safely on Vercel with AI disabled by default
 - 🧾 Inspect statement ranks, qualifiers, and references in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
 - 🧑‍⚖️ Review entity data-quality findings with persisted browser-local task status and source-link hints
-- 📤 Export selected graph paths, review findings, task status, source hints, and safe QuickStatements draft comments
+- 📤 Export evidence-grounded graph paths, review findings, task status, source hints, and safe QuickStatements draft comments
 - 🛡️ Classify specialist workflows through a tested autonomy safety layer before future bot/draft actions
 - ✅ Verify changes with lint, unit tests, production build, trace checks, route smoke tests, API contracts, e2e interaction tests, visual QA, and GitHub Actions
+
+## 🧭 Portfolio Case Study
+
+Wikidata Explorer is built to answer a focused research question: how quickly can someone start from one Wikidata entity and understand the trustworthy graph around it?
+
+- **Product decision:** lead with a fast public Next.js explorer, then route reviewers into seeded proof paths for Q42 graph context and evidence review.
+- **Data depth:** normalize Wikidata labels, statements, qualifiers, references, ranks, media, and language coverage into inspectable UI instead of flattening everything into generic search results.
+- **AI boundary:** keep AG2 agents feature-flagged and server-side so the public demo remains reliable while the Python/container runtime can be enabled for richer research workflows.
+- **Trust story:** pair graph and curation exports with autonomy-safety gates, route/API contracts, a mocked remote AG2 service contract, browser e2e checks, visual QA screenshots, and deployment trace checks.
 
 ## 🧰 Tech Stack
 
@@ -112,14 +121,16 @@ npm run test
 npm run build
 npm run verify
 npm run smoke
+npm run metadata:check
 npm run deploy:check
 npm run api:contracts
 npm run e2e
 npm run visual:qa
+npm run screenshots:update
 npm run trace:check
 ```
 
-`npm run deploy:check` validates the default public Vercel AI-off environment. Use `npm run deploy:check -- --mode=ai-container` before an AI-enabled container deployment. `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` expect the app to be running locally. In public AI-off mode, API contracts assert fail-closed disabled responses and visual QA captures the disabled chat/agents states. In AI-enabled mode, the same scripts check the AG2 route validation and visible agent workbench.
+`npm run deploy:check` validates the default public Vercel AI-off environment and warns when `NEXT_PUBLIC_SITE_URL` is missing for production metadata. Use `npm run deploy:check -- --mode=ai-container` before an AI-enabled container deployment. `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` expect the app to be running locally. In public AI-off mode, API contracts assert fail-closed disabled responses and visual QA captures the disabled chat/agents states. In AI-enabled mode, the same scripts check the AG2 route validation and visible agent workbench.
 
 Override local targets when needed:
 
@@ -128,6 +139,7 @@ $env:SMOKE_BASE_URL = "http://localhost:3000"
 $env:API_CONTRACT_BASE_URL = "http://localhost:3000"
 $env:E2E_BASE_URL = "http://localhost:3000"
 $env:VISUAL_QA_BASE_URL = "http://localhost:3000"
+$env:METADATA_BASE_URL = "http://localhost:3000"
 npm run smoke
 npm run e2e
 npm run visual:qa
@@ -135,45 +147,50 @@ npm run visual:qa
 
 ## 🖼️ Portfolio Screenshots
 
-These tracked screenshots are refreshed from the visual QA flow. `npm run visual:qa` also captures current QA views under `.tmp/visual-qa` and fails on horizontal overflow or browser console/page errors.
+These tracked screenshots are refreshed from the visual QA flow. Run `npm run visual:qa`, then `npm run screenshots:update` to copy the canonical portfolio views from `.tmp/visual-qa` into `docs/screenshots`. Visual QA fails on horizontal overflow or browser console/page errors.
 
 | View | Screenshot | What it proves |
 | --- | --- | --- |
-| 🏠 Home | ![Home desktop](docs/screenshots/home-desktop.png) | The first screen explains the product quickly and routes users into search. |
-| 🕸️ Q42 graph | ![Q42 relationship graph desktop](docs/screenshots/search-q42-graph-desktop.png) | The main explorer loads Wikidata data, prefers stable English labels, and renders a clickable relationship graph. |
+| 🏠 Home | ![Home desktop](docs/screenshots/home-desktop.png) | The first screen explains the product quickly and routes users into search, graph context, and evidence review. |
+| 🕸️ Q42 graph | ![Q42 relationship graph desktop](docs/screenshots/search-q42-graph-desktop.png) | The main explorer loads Wikidata data, prefers stable English labels, and renders a clickable relationship graph with evidence-grounded selected edges. |
 | 🤖 Research assistant | ![Research assistant desktop](docs/screenshots/research-assistant-desktop.png) | The AG2 chat surface is available in AI-enabled mode and disabled intentionally in public mode. |
 | 📱 Mobile search | ![Q42 search mobile](docs/screenshots/search-q42-mobile.png) | The core explorer remains usable on a narrow viewport without horizontal overflow. |
 
 ## 🚢 Public Deployment Plan
 
 1. Run `npm run deploy:check` and confirm the public Vercel AI-off environment is clean.
-2. Deploy the Next.js app to Vercel with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false` and `ENABLE_AI_AGENTS=false`.
-3. Add the public Vercel URL and badge to this README after the first successful deploy.
+2. Deploy the Next.js app to Vercel with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false`, `ENABLE_AI_AGENTS=false`, and `NEXT_PUBLIC_SITE_URL=https://your-demo-url`.
+3. Run `npm run metadata:check` against the deployed URL, then add the public Vercel URL and badge to this README after the first successful deploy.
 4. Deploy `agents/Dockerfile` to a container host when ready to demo live AG2 agents.
 5. Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the container host.
-6. Run `npm run deploy:check -- --mode=ai-container` before enabling the AI container path.
+6. Keep `node scripts/test-ag2-remote-service.mjs` green, then run `npm run deploy:check -- --mode=ai-container` before enabling the AI container path.
 7. Enable AI by setting `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, `AG2_SERVICE_URL=https://...`, and rate limits such as `AI_AGENT_RATE_LIMIT_MAX=20`, then redeploy the Next.js app.
 
 ## 🗂️ Project Structure
 
 - `app/page.tsx`: first-screen search entry point
+- `app/opengraph-image.tsx`: generated 1200x630 social preview for shared portfolio links
+- `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
 - `app/search/page.tsx`: main Wikidata explorer workflow, selected graph path exports, graph focus, data-quality summary, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
 - `app/api/entity-summary/route.ts`: feature-flagged grounded entity summary endpoint
 - `app/api/ag2-workflow/route.ts`: feature-flagged specialist workflow endpoint with autonomy safety gating
-- `components/relationship-graph.tsx`: clickable, filterable entity relationship visualization with controlled filter state
+- `components/relationship-graph.tsx`: clickable, filterable entity relationship visualization with controlled filter state and selected-edge evidence summaries
 - `components/nav/main-nav.tsx`: primary nav with AI links hidden unless the AI feature flag is enabled
 - `lib/wikidata.ts`: Wikidata API client and normalization helpers
+- `lib/site-config.mjs`: shared portfolio metadata, public URL, and social-preview configuration
 - `lib/ai-feature-flags.mjs`: shared public/server AI feature flag helper
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
-- `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers
+- `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and formatter-aware external IDs
 - `lib/search-url-state.mjs`: tested shareable tab, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
 - `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, token-authenticated remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
+- `lib/ag2-remote-service.mjs`: tested remote AG2 service client for `/run` payloads, bearer auth, success responses, and service error mapping
+- `lib/ag2-errors.mjs`: shared AG2 bridge error type for local and remote runtime failures
 - `lib/ag2-service-auth.mjs`: shared AG2 service bearer-token validation helper
 - `lib/ai-rate-limit.mjs`: in-memory public AI route throttling helper
 - `agents/wikidata_ag2_agent.py`: bounded AG2 agent bridge for chat, research, graph analysis, suggestions, verification, comparison, and reports
@@ -182,19 +199,22 @@ These tracked screenshots are refreshed from the visual QA flow. `npm run visual
 - `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
+- `scripts/test-ag2-remote-service.mjs`: mocked AG2 container contract test for remote `/run` success, auth, and sanitized service failures
 - `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
+- `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
 - `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, graph filtering, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, route-surface, layout overflow, and browser console/page-error checks
+- `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA
 - `ROADMAP.md`: forward-looking product and engineering plan
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` with the local dev server running to catch route, interaction, console, hydration, and layout regressions.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, and social preview image. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` with the local dev server running to catch route, interaction, console, hydration, and layout regressions. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
-CI also runs install, verify, production trace checks, smoke, API contracts, e2e, visual QA, and screenshot artifact upload on GitHub Actions.
+CI also runs install, verify, production trace checks, smoke, public metadata checks, API contracts, e2e, visual QA, and screenshot artifact upload on GitHub Actions.
 
 ## 🗺️ Roadmap
 
