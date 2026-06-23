@@ -27,6 +27,7 @@ The project already has a strong base:
 - Stable English label fallback for multilingual Wikidata records
 - Expandable statement evidence for ranks, qualifiers, and references
 - Evidence review queue seeded from deprecated and unreferenced visible statements
+- Bot-ready draft exports for review findings as safe QuickStatements comments and Markdown curation notes
 - Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
 - Route smoke checks, unit tests, AG2 workflow validation, graph-click/evidence e2e test, visual QA screenshots, and GitHub Actions CI
 - Cleaned repo presentation with tracked portfolio screenshots
@@ -60,7 +61,7 @@ Goal: make AG2 assistance grounded in visible and fetched Wikidata context throu
 - Add citation-style references to Wikidata IDs in AI responses
 - Persist agent result history beyond browser-local storage when a database layer is introduced
 - Add a “suggest next entities to inspect” action from the graph
-- Expand safety copy and policy UI for draft exports, bot-ready actions, and human approval states
+- Expand safety copy and policy UI for future live bot-ready actions, source requirements, and human approval states
 
 ### 4. Evidence And Trust
 
@@ -71,7 +72,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Add badges for referenced vs unreferenced claims
 - Add source links where references include URLs, identifiers, or stated-in records
 - Add a data-quality summary for each entity
-- Promote review queue findings into saved, exportable curation tasks
+- Promote review queue findings into persisted, source-backed curation tasks
 
 ## 🧪 Testing And Quality Roadmap
 

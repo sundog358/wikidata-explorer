@@ -9,7 +9,7 @@
     "lint": "eslint . --max-warnings=0",
     "verify": "npm run lint && npm run test && npm run build",
     "smoke": "node scripts/smoke-routes.mjs",
-    "test": "node scripts/test-wikidata-utils.mjs && node scripts/test-autonomy-safety.mjs",
+    "test": "node scripts/test-wikidata-utils.mjs && node scripts/test-autonomy-safety.mjs && node scripts/test-curation-export.mjs",
     "visual:qa": "node scripts/visual-qa.mjs",
     "e2e": "node scripts/test-search-interaction.mjs"
   },
@@ -39,4 +39,3 @@
     "typescript": "^5.7.3"
   }
 }
-

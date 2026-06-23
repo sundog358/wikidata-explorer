@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
+import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
 import { RelationshipGraph } from "@/components/relationship-graph";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +51,15 @@ type SavedAgentRun = {
   safety?: AgentSafetyState;
   compareEntityId?: string;
   createdAt: string;
+};
+
+type DraftSafetyState = {
+  allowed: boolean;
+  decisionLabel: string;
+  risk: string;
+  modeLabel: string;
+  reasons: string[];
+  requiredControls: string[];
 };
 
 type ReviewQueueItem = {
@@ -289,6 +300,7 @@ export default function SearchPage() {
   const [compareEntityId, setCompareEntityId] = useState("Q80");
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
+  const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const storageHydratedRef = useRef(false);
 
@@ -382,6 +394,31 @@ export default function SearchPage() {
   }, [savedAgentRuns, selectedItem]);
 
   const reviewQueue = useMemo(() => buildReviewQueue(selectedItem, dismissedReviewIds), [dismissedReviewIds, selectedItem]);
+  const draftSafety = useMemo<DraftSafetyState>(() => evaluateAutonomyAction({
+    action: "quickstatements_draft",
+    mode: "draft_only",
+    entityId: selectedItem?.id,
+    batchSize: Math.max(1, reviewQueue.length),
+    dryRun: true,
+  }), [reviewQueue.length, selectedItem?.id]);
+  const quickStatementsDraft = useMemo(() => buildQuickStatementsReviewDraft(reviewQueue, {
+    entityId: selectedItem?.id,
+    entityLabel: getEntityLabel(selectedItem),
+  }), [reviewQueue, selectedItem]);
+  const markdownDraft = useMemo(() => buildReviewMarkdownExport(reviewQueue, {
+    entityId: selectedItem?.id,
+    entityLabel: getEntityLabel(selectedItem),
+  }), [reviewQueue, selectedItem]);
+
+  async function copyDraftToClipboard(label: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedDraft(label);
+      window.setTimeout(() => setCopiedDraft(null), 1800);
+    } catch {
+      setError(`Could not copy ${label}. Your browser may require manual selection.`);
+    }
+  }
 
   const runSearch = useCallback(async (rawQuery: string) => {
     const query = rawQuery.trim();
@@ -946,6 +983,47 @@ export default function SearchPage() {
                             Dismiss Visible
                           </Button>
                         </div>
+
+                        <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900">
+                          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <div className="font-semibold text-slate-950 dark:text-slate-50">Bot-ready draft exports</div>
+                              <p className="mt-1 text-slate-600 dark:text-slate-300">
+                                Export review findings as safe draft artifacts. QuickStatements rows are commented out until a human adds sources and approves live edits.
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant={draftSafety.allowed ? "secondary" : "destructive"}>{draftSafety.decisionLabel}</Badge>
+                              <Badge variant="outline">{draftSafety.risk} risk</Badge>
+                            </div>
+                          </div>
+                          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
+                            <div className="font-semibold">{draftSafety.modeLabel}</div>
+                            <div className="mt-1">{draftSafety.reasons[0]}</div>
+                            <div className="mt-2 text-emerald-800 dark:text-emerald-200">Controls: {draftSafety.requiredControls.join("; ")}</div>
+                          </div>
+                          <div className="grid gap-3 xl:grid-cols-2">
+                            <div>
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">QuickStatements draft</span>
+                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("QuickStatements draft", quickStatementsDraft)}>
+                                  {copiedDraft === "QuickStatements draft" ? "Copied" : "Copy"}
+                                </Button>
+                              </div>
+                              <textarea readOnly value={quickStatementsDraft} className="h-40 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="QuickStatements draft export" />
+                            </div>
+                            <div>
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Markdown review notes</span>
+                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Markdown review notes", markdownDraft)}>
+                                  {copiedDraft === "Markdown review notes" ? "Copied" : "Copy"}
+                                </Button>
+                              </div>
+                              <textarea readOnly value={markdownDraft} className="h-40 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Markdown review notes export" />
+                            </div>
+                          </div>
+                        </div>
+
                         {reviewQueue.map((item) => (
                           <div key={item.id} className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
                             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -1011,5 +1089,3 @@ export default function SearchPage() {
     </div>
   );
 }
-
-
