@@ -21,7 +21,7 @@ The project already has a strong base:
 - Next.js 16 App Router and React 19 stable
 - AG2-backed research assistant with server-side OpenAI key handling
 - Grounded AG2 entity summaries and specialist workflows generated from visible or fetched Wikidata context
-- Bounded AG2 bridge retry/backoff for transient provider/runtime failures
+- Bounded AG2 bridge missing-key guard and retry/backoff for provider/runtime failures
 - Browser-local AG2 agent run history for revisiting research, graph, verifier, comparison, and report outputs
 - Wikidata Action API, Wikibase REST API, and Commons media integration
 - Clickable relationship graph for selected entities with filters, hover previews, rank badges, and selected-edge details
@@ -30,7 +30,7 @@ The project already has a strong base:
 - Evidence review queue seeded from deprecated and unreferenced visible statements
 - Bot-ready draft exports for review findings as safe QuickStatements comments and Markdown curation notes
 - Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
-- Route smoke checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots, and GitHub Actions CI
+- Route smoke checks, API contract checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots, and GitHub Actions CI
 - Cleaned repo presentation with tracked portfolio screenshots and production trace checks that exclude repo clutter and local bot files
 
 ## 🚦 Near-Term Priorities
@@ -82,7 +82,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Keep `npm run verify`, `npm run smoke`, `npm run e2e`, and `npm run visual:qa` green
 - Add unit coverage for Wikidata normalization helpers beyond ID and sitelink utilities
 - Keep direct PID lookup e2e coverage for `/search?q=P31` green
-- Add e2e coverage for chat validation and missing-key behavior
+- Keep API contract coverage for chat validation, workflow safety, and missing-key behavior green
 
 ### Next
 
@@ -95,7 +95,7 @@ Goal: help users evaluate data quality, not just browse facts.
 
 - Add performance budgets for `/search?q=Q42`
 - Add accessibility checks for keyboard graph navigation and tab order
-- Add API contract tests for `/api/chat`
+- Expand API contract tests for successful mocked AG2 responses once a route-mocking harness exists
 
 ## 🚀 Deployment Roadmap
 

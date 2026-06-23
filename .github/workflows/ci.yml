@@ -51,6 +51,11 @@ jobs:
         env:
           SMOKE_BASE_URL: http://localhost:3000
 
+      - name: API contract tests
+        run: npm run api:contracts
+        env:
+          API_CONTRACT_BASE_URL: http://localhost:3000
+
       - name: Search interaction test
         run: npm run e2e
         env:

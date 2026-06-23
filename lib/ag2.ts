@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { missingOpenAiApiKeyMessage, hasOpenAiApiKey } from "@/lib/ag2-config.mjs";
 import { ag2RetryDelayMs, normalizeAg2RetryOptions, shouldRetryAg2Error } from "@/lib/ag2-reliability.mjs";
 
 export class Ag2BridgeError extends Error {
@@ -86,6 +87,10 @@ function ag2RetryOptions() {
 }
 
 async function runAg2AgentOnce(payload: Ag2Payload, timeoutMs = 45000): Promise<Ag2Result> {
+  if (!hasOpenAiApiKey()) {
+    throw new Ag2BridgeError(missingOpenAiApiKeyMessage(), 503);
+  }
+
   const { command, args } = pythonCommand();
   const scriptPath = "agents/wikidata_ag2_agent.py";
   const child = spawn(command, [...args, scriptPath], {
