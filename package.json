@@ -11,6 +11,7 @@
     "smoke": "node scripts/smoke-routes.mjs",
     "test": "node scripts/test-wikidata-utils.mjs && node scripts/test-autonomy-safety.mjs && node scripts/test-curation-export.mjs && node scripts/test-ag2-reliability.mjs && node scripts/test-main-nav.mjs && node scripts/test-relationship-graph-utils.mjs",
     "visual:qa": "node scripts/visual-qa.mjs",
+    "trace:check": "node scripts/test-deployment-trace.mjs",
     "e2e": "node scripts/test-search-interaction.mjs"
   },
   "dependencies": {

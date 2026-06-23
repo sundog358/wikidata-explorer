@@ -26,6 +26,9 @@ jobs:
       - name: Verify
         run: npm run verify
 
+      - name: Check production trace
+        run: npm run trace:check
+
       - name: Setup Chrome
         id: setup-chrome
         uses: browser-actions/setup-chrome@v1

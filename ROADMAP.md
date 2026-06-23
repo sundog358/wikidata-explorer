@@ -31,7 +31,7 @@ The project already has a strong base:
 - Bot-ready draft exports for review findings as safe QuickStatements comments and Markdown curation notes
 - Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
 - Route smoke checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots, and GitHub Actions CI
-- Cleaned repo presentation with tracked portfolio screenshots
+- Cleaned repo presentation with tracked portfolio screenshots and production trace checks that exclude repo clutter and local bot files
 
 ## 🚦 Near-Term Priorities
 
@@ -105,6 +105,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Add a deployment badge and production URL to the README
 - Add basic metadata and social preview image
 - Confirm Wikidata and Commons API calls behave correctly from deployed origin
+- Keep `npm run trace:check` green so deployed API route traces include the AG2 bridge without bundling local repo clutter
 
 ### Observability
 
