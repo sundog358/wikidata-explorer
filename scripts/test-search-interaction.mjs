@@ -41,7 +41,21 @@ try {
     throw new Error(`Expected graph click to select Q5, got ${selectedEntity}`);
   }
 
+  await page.goto(new URL("/search?q=P31", baseUrl).toString(), {
+    waitUntil: "commit",
+  });
+  await page.waitForFunction(() => {
+    const node = document.querySelector('[data-testid="selected-entity-id"]');
+    return node?.textContent?.trim() === "P31";
+  });
+
+  const selectedProperty = await page.getByTestId("selected-entity-id").innerText();
+  if (selectedProperty.trim() !== "P31") {
+    throw new Error(`Expected direct PID lookup to select P31, got ${selectedProperty}`);
+  }
+
   console.log("PASS search graph interaction selects Q5 from Q42");
+  console.log("PASS direct PID lookup selects P31");
 } finally {
   await browser.close().catch(() => {});
 }

@@ -30,7 +30,7 @@ The project already has a strong base:
 - Evidence review queue seeded from deprecated and unreferenced visible statements
 - Bot-ready draft exports for review findings as safe QuickStatements comments and Markdown curation notes
 - Tested autonomy safety policy that gates read-only, draft, supervised bot, sandbox bot, and critical write actions
-- Route smoke checks, unit tests, AG2 workflow validation, graph-click/evidence e2e test, visual QA screenshots, and GitHub Actions CI
+- Route smoke checks, unit tests, AG2 workflow validation, graph-click/direct PID/evidence e2e tests, visual QA screenshots, and GitHub Actions CI
 - Cleaned repo presentation with tracked portfolio screenshots
 
 ## 🚦 Near-Term Priorities
@@ -81,7 +81,7 @@ Goal: help users evaluate data quality, not just browse facts.
 
 - Keep `npm run verify`, `npm run smoke`, `npm run e2e`, and `npm run visual:qa` green
 - Add unit coverage for Wikidata normalization helpers beyond ID and sitelink utilities
-- Add e2e coverage for direct PID lookup such as `/search?q=P31`
+- Keep direct PID lookup e2e coverage for `/search?q=P31` green
 - Add e2e coverage for chat validation and missing-key behavior
 
 ### Next
