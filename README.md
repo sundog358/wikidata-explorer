@@ -112,13 +112,14 @@ npm run test
 npm run build
 npm run verify
 npm run smoke
+npm run deploy:check
 npm run api:contracts
 npm run e2e
 npm run visual:qa
 npm run trace:check
 ```
 
-`npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` expect the app to be running locally. In public AI-off mode, API contracts assert fail-closed disabled responses and visual QA captures the disabled chat/agents states. In AI-enabled mode, the same scripts check the AG2 route validation and visible agent workbench.
+`npm run deploy:check` validates the default public Vercel AI-off environment. Use `npm run deploy:check -- --mode=ai-container` before an AI-enabled container deployment. `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` expect the app to be running locally. In public AI-off mode, API contracts assert fail-closed disabled responses and visual QA captures the disabled chat/agents states. In AI-enabled mode, the same scripts check the AG2 route validation and visible agent workbench.
 
 Override local targets when needed:
 
@@ -145,11 +146,13 @@ These tracked screenshots are refreshed from the visual QA flow. `npm run visual
 
 ## 🚢 Public Deployment Plan
 
-1. Deploy the Next.js app to Vercel with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false` and `ENABLE_AI_AGENTS=false`.
-2. Add the public Vercel URL and badge to this README after the first successful deploy.
-3. Deploy `agents/Dockerfile` to a container host when ready to demo live AG2 agents.
-4. Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the container host.
-5. Enable AI by setting `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, `AG2_SERVICE_URL=https://...`, and rate limits such as `AI_AGENT_RATE_LIMIT_MAX=20`, then redeploy the Next.js app.
+1. Run `npm run deploy:check` and confirm the public Vercel AI-off environment is clean.
+2. Deploy the Next.js app to Vercel with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false` and `ENABLE_AI_AGENTS=false`.
+3. Add the public Vercel URL and badge to this README after the first successful deploy.
+4. Deploy `agents/Dockerfile` to a container host when ready to demo live AG2 agents.
+5. Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the container host.
+6. Run `npm run deploy:check -- --mode=ai-container` before enabling the AI container path.
+7. Enable AI by setting `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, `AG2_SERVICE_URL=https://...`, and rate limits such as `AI_AGENT_RATE_LIMIT_MAX=20`, then redeploy the Next.js app.
 
 ## 🗂️ Project Structure
 
@@ -176,6 +179,7 @@ These tracked screenshots are refreshed from the visual QA flow. `npm run visual
 - `agents/wikidata_ag2_agent.py`: bounded AG2 agent bridge for chat, research, graph analysis, suggestions, verification, comparison, and reports
 - `agents/ag2_service.py`: token-protected FastAPI wrapper for the containerized AG2 runtime
 - `agents/Dockerfile`: Docker image for hosting the AG2 service outside Vercel
+- `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
 - `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests

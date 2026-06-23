@@ -9,11 +9,12 @@
     "lint": "eslint . --max-warnings=0",
     "verify": "npm run lint && npm run test && npm run build",
     "smoke": "node scripts/smoke-routes.mjs",
-    "test": "node scripts/test-wikidata-utils.mjs && node scripts/test-autonomy-safety.mjs && node scripts/test-curation-export.mjs && node scripts/test-review-source-hints.mjs && node scripts/test-data-quality.mjs && node scripts/test-ag2-reliability.mjs && node scripts/test-ag2-config.mjs && node scripts/test-ai-feature-flags.mjs && node scripts/test-ai-rate-limit.mjs && node scripts/test-ag2-service-security.mjs && node scripts/test-main-nav.mjs && node scripts/test-relationship-graph-utils.mjs && node scripts/test-graph-path-export.mjs && node scripts/test-search-url-state.mjs",
+    "test": "node scripts/test-wikidata-utils.mjs && node scripts/test-autonomy-safety.mjs && node scripts/test-curation-export.mjs && node scripts/test-review-source-hints.mjs && node scripts/test-data-quality.mjs && node scripts/test-ag2-reliability.mjs && node scripts/test-ag2-config.mjs && node scripts/test-ai-feature-flags.mjs && node scripts/test-deploy-env-validation.mjs && node scripts/test-ai-rate-limit.mjs && node scripts/test-ag2-service-security.mjs && node scripts/test-main-nav.mjs && node scripts/test-relationship-graph-utils.mjs && node scripts/test-graph-path-export.mjs && node scripts/test-search-url-state.mjs",
     "visual:qa": "node scripts/visual-qa.mjs",
     "trace:check": "node scripts/test-deployment-trace.mjs",
     "api:contracts": "node scripts/test-api-contracts.mjs",
-    "e2e": "node scripts/test-search-interaction.mjs"
+    "e2e": "node scripts/test-search-interaction.mjs",
+    "deploy:check": "node scripts/check-deploy-env.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
