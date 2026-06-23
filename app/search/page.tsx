@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
+import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-source-hints.mjs";
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
@@ -66,6 +67,7 @@ type DraftSafetyState = {
 };
 
 type ReviewTaskStatus = "needs_review" | "checking_sources" | "ready_to_draft" | "resolved";
+type ReviewSourceHint = ReturnType<typeof sourceHintsFromStatement>[number];
 
 type ReviewQueueItem = {
   id: string;
@@ -77,6 +79,7 @@ type ReviewQueueItem = {
   title: string;
   detail: string;
   value: string;
+  sourceHints: ReviewSourceHint[];
 };
 
 type ReviewQueueItemWithStatus = ReviewQueueItem & {
@@ -240,6 +243,7 @@ function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): Re
     const baseId = `${item.id}:${statementId}`;
     const propertyLabel = statement.property.label || statement.property.id;
     const value = formatValueText(statement.value);
+    const sourceHints = sourceHintsFromStatement(statement);
 
     if (statement.rank === "deprecated") {
       const id = `${baseId}:deprecated`;
@@ -254,6 +258,7 @@ function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): Re
           title: "Deprecated statement needs review",
           detail: `${propertyLabel} is marked deprecated; verify whether it should remain visible, be explained by qualifiers, or be replaced.`,
           value,
+          sourceHints,
         });
       }
     }
@@ -271,6 +276,7 @@ function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): Re
           title: "Claim has no references",
           detail: `${propertyLabel} has no references in the visible Wikidata statement data. It is a good candidate for verifier follow-up or source discovery.`,
           value,
+          sourceHints,
         });
       }
     }
@@ -1186,6 +1192,19 @@ export default function SearchPage() {
                             </div>
                             <p className="text-slate-700 dark:text-slate-200">{item.detail}</p>
                             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Value: {item.value}</p>
+                            {item.sourceHints.length > 0 && (
+                              <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-900">
+                                <div className="font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Source hints</div>
+                                <ul className="mt-2 space-y-1">
+                                  {item.sourceHints.map((hint, index) => (
+                                    <li key={`${hint.propertyId}-${hint.value}-${index}`} className="break-words text-slate-600 dark:text-slate-300">
+                                      <span className="font-medium text-slate-800 dark:text-slate-100">{sourceHintKindLabel(hint.kind)}</span>
+                                      <span className="text-slate-500 dark:text-slate-400"> - {hint.propertyLabel || hint.propertyId}</span>: {hint.value}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                             <label className="mt-3 grid max-w-xs gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
                               <span>Task status</span>
                               <select
@@ -1254,3 +1273,7 @@ export default function SearchPage() {
     </div>
   );
 }
+
+
+
+

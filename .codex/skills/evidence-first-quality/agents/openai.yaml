@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evidence-First Quality"
+  short_description: "Quality slices with proof"
+  default_prompt: "Use $evidence-first-quality to implement the next Wikidata Explorer quality improvement and verify it with focused evidence."
