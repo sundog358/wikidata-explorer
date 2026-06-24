@@ -10,15 +10,9 @@ const nextConfig = {
   ],
   outputFileTracingIncludes: {
     "/*": [
-      "./node_modules/next/dist/shared/lib/router/utils/app-paths.js",
-      "./node_modules/next/dist/shared/lib/page-path/ensure-leading-slash.js",
-      "./node_modules/next/dist/shared/lib/segment.js",
-      "./node_modules/next/dist/server/lib/router-utils/instrumentation-globals.external.js",
-      "./node_modules/next/dist/server/lib/router-utils/instrumentation-node-extensions.js",
-      "./node_modules/next/dist/lib/client-and-server-references.js",
-      "./node_modules/next/dist/lib/constants.js",
-      "./node_modules/next/dist/lib/interop-default.js",
-      "./node_modules/next/dist/lib/is-error.js",
+      "./node_modules/next/dist/shared/lib/**/*.js",
+      "./node_modules/next/dist/lib/**/*.js",
+      "./node_modules/next/dist/server/lib/router-utils/**/*.js",
     ],
     "/opengraph-image": ["./public/images/jean-francois-millet-gleaners-google-art-project-2.jpg"],
   },

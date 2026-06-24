@@ -27,6 +27,7 @@ function assertApiTrace(routeName, files) {
     "next/dist/shared/lib/router/utils/app-paths.js",
     "next/dist/shared/lib/page-path/ensure-leading-slash.js",
     "next/dist/shared/lib/segment.js",
+    "next/dist/shared/lib/server-reference-info.js",
     "next/dist/server/lib/router-utils/instrumentation-globals.external.js",
     "next/dist/server/lib/router-utils/instrumentation-node-extensions.js",
     "next/dist/lib/client-and-server-references.js",
