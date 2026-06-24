@@ -9,7 +9,11 @@ const nextConfig = {
     "@radix-ui/react-tabs",
   ],
   outputFileTracingIncludes: {
-    "/*": ["./node_modules/next/dist/shared/lib/router/utils/app-paths.js"],
+    "/*": [
+      "./node_modules/next/dist/shared/lib/router/utils/app-paths.js",
+      "./node_modules/next/dist/shared/lib/page-path/ensure-leading-slash.js",
+      "./node_modules/next/dist/shared/lib/segment.js",
+    ],
     "/opengraph-image": ["./public/images/jean-francois-millet-gleaners-google-art-project-2.jpg"],
   },
   outputFileTracingExcludes: {
