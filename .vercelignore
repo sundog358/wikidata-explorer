@@ -5,7 +5,9 @@
 .tmp/
 metagenauto/
 data/
-images/
+/images/
+!/public/images/
+!/public/images/**
 notebooks/
 __pycache__/
 *.py[cod]
