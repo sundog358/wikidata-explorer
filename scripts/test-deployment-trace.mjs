@@ -14,18 +14,28 @@ async function readTrace(tracePath) {
 
 const includes = (files, pattern) => files.some((file) => file.includes(pattern));
 const includesAny = (files, patterns) => patterns.some((pattern) => includes(files, pattern));
+const normalizeTracePath = (file) => file.replaceAll("\\", "/");
+const includesRepoPath = (files, repoPath) =>
+  files.some((file) => normalizeTracePath(file).includes(`../../../../../${repoPath}`));
 
 function assertApiTrace(routeName, files) {
   assert.ok(
     includesAny(files, ["lib/ag2.ts", "lib\\ag2.ts"]),
     `${routeName} API route trace should keep the AG2 bridge module.`
   );
+  assert.ok(
+    includesAny(files, [
+      "next/dist/shared/lib/router/utils/app-paths.js",
+      "next\\dist\\shared\\lib\\router\\utils\\app-paths.js",
+    ]),
+    `${routeName} API route trace should include Next's app-path runtime helper.`
+  );
   assert.equal(includes(files, "next.config.js"), false, "next.config.js should not be bundled into API route traces.");
   assert.equal(includes(files, "pywikibot.lwp"), false, "local Pywikibot login cache must not be bundled into API route traces.");
   assert.equal(includes(files, "user-password.py"), false, "local bot password file must not be bundled into API route traces.");
-  assert.equal(includesAny(files, ["/out/", "\\out\\"]), false, "static export output should not be bundled into API route traces.");
-  assert.equal(includesAny(files, ["/utils/", "\\utils\\"]), false, "legacy utility scripts should not be bundled into API route traces.");
-  assert.equal(includesAny(files, ["docs/screenshots", "docs\\screenshots"]), false, "portfolio screenshots should not be bundled into API route traces.");
+  assert.equal(includesRepoPath(files, "out/"), false, "static export output should not be bundled into API route traces.");
+  assert.equal(includesRepoPath(files, "utils/"), false, "legacy utility scripts should not be bundled into API route traces.");
+  assert.equal(includesRepoPath(files, "docs/screenshots"), false, "portfolio screenshots should not be bundled into API route traces.");
 }
 
 let tracedFileCount = 0;
