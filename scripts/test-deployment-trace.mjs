@@ -1,19 +1,47 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const tracePath = new URL("../.next/server/app/api/entity-summary/route.js.nft.json", import.meta.url);
-const trace = JSON.parse(await readFile(tracePath, "utf8"));
-const files = trace.files || [];
+const apiTracePaths = [
+  ["ag2-workflow", new URL("../.next/server/app/api/ag2-workflow/route.js.nft.json", import.meta.url)],
+  ["chat", new URL("../.next/server/app/api/chat/route.js.nft.json", import.meta.url)],
+  ["entity-summary", new URL("../.next/server/app/api/entity-summary/route.js.nft.json", import.meta.url)],
+];
 
-const includes = (pattern) => files.some((file) => file.includes(pattern));
-const includesAny = (patterns) => patterns.some((pattern) => includes(pattern));
+async function readTrace(tracePath) {
+  const trace = JSON.parse(await readFile(tracePath, "utf8"));
+  return trace.files || [];
+}
 
-assert.ok(includes("agents/wikidata_ag2_agent.py"), "AG2 Python bridge script should stay in the API route trace.");
-assert.equal(includes("next.config.js"), false, "next.config.js should not be bundled into API route traces.");
-assert.equal(includes("pywikibot.lwp"), false, "local Pywikibot login cache must not be bundled into API route traces.");
-assert.equal(includes("user-password.py"), false, "local bot password file must not be bundled into API route traces.");
-assert.equal(includesAny(["/out/", "\\out\\"]), false, "static export output should not be bundled into API route traces.");
-assert.equal(includesAny(["/utils/", "\\utils\\"]), false, "legacy utility scripts should not be bundled into API route traces.");
-assert.equal(includesAny(["docs/screenshots", "docs\\screenshots"]), false, "portfolio screenshots should not be bundled into API route traces.");
+const includes = (files, pattern) => files.some((file) => file.includes(pattern));
+const includesAny = (files, patterns) => patterns.some((pattern) => includes(files, pattern));
 
-console.log(`PASS deployment trace excludes repo clutter (${files.length} traced files)`);
+function assertApiTrace(routeName, files) {
+  assert.ok(
+    includesAny(files, ["lib/ag2.ts", "lib\\ag2.ts"]),
+    `${routeName} API route trace should keep the AG2 bridge module.`
+  );
+  assert.equal(includes(files, "next.config.js"), false, "next.config.js should not be bundled into API route traces.");
+  assert.equal(includes(files, "pywikibot.lwp"), false, "local Pywikibot login cache must not be bundled into API route traces.");
+  assert.equal(includes(files, "user-password.py"), false, "local bot password file must not be bundled into API route traces.");
+  assert.equal(includesAny(files, ["/out/", "\\out\\"]), false, "static export output should not be bundled into API route traces.");
+  assert.equal(includesAny(files, ["/utils/", "\\utils\\"]), false, "legacy utility scripts should not be bundled into API route traces.");
+  assert.equal(includesAny(files, ["docs/screenshots", "docs\\screenshots"]), false, "portfolio screenshots should not be bundled into API route traces.");
+}
+
+let tracedFileCount = 0;
+for (const [routeName, tracePath] of apiTracePaths) {
+  const files = await readTrace(tracePath);
+  tracedFileCount += files.length;
+  assertApiTrace(routeName, files);
+}
+
+const previewTrace = await readTrace(new URL("../.next/server/app/opengraph-image/route.js.nft.json", import.meta.url));
+assert.ok(
+  includesAny(previewTrace, [
+    "public/images/jean-francois-millet-gleaners-google-art-project-2.jpg",
+    "public\\images\\jean-francois-millet-gleaners-google-art-project-2.jpg",
+  ]),
+  "social preview image should stay in the Open Graph image route trace."
+);
+
+console.log(`PASS deployment trace keeps API bridge and social preview assets while excluding repo clutter (${tracedFileCount} API traced files)`);
