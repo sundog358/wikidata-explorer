@@ -4,6 +4,9 @@ export type SiteConfig = {
   description: string;
   defaultUrl: string;
   ogImagePath: string;
+  ogImageWidth: number;
+  ogImageHeight: number;
+  ogImageAlt: string;
   keywords: string[];
 };
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
-import { Ag2BridgeError, runAg2Agent } from "@/lib/ag2";
+import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 
 export const runtime = "nodejs";
@@ -129,6 +129,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    const { runAg2Agent } = await import("@/lib/ag2");
     const result = await runAg2Agent({
       mode: "workflow",
       action,

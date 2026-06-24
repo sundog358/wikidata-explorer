@@ -30,6 +30,15 @@ assert.deepEqual(ag2ServiceAuthorizationHeader({ AG2_SERVICE_TOKEN: strongToken 
 
 const nextBridge = readFileSync(new URL("../lib/ag2.ts", import.meta.url), "utf8");
 assert.match(nextBridge, /runRemoteAg2Agent\(payload, \{ timeoutMs \}\)/);
+assert.doesNotMatch(nextBridge, /^import \{ spawn \} from "node:child_process";/m);
+assert.match(nextBridge, /await import\("node:child_process"\)/);
+
+for (const route of ["chat", "entity-summary", "ag2-workflow"]) {
+  const routeSource = readFileSync(new URL(`../app/api/${route}/route.ts`, import.meta.url), "utf8");
+  assert.match(routeSource, /import \{ Ag2BridgeError \} from "@\/lib\/ag2-errors\.mjs"/);
+  assert.match(routeSource, /await import\("@\/lib\/ag2"\)/);
+  assert.doesNotMatch(routeSource, /import \{ Ag2BridgeError, runAg2Agent \} from "@\/lib\/ag2"/);
+}
 
 const remoteBridge = readFileSync(new URL("../lib/ag2-remote-service.mjs", import.meta.url), "utf8");
 assert.match(remoteBridge, /ag2ServiceAuthorizationHeader\(env\)/);

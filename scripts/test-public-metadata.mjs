@@ -18,13 +18,18 @@ function includesAll(body, expected, label) {
 
 const home = await fetchText("/");
 assert(home.response.status === 200, `home metadata returned ${home.response.status}`);
+const expectedImagePath = "/images/jean-francois-millet-gleaners-google-art-project-2.jpg";
 includesAll(home.body, [
   "Wikidata Explorer | Evidence-first linked-data research",
   "Search Wikidata, inspect references and qualifiers",
   'property="og:title"',
   'property="og:description"',
   'property="og:image"',
+  'property="og:image:width"',
+  'property="og:image:height"',
+  expectedImagePath,
   'name="twitter:card"',
+  'name="twitter:image"',
   'rel="canonical"',
 ], "home metadata");
 
@@ -36,11 +41,11 @@ const sitemap = await fetchText("/sitemap.xml");
 assert(sitemap.response.status === 200, `sitemap.xml returned ${sitemap.response.status}`);
 includesAll(sitemap.body, ["<loc>", "/search", "/docs", "/about"], "sitemap.xml");
 
-const imageResponse = await fetch(new URL("/opengraph-image", baseUrl));
-assert(imageResponse.status === 200, `opengraph-image returned ${imageResponse.status}`);
+const imageResponse = await fetch(new URL(expectedImagePath, baseUrl));
+assert(imageResponse.status === 200, `social preview image returned ${imageResponse.status}`);
 const contentType = imageResponse.headers.get("content-type") || "";
-assert(contentType.includes("image/png"), `opengraph-image content-type was ${contentType}`);
+assert(contentType.includes("image/jpeg"), `social preview image content-type was ${contentType}`);
 const imageBytes = await imageResponse.arrayBuffer();
-assert(imageBytes.byteLength > 1000, `opengraph-image was unexpectedly small: ${imageBytes.byteLength}`);
+assert(imageBytes.byteLength > 1000, `social preview image was unexpectedly small: ${imageBytes.byteLength}`);
 
 console.log("PASS public metadata checks");

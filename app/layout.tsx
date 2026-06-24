@@ -37,9 +37,9 @@ export const metadata: Metadata = {
     images: [
       {
         url: siteConfig.ogImagePath,
-        width: 1200,
-        height: 630,
-        alt: "Wikidata Explorer evidence-first graph research preview",
+        width: siteConfig.ogImageWidth,
+        height: siteConfig.ogImageHeight,
+        alt: siteConfig.ogImageAlt,
       },
     ],
   },
