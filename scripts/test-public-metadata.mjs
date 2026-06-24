@@ -18,7 +18,7 @@ function includesAll(body, expected, label) {
 
 const home = await fetchText("/");
 assert(home.response.status === 200, `home metadata returned ${home.response.status}`);
-const expectedImagePath = "/images/jean-francois-millet-gleaners-google-art-project-2.jpg";
+const expectedImagePath = "/opengraph-image";
 includesAll(home.body, [
   "Wikidata Explorer | Evidence-first linked-data research",
   "Search Wikidata, inspect references and qualifiers",

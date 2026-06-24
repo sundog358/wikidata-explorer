@@ -8,6 +8,9 @@ const nextConfig = {
     "@radix-ui/react-slot",
     "@radix-ui/react-tabs",
   ],
+  outputFileTracingIncludes: {
+    "/opengraph-image": ["./public/images/jean-francois-millet-gleaners-google-art-project-2.jpg"],
+  },
   outputFileTracingExcludes: {
     "*": [
       "./.git/**/*",

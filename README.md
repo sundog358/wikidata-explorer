@@ -169,6 +169,7 @@ These tracked screenshots are refreshed from the visual QA flow. Run `npm run vi
 ## 🗂️ Project Structure
 
 - `app/page.tsx`: first-screen search entry point
+- `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
 - `app/search/page.tsx`: main Wikidata explorer workflow, selected graph path exports, graph focus, data-quality summary, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant
@@ -180,7 +181,7 @@ These tracked screenshots are refreshed from the visual QA flow. Run `npm run vi
 - `components/nav/main-nav.tsx`: primary nav with AI links hidden unless the AI feature flag is enabled
 - `lib/wikidata.ts`: Wikidata API client and normalization helpers
 - `lib/site-config.mjs`: shared portfolio metadata, public URL, and social-preview configuration
-- `public/images/jean-francois-millet-gleaners-google-art-project-2.jpg`: shared Open Graph, Facebook, and Twitter link-preview image
+- `public/images/jean-francois-millet-gleaners-google-art-project-2.jpg`: source JPEG used by the social preview image route
 - `lib/ai-feature-flags.mjs`: shared public/server AI feature flag helper
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
