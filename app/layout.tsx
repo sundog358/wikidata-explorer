@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"] });
 
-const siteIcon = "/images/8sprocket.jpg";
 const siteUrl = publicSiteUrl();
 
 export const metadata: Metadata = {
@@ -50,9 +49,12 @@ export const metadata: Metadata = {
     images: [siteConfig.ogImagePath],
   },
   icons: {
-    icon: [{ url: siteIcon, type: "image/jpeg" }],
-    shortcut: [{ url: siteIcon, type: "image/jpeg" }],
-    apple: [{ url: siteIcon, type: "image/jpeg" }],
+    icon: [
+      { url: siteConfig.faviconPath, type: "image/x-icon", sizes: "any" },
+      { url: siteConfig.siteIconPath, type: "image/jpeg" },
+    ],
+    shortcut: [{ url: siteConfig.faviconPath, type: "image/x-icon" }],
+    apple: [{ url: siteConfig.siteIconPath, type: "image/jpeg" }],
   },
 };
 

@@ -19,6 +19,8 @@ function includesAll(body, expected, label) {
 const home = await fetchText("/");
 assert(home.response.status === 200, `home metadata returned ${home.response.status}`);
 const expectedImagePath = "/opengraph-image";
+const expectedFaviconPath = "/favicon.ico";
+const expectedSiteIconPath = "/images/8sprocket.jpg";
 includesAll(home.body, [
   "Wikidata Explorer | Evidence-first linked-data research",
   "Search Wikidata, inspect references and qualifiers",
@@ -30,6 +32,9 @@ includesAll(home.body, [
   expectedImagePath,
   'name="twitter:card"',
   'name="twitter:image"',
+  'rel="icon"',
+  expectedFaviconPath,
+  expectedSiteIconPath,
   'rel="canonical"',
 ], "home metadata");
 
@@ -47,5 +52,19 @@ const contentType = imageResponse.headers.get("content-type") || "";
 assert(contentType.includes("image/jpeg"), `social preview image content-type was ${contentType}`);
 const imageBytes = await imageResponse.arrayBuffer();
 assert(imageBytes.byteLength > 1000, `social preview image was unexpectedly small: ${imageBytes.byteLength}`);
+
+const siteIconResponse = await fetch(new URL(expectedSiteIconPath, baseUrl));
+assert(siteIconResponse.status === 200, `site icon image returned ${siteIconResponse.status}`);
+const siteIconType = siteIconResponse.headers.get("content-type") || "";
+assert(siteIconType.includes("image/jpeg"), `site icon image content-type was ${siteIconType}`);
+const siteIconBytes = await siteIconResponse.arrayBuffer();
+assert(siteIconBytes.byteLength > 1000, `site icon image was unexpectedly small: ${siteIconBytes.byteLength}`);
+
+const faviconResponse = await fetch(new URL(expectedFaviconPath, baseUrl));
+assert(faviconResponse.status === 200, `favicon returned ${faviconResponse.status}`);
+const faviconType = faviconResponse.headers.get("content-type") || "";
+assert(faviconType.includes("image/"), `favicon content-type was ${faviconType}`);
+const faviconBytes = await faviconResponse.arrayBuffer();
+assert(faviconBytes.byteLength > 100, `favicon was unexpectedly small: ${faviconBytes.byteLength}`);
 
 console.log("PASS public metadata checks");
