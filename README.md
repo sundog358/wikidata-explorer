@@ -2,7 +2,11 @@
 
 A portfolio-ready **Next.js 16** application for searching Wikidata, inspecting entity evidence, visualizing relationships, and optionally running **AG2-backed** linked-data research agents.
 
-The public demo is designed to ship safely on Vercel with AI disabled by default, while the AG2 agent runtime can be enabled locally or hosted as a separate container service.
+Live demo: [www.historypuzzle.com](https://www.historypuzzle.com)
+
+History Puzzle is the public-facing frame for Wikidata Explorer: the app helps users assemble a trail of entities, statements, labels, references, and linked records into a trustworthy research picture.
+
+The public demo ships safely on Vercel with AI disabled by default, while the AG2 agent runtime can be enabled locally or hosted as a separate container service.
 
 ## ✨ Highlights
 
@@ -10,7 +14,7 @@ The public demo is designed to ship safely on Vercel with AI disabled by default
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
 - 🕸️ Explore a clickable relationship graph with URL-backed filters, hover previews, selected-edge qualifier/reference summaries, and selected-path Markdown/JSON exports
 - 🧭 Follow related items and properties without restarting the search flow
-- 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`
+- 🔗 Launch directly into a query with `/search?q=Douglas%20Adams` or a seeded Q42 proof path with graph focus, review, exports, and AI-boundary context
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
 - 🤖 Enable AG2 specialist agents for research, graph analysis, next-entity suggestions, citation verification, comparison, and Markdown reports
 - 🐳 Run agents through local conda or a token-protected containerized FastAPI AG2 service
@@ -25,7 +29,7 @@ The public demo is designed to ship safely on Vercel with AI disabled by default
 
 Wikidata Explorer is built to answer a focused research question: how quickly can someone start from one Wikidata entity and understand the trustworthy graph around it?
 
-- **Product decision:** lead with a fast public Next.js explorer, then route reviewers into seeded proof paths for Q42 graph context and evidence review.
+- **Product decision:** lead with a fast public Next.js explorer, then route reviewers into a seeded Q42 proof path that shows graph context, evidence depth, safe exports, and the AI boundary in one short review.
 - **Data depth:** normalize Wikidata labels, statements, qualifiers, references, ranks, media, and language coverage into inspectable UI instead of flattening everything into generic search results.
 - **AI boundary:** keep AG2 agents feature-flagged and server-side so the public demo remains reliable while the Python/container runtime can be enabled for richer research workflows.
 - **Trust story:** pair graph and curation exports with autonomy-safety gates, route/API contracts, a mocked remote AG2 service contract, browser e2e checks, visual QA screenshots, and deployment trace checks.
@@ -152,19 +156,25 @@ These tracked screenshots are refreshed from the visual QA flow. Run `npm run vi
 | View | Screenshot | What it proves |
 | --- | --- | --- |
 | 🏠 Home | ![Home desktop](docs/screenshots/home-desktop.png) | The first screen explains the product quickly and routes users into search, graph context, and evidence review. |
-| 🕸️ Q42 graph | ![Q42 relationship graph desktop](docs/screenshots/search-q42-graph-desktop.png) | The main explorer loads Wikidata data, prefers stable English labels, and renders a clickable relationship graph with evidence-grounded selected edges. |
+| 🕸️ Q42 graph | ![Q42 relationship graph desktop](docs/screenshots/search-q42-graph-desktop.png) | The seeded proof path loads Douglas Adams, focuses the Q42 -> human graph edge, and renders evidence-grounded selected-edge exports. |
 | 🤖 Research assistant | ![Research assistant desktop](docs/screenshots/research-assistant-desktop.png) | The AG2 chat surface is available in AI-enabled mode and disabled intentionally in public mode. |
 | 📱 Mobile search | ![Q42 search mobile](docs/screenshots/search-q42-mobile.png) | The core explorer remains usable on a narrow viewport without horizontal overflow. |
 
-## 🚢 Public Deployment Plan
+## 🚢 Production Deployment
 
-1. Run `npm run deploy:check` and confirm the public Vercel AI-off environment is clean.
-2. Deploy the Next.js app to Vercel with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false`, `ENABLE_AI_AGENTS=false`, and `NEXT_PUBLIC_SITE_URL=https://your-demo-url`.
-3. Run `npm run metadata:check` against the deployed URL, then add the public Vercel URL and badge to this README after the first successful deploy.
-4. Deploy `agents/Dockerfile` to a container host when ready to demo live AG2 agents.
-5. Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the container host.
-6. Keep `node scripts/test-ag2-remote-service.mjs` green, then run `npm run deploy:check -- --mode=ai-container` before enabling the AI container path.
-7. Enable AI by setting `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, `AG2_SERVICE_URL=https://...`, and rate limits such as `AI_AGENT_RATE_LIMIT_MAX=20`, then redeploy the Next.js app.
+Current public mode is live at [www.historypuzzle.com](https://www.historypuzzle.com):
+
+1. Vercel runs the Next.js app with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false`, `ENABLE_AI_AGENTS=false`, and `NEXT_PUBLIC_SITE_URL=https://www.historypuzzle.com`.
+2. Public AI routes fail closed with the tested disabled response.
+3. `npm run metadata:check` verifies canonical metadata, robots, sitemap, the Millet social preview image, `8sprocket.jpg` site icon, and generated favicon.
+4. `npm run trace:check` keeps required Next runtime helpers in API route traces while excluding local repo clutter.
+
+Optional AI-enabled mode remains a separate deployment step:
+
+1. Deploy `agents/Dockerfile` to a container host when ready to demo live AG2 agents.
+2. Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the container host.
+3. Keep `node scripts/test-ag2-remote-service.mjs` green, then run `npm run deploy:check -- --mode=ai-container` before enabling the AI container path.
+4. Enable AI by setting `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, `AG2_SERVICE_URL=https://...`, and rate limits such as `AI_AGENT_RATE_LIMIT_MAX=20`, then redeploy the Next.js app.
 
 ## 🗂️ Project Structure
 
@@ -180,7 +190,9 @@ These tracked screenshots are refreshed from the visual QA flow. Run `npm run vi
 - `components/relationship-graph.tsx`: clickable, filterable entity relationship visualization with controlled filter state and selected-edge evidence summaries
 - `components/nav/main-nav.tsx`: primary nav with AI links hidden unless the AI feature flag is enabled
 - `lib/wikidata.ts`: Wikidata API client and normalization helpers
-- `lib/site-config.mjs`: shared portfolio metadata, public URL, and social-preview configuration
+- `lib/site-config.mjs`: shared portfolio metadata, public URL, social-preview, favicon, and site-icon configuration
+- `public/favicon.ico`: generated site favicon based on the sprocket image
+- `public/images/8sprocket.jpg`: source JPEG used by site icon and Apple icon metadata
 - `public/images/jean-francois-millet-gleaners-google-art-project-2.jpg`: source JPEG used by the social preview image route
 - `lib/ai-feature-flags.mjs`: shared public/server AI feature flag helper
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
@@ -213,7 +225,7 @@ These tracked screenshots are refreshed from the visual QA flow. Run `npm run vi
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, and social preview image. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` with the local dev server running to catch route, interaction, console, hydration, and layout regressions. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` with the local dev server running to catch route, interaction, console, hydration, and layout regressions. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
 CI also runs install, verify, production trace checks, smoke, public metadata checks, API contracts, e2e, visual QA, and screenshot artifact upload on GitHub Actions.
 

@@ -10,11 +10,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 const examples = ["Douglas Adams", "Q42", "P31", "linked open data"];
+const q42ProofPathHref = "/search?q=Q42&gkind=item&gprop=P31&gevidence=referenced&gfocus=Q5";
 const proofPaths = [
   {
-    title: "Graph context",
-    body: "Open Douglas Adams with relationship filters ready for inspection.",
-    href: "/search?q=Q42",
+    title: "Five-minute Q42 path",
+    body: "Open Douglas Adams with the instance-of human edge selected for graph, evidence, export, and AI-boundary review.",
+    href: q42ProofPathHref,
     icon: Network,
     testId: "home-proof-path-graph",
   },
@@ -47,7 +48,7 @@ export default function Home() {
         <div className="max-w-4xl space-y-7">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
             <Sparkles className="h-4 w-4 text-sky-500" />
-            Wikidata graph exploration
+            History Puzzle workspace
           </div>
 
           <div className="space-y-4">
@@ -55,7 +56,7 @@ export default function Home() {
               Wikidata Explorer
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-              Search entities, inspect statements, follow linked items, compare labels across languages, and open the source record without leaving your flow.
+              History Puzzle is the public home for Wikidata Explorer: piece together entities, statements, languages, and source links into a trustworthy graph trail.
             </p>
           </div>
 
@@ -91,7 +92,7 @@ export default function Home() {
               <Network className="h-4 w-4" />
               Explorer workflow
             </div>
-            <h2 className="text-xl font-semibold">From search to graph context</h2>
+            <h2 className="text-xl font-semibold">From clues to graph context</h2>
           </div>
           <div className="divide-y divide-slate-200 dark:divide-slate-800">
             <div className="flex gap-3 p-5">

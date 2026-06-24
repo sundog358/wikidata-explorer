@@ -91,6 +91,10 @@ type ReviewQueueItemWithStatus = ReviewQueueItem & {
   statusLabel: string;
 };
 
+type RunSearchOptions = {
+  graphFocusId?: string | null;
+};
+
 const AGENT_RUNS_STORAGE_KEY = "wikidata-explorer.agentRuns.v1";
 const DISMISSED_REVIEW_STORAGE_KEY = "wikidata-explorer.dismissedReviewItems.v1";
 const REVIEW_TASK_STATUS_STORAGE_KEY = "wikidata-explorer.reviewTaskStatus.v1";
@@ -98,6 +102,14 @@ const REVIEW_TASK_STATUS_STORAGE_KEY = "wikidata-explorer.reviewTaskStatus.v1";
 const AI_AGENTS_ENABLED = aiAgentsEnabled({
   NEXT_PUBLIC_ENABLE_AI_AGENTS: process.env.NEXT_PUBLIC_ENABLE_AI_AGENTS,
 });
+
+const Q42_PROOF_GRAPH_FILTERS: RelationshipGraphFilters = {
+  kind: "item",
+  rank: "all",
+  propertyId: "P31",
+  evidence: "referenced",
+};
+const Q42_PROOF_FOCUS_ID = "Q5";
 
 const REVIEW_TASK_STATUS_OPTIONS: Array<{ value: ReviewTaskStatus; label: string }> = [
   { value: "needs_review", label: "Needs review" },
@@ -533,8 +545,9 @@ export default function SearchPage() {
     }
   }
 
-  const runSearch = useCallback(async (rawQuery: string) => {
+  const runSearch = useCallback(async (rawQuery: string, options: RunSearchOptions = {}) => {
     const query = rawQuery.trim();
+    const graphFocusId = Object.prototype.hasOwnProperty.call(options, "graphFocusId") ? options.graphFocusId || null : null;
     if (!query) {
       setError("Enter a Wikidata search term or entity ID.");
       return;
@@ -546,13 +559,13 @@ export default function SearchPage() {
     setAiSummary(null);
     setAgentResult(null);
     setSelectedGraphFocus(null);
-    setSelectedGraphNodeId(null);
+    setSelectedGraphNodeId(graphFocusId);
 
     try {
       if (/^[QP]\d+$/i.test(query)) {
         const entityId = query.toUpperCase();
         const entity = await client.getDetailedEntity(entityId);
-        replaceWorkbenchUrlState({ q: entityId, graphFocusId: null });
+        replaceWorkbenchUrlState({ q: entityId, graphFocusId });
         setResults([entity]);
         setSelectedItem(entity);
       } else {
@@ -578,7 +591,7 @@ export default function SearchPage() {
       setGraphFilters(initialState.graphFilters as RelationshipGraphFilters);
       setSelectedGraphNodeId(initialState.graphFocusId);
       if (initialQuery) {
-        void runSearch(initialQuery);
+        void runSearch(initialQuery, { graphFocusId: initialState.graphFocusId });
       }
     }, 0);
 
@@ -590,6 +603,17 @@ export default function SearchPage() {
     await runSearch(searchTerm);
   }
 
+  function openQ42ProofGraph() {
+    setActiveTab("graph");
+    setGraphFilters(Q42_PROOF_GRAPH_FILTERS);
+    setSelectedGraphNodeId(Q42_PROOF_FOCUS_ID);
+    replaceWorkbenchUrlState({ tab: "graph", graphFilters: Q42_PROOF_GRAPH_FILTERS, graphFocusId: Q42_PROOF_FOCUS_ID });
+  }
+
+  function openQ42ProofReview() {
+    setActiveTab("review");
+    replaceWorkbenchUrlState({ tab: "review" });
+  }
 
   async function loadEntity(id: string) {
     setDetailLoading(true);
@@ -853,6 +877,91 @@ export default function SearchPage() {
                     </Button>
                   </div>
                 </div>
+
+                {selectedItem.id === "Q42" && (
+                  <div className="mb-5 rounded-md border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950" data-testid="recruiter-proof-path">
+                    <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                          <Sparkles className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                          Recruiter proof path
+                        </div>
+                        <p className="mt-1 max-w-3xl text-sm text-slate-700 dark:text-slate-200">
+                          Douglas Adams shows the full History Puzzle loop: graph context, evidence depth, draft-only exports, and the AI safety boundary in one review path.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary">Seed Q42</Badge>
+                        <Badge variant="outline">Under 5 minutes</Badge>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-md border border-sky-200 bg-white p-3 text-sm dark:border-sky-900 dark:bg-slate-950">
+                        <div className="mb-2 flex items-center gap-2 font-semibold text-slate-950 dark:text-slate-50">
+                          <Network className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                          Graph context
+                        </div>
+                        <p className="min-h-10 text-slate-600 dark:text-slate-300">Q42 -&gt; human through instance of (P31).</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Badge variant={selectedGraphFocus?.id === Q42_PROOF_FOCUS_ID ? "secondary" : "outline"}>{selectedGraphFocus?.id === Q42_PROOF_FOCUS_ID ? "Focused" : "Ready"}</Badge>
+                          <Button type="button" variant="outline" size="sm" className="gap-2" onClick={openQ42ProofGraph} data-testid="proof-path-graph-focus">
+                            <Network className="h-4 w-4" />
+                            Focus
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border border-sky-200 bg-white p-3 text-sm dark:border-sky-900 dark:bg-slate-950">
+                        <div className="mb-2 flex items-center gap-2 font-semibold text-slate-950 dark:text-slate-50">
+                          <ShieldCheck className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                          Evidence depth
+                        </div>
+                        <p className="min-h-10 text-slate-600 dark:text-slate-300">
+                          {dataQuality ? `${dataQuality.referencedStatementCount}/${dataQuality.statementCount} referenced statements; ${dataQuality.qualifierCount} qualifiers.` : "Evidence counts load with the selected entity."}
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Badge variant="outline">{reviewQueue.length} review flags</Badge>
+                          <Button type="button" variant="outline" size="sm" className="gap-2" onClick={openQ42ProofReview} data-testid="proof-path-review">
+                            <Database className="h-4 w-4" />
+                            Review
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border border-sky-200 bg-white p-3 text-sm dark:border-sky-900 dark:bg-slate-950">
+                        <div className="mb-2 flex items-center gap-2 font-semibold text-slate-950 dark:text-slate-50">
+                          <FileText className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                          Safe exports
+                        </div>
+                        <p className="min-h-10 text-slate-600 dark:text-slate-300">
+                          {selectedGraphFocus ? `Path export ready for ${selectedGraphFocus.propertyId} -&gt; ${selectedGraphFocus.id}.` : "Focus the P31 edge to reveal Markdown and JSON path exports."}
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Badge variant={draftSafety.allowed ? "secondary" : "destructive"}>{draftSafety.decisionLabel}</Badge>
+                          <Button type="button" variant="outline" size="sm" className="gap-2" onClick={openQ42ProofGraph} data-testid="proof-path-safe-exports">
+                            <FileText className="h-4 w-4" />
+                            Export
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border border-sky-200 bg-white p-3 text-sm dark:border-sky-900 dark:bg-slate-950" data-testid="proof-path-ai-boundary">
+                        <div className="mb-2 flex items-center gap-2 font-semibold text-slate-950 dark:text-slate-50">
+                          <BrainCircuit className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                          AI boundary
+                        </div>
+                        <p className="min-h-10 text-slate-600 dark:text-slate-300">
+                          {AI_AGENTS_ENABLED ? "AG2 mode sends selected context through server-side safety gates." : "Public mode keeps AG2 hidden and API routes fail closed."}
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Badge variant={AI_AGENTS_ENABLED ? "secondary" : "outline"}>{AI_AGENTS_ENABLED ? "AI enabled" : "AI off"}</Badge>
+                          <Badge variant="outline">Safety gated</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {dataQuality && (
                   <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900" data-testid="data-quality-summary">
