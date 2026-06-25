@@ -5,15 +5,20 @@ export type RelationshipGraphNode = {
   label: string;
   property: string;
   propertyId: string;
+  sourceProperty: string;
+  sourcePropertyId: string;
   kind: "item" | "property";
   rank: WikidataStatement["rank"];
   dataType: string | null;
   qualifierCount: number;
   referenceCount: number;
+  depth: 1 | 2;
+  source: "statement" | "qualifier" | "reference";
   statement: WikidataStatement;
 };
 
 export type RelationshipGraphFilters = {
+  depth?: "1" | "2" | "property";
   kind?: "all" | "item" | "property";
   rank?: "all" | WikidataStatement["rank"];
   propertyId?: string;
@@ -25,11 +30,15 @@ export type RelationshipGraphFocus = {
   label: string;
   property: string;
   propertyId: string;
+  sourceProperty: string;
+  sourcePropertyId: string;
   kind: "item" | "property";
   rank: WikidataStatement["rank"];
   dataType: string | null;
   qualifierCount: number;
   referenceCount: number;
+  depth: 1 | 2;
+  source: "statement" | "qualifier" | "reference";
   statementId: string | null;
   value: string;
 };

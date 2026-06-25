@@ -1,6 +1,7 @@
 export type SearchWorkbenchTab = "graph" | "compare" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
 
 export type SearchGraphFilters = {
+  depth: "1" | "2" | "property";
   kind: "all" | "item" | "property";
   rank: "all" | "preferred" | "normal" | "deprecated";
   propertyId: string;

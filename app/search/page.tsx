@@ -105,6 +105,7 @@ const AI_AGENTS_ENABLED = aiAgentsEnabled({
 });
 
 const Q42_PROOF_GRAPH_FILTERS: RelationshipGraphFilters = {
+  depth: "1",
   kind: "item",
   rank: "all",
   propertyId: "P31",

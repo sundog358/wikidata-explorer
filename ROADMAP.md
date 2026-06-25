@@ -2,7 +2,7 @@
 
 Last reviewed: June 25, 2026
 
-This roadmap tracks the path from a strong public portfolio app to a credible linked-data research workspace. The public Next.js app is live at `https://www.wikidataexplorer.com` with AI disabled by default; the AG2 runtime remains available locally or through the token-protected container service path. Items marked as ready for deploy are implemented and verified locally, but should not be treated as public-production features until the Vercel deployment catches up.
+This roadmap tracks the path from a strong public portfolio app to a credible linked-data research workspace. The public Next.js app is live at `https://www.wikidataexplorer.com` with AI disabled by default; the AG2 runtime remains available locally or through the token-protected container service path.
 
 `Wikidata Explorer` is the public product name and domain. `History Puzzle` remains a narrative frame inside the demo: users are assembling a research picture from linked records, statement evidence, language labels, references, and graph paths.
 
@@ -23,7 +23,8 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Optional AG2 runtime supports local Python/conda or a token-protected FastAPI container through `AG2_SERVICE_URL`.
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed filters, selected-edge evidence summaries, and selected-path Markdown/JSON exports.
-- The current local branch adds an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, and Markdown comparison exports.
+- Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, and Markdown comparison exports.
+- The current local branch adds URL-backed graph depth controls and a selected statement detail drawer for richer graph review.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -38,23 +39,24 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - `.vercelignore` now preserves `public/images/**` for deployment.
 - `metadata:check` verifies canonical metadata, robots, sitemap, social preview image, favicon, and site icon.
 - Recruiter-ready Q42 proof path opens Douglas Adams with a selected P31 -> Q5 graph edge, evidence depth, safe exports, and visible AI boundary.
+- AI-off comparison workflow compares Q42 against a target entity such as Q80, with shared/unique properties, overlapping linked entities, and Markdown notes.
 - README now includes live deployment, CI, and visual QA links above the portfolio story.
 
 ## Ready For Next Production Deploy
 
-- AI-off comparison workflow is implemented and verified locally: Q42 can be compared against a target entity such as Q80, with shared/unique properties, overlapping linked entities, and Markdown notes.
-- Search URL state now accepts the `compare` workbench tab so comparison views can become shareable after the current branch is deployed.
-- Before calling this live, deploy the current branch and re-check `https://www.wikidataexplorer.com/search?q=Q42` for the Compare tab.
+- Graph depth controls are implemented and verified locally: 1-hop statements, 2-hop evidence-linked records, and selected-property expansion.
+- Selected graph relationships now open a clearer statement detail drawer with statement ID, value, data type, depth/source context, qualifiers, and references.
+- Search URL state now includes `gdepth`, so graph depth selections can be shared alongside target type, rank, property, evidence, and focus.
 
 ## Portfolio Readiness
 
-Current local grade: 9.0 / 10
+Current local grade: 9.1 / 10
 
-The project is job-portfolio ready now. The local branch shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. Production remains just behind the local branch until the comparison work is deployed, so the remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
+The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
 To reach 9.5:
 
-- Add graph depth controls and a clearer statement detail drawer for references/qualifiers.
+- Add richer node previews from secondary entity lookups and pinned relationship history.
 - Add accessibility checks for keyboard graph navigation, focus order, and reduced-motion behavior.
 - Add performance budgets for `/search?q=Q42` and graph rendering.
 
@@ -79,9 +81,12 @@ Goal: make the first five minutes of the demo obvious and impressive.
 
 ### 2. Graph Exploration Depth
 
+Status: first slice implemented locally; pending production deployment.
+
 Goal: make the graph the signature feature.
 
-- Add graph depth controls: 1-hop, 2-hop, and selected-property expansion.
+- Implemented graph depth controls: 1-hop statements, 2-hop evidence-linked records, and selected-property expansion.
+- Implemented a selected statement detail drawer for statement ID, value, data type, depth/source context, qualifiers, and references.
 - Add richer node previews from secondary entity lookups.
 - Add multi-edge history and pinned comparison for selected graph relationships.
 - Add layout modes: radial, grouped by property, and timeline-like for date-heavy entities.
@@ -89,14 +94,13 @@ Goal: make the graph the signature feature.
 
 ### 3. Entity Comparison
 
-Status: implemented and verified locally; pending production deployment.
+Status: shipped in production as a public AI-off two-entity comparison slice; continue toward richer comparison research outputs.
 
 Goal: support research workflows beyond single-entity browsing.
 
-- Implemented two-entity comparison from the workbench in public AI-off mode.
-- Implemented shared properties, source-only properties, target-only properties, overlapping related entities, and Markdown comparison exports.
+- Shipped two-entity comparison from the workbench in public AI-off mode.
+- Shipped shared properties, source-only properties, target-only properties, overlapping related entities, and Markdown comparison exports.
 - Covered comparison with deterministic utility tests and browser e2e coverage.
-- Next: deploy the current branch and verify the Compare tab on the public `www.wikidataexplorer.com` search page.
 - Next: compare three entities side by side.
 - Next: add seeded examples such as `Q42` vs another author and property-focused examples such as `P31`.
 - Next: add shareable comparison URLs and visual QA coverage for the comparison tab.
@@ -105,9 +109,9 @@ Goal: support research workflows beyond single-entity browsing.
 
 Goal: help users evaluate data quality, not just browse facts.
 
-- Promote references and qualifiers into a clearer statement detail drawer.
+- Extend the new graph statement detail drawer pattern into the full statements tab.
 - Add visible badges for referenced vs unreferenced claims.
-- Extend source-link coverage into the full statement detail drawer.
+- Extend source-link coverage into full statement detail views.
 - Add fallback support for uncommon external-ID formatter patterns beyond `$1`.
 - Promote review queue findings into persisted, source-backed curation tasks once a storage layer exists.
 
@@ -187,15 +191,15 @@ Status: shipped
 Status: in progress
 
 - Shipped: graph filters, hover previews, selected-edge evidence, selected-path exports, graph focus URL state.
-- Next: depth controls, richer node previews, pinned relationship history, layout modes.
+- Ready for deploy: graph depth controls and selected statement detail drawer.
+- Next: richer node previews, pinned relationship history, layout modes.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 
 Status: in progress
 
-- Shipped: selected graph path Markdown/JSON exports and safe curation exports.
-- Ready for deploy: AI-off two-entity comparison UI and Markdown comparison exports.
-- Next: production verification, three-entity comparison, shareable comparison URLs, and shareable export views.
+- Shipped: selected graph path Markdown/JSON exports, safe curation exports, public AI-off two-entity comparison UI, and Markdown comparison exports.
+- Next: three-entity comparison, shareable comparison URLs, and shareable export views.
 
 ### Milestone 4: Grounded AI Research Assistant
 

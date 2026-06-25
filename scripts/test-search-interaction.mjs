@@ -60,13 +60,25 @@ try {
 
   await page.getByRole("tab", { name: /Graph/ }).click();
   await page.getByTestId("graph-filters").waitFor({ state: "visible" });
+  await page.getByLabel("Depth").selectOption("2");
   await page.getByLabel("Target type").selectOption("item");
+  await page.locator("#graph-property-filter").selectOption("P31");
+  await page.getByLabel("Depth").selectOption("property");
   const filterSummary = await page.getByTestId("graph-filter-summary").innerText();
   if (!filterSummary.includes("Showing")) {
     throw new Error(`Expected graph filter summary after item filter, got ${filterSummary}`);
   }
+  const graphUrl = new URL(page.url());
+  if (graphUrl.searchParams.get("gdepth") !== "property" || graphUrl.searchParams.get("gprop") !== "P31") {
+    throw new Error(`Expected graph depth and property filters in URL, got ${page.url()}`);
+  }
 
   await page.getByTestId("graph-focus-Q5").click();
+  const statementDetailDrawer = await page.getByTestId("graph-statement-detail-drawer").innerText();
+  const statementDetailText = statementDetailDrawer.toLowerCase();
+  if (!statementDetailText.includes("statement detail drawer") || !statementDetailText.includes("statement id") || !statementDetailText.includes("references")) {
+    throw new Error(`Expected selected graph detail drawer to include statement and reference details, got ${statementDetailDrawer}`);
+  }
   const graphEdgeEvidence = await page.getByTestId("graph-edge-evidence-summary").innerText();
   const graphEdgeEvidenceText = graphEdgeEvidence.toLowerCase();
   if (!graphEdgeEvidenceText.includes("references") || !graphEdgeEvidenceText.includes("stated in")) {
@@ -129,9 +141,11 @@ try {
   console.log("PASS AI-off comparison workflow summarizes Q42 against Q80");
   console.log("PASS comparison Markdown export includes shared-property sections");
   console.log("PASS search tab and graph filter state update the URL");
+  console.log("PASS graph depth controls support selected-property expansion");
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");
+  console.log("PASS selected graph statement detail drawer shows references");
   console.log("PASS selected graph edge evidence shows concrete references");
   console.log("PASS selected graph path export includes evidence details");
   console.log("PASS selected graph path export summarizes the chosen edge");

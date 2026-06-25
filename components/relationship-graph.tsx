@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Filter, GitBranch, Network, RotateCcw } from "lucide-react";
+import { FileText, Filter, GitBranch, Network, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,15 +19,20 @@ type RelationshipGraphNode = {
   label: string;
   property: string;
   propertyId: string;
+  sourceProperty: string;
+  sourcePropertyId: string;
   kind: "item" | "property";
   rank: WikidataStatement["rank"];
   dataType: string | null;
   qualifierCount: number;
   referenceCount: number;
+  depth: 1 | 2;
+  source: "statement" | "qualifier" | "reference";
   statement: WikidataStatement;
 };
 
 export type RelationshipGraphFilters = {
+  depth: "1" | "2" | "property";
   kind: "all" | "item" | "property";
   rank: "all" | WikidataStatement["rank"];
   propertyId: string;
@@ -73,6 +78,7 @@ type RelationshipGraphProps = {
 const CENTER = { x: 50, y: 50 };
 const RADIUS = 34;
 export const DEFAULT_RELATIONSHIP_GRAPH_FILTERS: RelationshipGraphFilters = {
+  depth: "1",
   kind: "all",
   rank: "all",
   propertyId: "all",
@@ -94,6 +100,25 @@ function evidenceLabel(node: RelationshipGraphNode) {
   if (node.qualifierCount) parts.push(`${node.qualifierCount} qualifier${node.qualifierCount === 1 ? "" : "s"}`);
   if (node.referenceCount) parts.push(`${node.referenceCount} reference${node.referenceCount === 1 ? "" : "s"}`);
   return parts.length ? parts.join(" · ") : "No qualifiers or references";
+}
+
+function formatGraphValueText(value: WikidataStatement["value"]): string {
+  const content = value?.content;
+  if (value?.type === "somevalue") return "Unknown value";
+  if (value?.type === "novalue") return "No value";
+  if (!content) return "No displayable value";
+  if (content.label || content.id) return [content.label, content.id].filter(Boolean).join(" ");
+  if (content.time) return String(content.time).replace(/T.*Z$/, "").replace(/^\+/, "");
+  if (content.amount) return `${content.amount}${content.unit && content.unit !== "1" ? ` ${content.unit}` : ""}`;
+  if (content.latitude !== undefined && content.longitude !== undefined) return `${content.latitude}, ${content.longitude}`;
+  if (content.value !== undefined) return String(content.value);
+  return String(content);
+}
+
+function sourceLabel(source: RelationshipGraphNode["source"]) {
+  if (source === "qualifier") return "Qualifier expansion";
+  if (source === "reference") return "Reference expansion";
+  return "Statement edge";
 }
 
 function positionNodes(graphNodes: RelationshipGraphNode[]): PositionedGraphNode[] {
@@ -143,7 +168,8 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
   const filters = controlledFilters || internalFilters;
   const allNodes = useMemo(() => collectRelationshipGraphNodes(item), [item]);
   const matchingNodes = useMemo(() => filterRelationshipGraphNodes(allNodes, filters), [allNodes, filters]);
-  const nodes = useMemo(() => positionNodes(matchingNodes.slice(0, 14)), [matchingNodes]);
+  const visibleNodeLimit = filters.depth === "1" ? 14 : 24;
+  const nodes = useMemo(() => positionNodes(matchingNodes.slice(0, visibleNodeLimit)), [matchingNodes, visibleNodeLimit]);
   const propertyOptions = useMemo(() => graphPropertyOptions(allNodes), [allNodes]);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
   const selectedEvidenceSummary = selectedNode ? relationshipEvidenceSummary(selectedNode) : null;
@@ -211,7 +237,12 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
           </Button>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-5">
+          <SelectControl id="graph-depth-filter" label="Depth" value={filters.depth} onChange={(value) => updateFilter("depth", value as Required<RelationshipGraphFilters>["depth"])}>
+            <option value="1">1-hop statements</option>
+            <option value="2">2-hop evidence</option>
+            <option value="property">Selected property</option>
+          </SelectControl>
           <SelectControl id="graph-kind-filter" label="Target type" value={filters.kind} onChange={(value) => updateFilter("kind", value as Required<RelationshipGraphFilters>["kind"])}>
             <option value="all">All targets</option>
             <option value="item">Items only</option>
@@ -330,6 +361,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   </span>
                 </div>
                 <p className="mt-2 text-slate-600 dark:text-slate-300">{evidenceLabel(previewNode)}</p>
+                <p className="mt-1 text-slate-500 dark:text-slate-400">{sourceLabel(previewNode.source)}</p>
               </div>
             )}
           </div>
@@ -346,6 +378,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline">{selectedNode.propertyId}</Badge>
+                    <Badge variant="secondary">{selectedNode.depth}-hop</Badge>
                     <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${rankClass(selectedNode.rank)}`}>{selectedNode.rank}</span>
                   </div>
                 </div>
@@ -353,6 +386,9 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Property</div>
                     <div className="mt-1 text-slate-950 dark:text-slate-50">{selectedNode.property}</div>
+                    {selectedNode.sourcePropertyId !== selectedNode.propertyId && (
+                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">From {selectedNode.sourceProperty} ({selectedNode.sourcePropertyId})</div>
+                    )}
                   </div>
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Target</div>
@@ -363,6 +399,81 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Evidence</div>
                     <div className="mt-1 text-slate-700 dark:text-slate-200">{evidenceLabel(selectedNode)}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-900" data-testid="graph-statement-detail-drawer">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 font-semibold text-slate-950 dark:text-slate-50">
+                        <FileText className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                        Statement detail drawer
+                      </div>
+                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                        Full context for the selected edge, including source depth, statement ID, value, qualifiers, and references.
+                      </p>
+                    </div>
+                    <Badge variant="outline">{sourceLabel(selectedNode.source)}</Badge>
+                  </div>
+
+                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-md border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Statement ID</div>
+                      <div className="mt-1 break-all text-slate-800 dark:text-slate-100">{selectedNode.statement.id || "Not provided"}</div>
+                    </div>
+                    <div className="rounded-md border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Value</div>
+                      <div className="mt-1 text-slate-800 dark:text-slate-100">{formatGraphValueText(selectedNode.statement.value)}</div>
+                    </div>
+                    <div className="rounded-md border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Data type</div>
+                      <div className="mt-1 text-slate-800 dark:text-slate-100">{selectedNode.dataType || "unknown"}</div>
+                    </div>
+                    <div className="rounded-md border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Context</div>
+                      <div className="mt-1 text-slate-800 dark:text-slate-100">{selectedNode.depth}-hop via {selectedNode.sourcePropertyId}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                    <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Qualifiers</div>
+                      {selectedNode.statement.qualifiers.length ? (
+                        <div className="space-y-2">
+                          {selectedNode.statement.qualifiers.map((qualifier, index) => (
+                            <div key={`${selectedNode.statement.id}-drawer-qualifier-${index}`} className="grid gap-1 rounded border border-slate-100 p-2 dark:border-slate-800 sm:grid-cols-[150px_1fr]">
+                              <div className="text-xs text-slate-500 dark:text-slate-400">{qualifier.property.label || qualifier.property.id}</div>
+                              <div className="text-slate-800 dark:text-slate-100">{formatGraphValueText(qualifier.value)}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-slate-600 dark:text-slate-300">No qualifiers on this statement.</p>
+                      )}
+                    </div>
+
+                    <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">References</div>
+                      {selectedNode.statement.references.length ? (
+                        <div className="space-y-2">
+                          {selectedNode.statement.references.map((reference, referenceIndex) => (
+                            <div key={reference.hash || `${selectedNode.statement.id}-drawer-reference-${referenceIndex}`} className="rounded border border-slate-100 p-2 dark:border-slate-800">
+                              <div className="mb-2 text-xs text-slate-500 dark:text-slate-400">Reference {referenceIndex + 1}</div>
+                              <div className="space-y-1">
+                                {reference.parts.map((part, partIndex) => (
+                                  <div key={`${reference.hash || referenceIndex}-drawer-part-${partIndex}`} className="grid gap-1 sm:grid-cols-[150px_1fr]">
+                                    <div className="text-xs text-slate-500 dark:text-slate-400">{part.property.label || part.property.id}</div>
+                                    <div className="break-words text-slate-800 dark:text-slate-100">{formatGraphValueText(part.value)}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-slate-600 dark:text-slate-300">No references on this statement.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
