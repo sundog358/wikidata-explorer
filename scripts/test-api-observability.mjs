@@ -2,13 +2,18 @@ import assert from "node:assert/strict";
 import {
   API_FAILURE_CATEGORIES,
   API_OBSERVABILITY_ALERT_RULES,
+  API_OBSERVABILITY_RECEIVER_EVENT_LIMIT,
+  apiObservabilityReceiverConfig,
+  apiObservabilityReceiverSnapshot,
   apiObservabilityMonitorConfig,
   apiObservabilityMonitorPayload,
   apiObservabilityDashboardSpec,
   apiFailureEvent,
+  authorizeApiObservabilityReceiver,
   classifyApiFailure,
   evaluateApiFailureAlerts,
   logApiFailure,
+  receiveApiObservabilityMonitorPayload,
   reportApiFailure,
   sanitizeLogMessage,
   sendApiFailureToMonitor,
@@ -62,6 +67,18 @@ assert.deepEqual(apiObservabilityMonitorConfig({ API_OBSERVABILITY_WEBHOOK_URL: 
 assert.deepEqual(apiObservabilityMonitorConfig({ API_OBSERVABILITY_WEBHOOK_URL: "http://monitor.example.com/events" }), { enabled: false, reason: "insecure-url" });
 assert.equal(apiObservabilityMonitorConfig({ API_OBSERVABILITY_WEBHOOK_URL: "https://monitor.example.com/events" }).enabled, true);
 assert.equal(apiObservabilityMonitorConfig({ API_OBSERVABILITY_WEBHOOK_URL: "http://127.0.0.1:3002/events" }).enabled, true);
+assert.deepEqual(apiObservabilityReceiverConfig({}), { enabled: false, reason: "token-not-configured" });
+assert.deepEqual(apiObservabilityReceiverConfig({ API_OBSERVABILITY_RECEIVER_TOKEN: "short" }), { enabled: false, reason: "token-too-short" });
+assert.equal(apiObservabilityReceiverConfig({ API_OBSERVABILITY_RECEIVER_TOKEN: "receiver-token-value" }).enabled, true);
+assert.equal(apiObservabilityReceiverConfig({ API_OBSERVABILITY_WEBHOOK_TOKEN: "monitor-token-value" }).enabled, true);
+assert.deepEqual(
+  authorizeApiObservabilityReceiver({ authorization: "Bearer wrong-token" }, { API_OBSERVABILITY_RECEIVER_TOKEN: "receiver-token-value" }),
+  { authorized: false, status: 401, reason: "unauthorized" },
+);
+assert.deepEqual(
+  authorizeApiObservabilityReceiver({ authorization: "Bearer receiver-token-value" }, { API_OBSERVABILITY_RECEIVER_TOKEN: "receiver-token-value" }),
+  { authorized: true },
+);
 
 const monitorPayload = apiObservabilityMonitorPayload({
   route: "/api/chat",
@@ -72,6 +89,38 @@ assert.equal(monitorPayload.source, "wikidata-explorer");
 assert.equal(monitorPayload.event.category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
 assert.equal(monitorPayload.alertRules[0].id, "ag2-grounding-invalid");
 assert.doesNotMatch(JSON.stringify(monitorPayload), /abcdefghijklmnop/);
+
+const receiverStore = [];
+const receivedMonitor = receiveApiObservabilityMonitorPayload(monitorPayload, {
+  store: receiverStore,
+  now: "2026-06-25T21:29:45.000Z",
+});
+assert.equal(receivedMonitor.received, true);
+assert.equal(receivedMonitor.event.category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
+assert.equal(receivedMonitor.retainedEvents, 1);
+assert.equal(receivedMonitor.alertResults.find((alert) => alert.id === "ag2-grounding-invalid").firing, true);
+assert.doesNotMatch(JSON.stringify(receiverStore), /abcdefghijklmnop/);
+
+for (let index = 0; index < API_OBSERVABILITY_RECEIVER_EVENT_LIMIT + 3; index += 1) {
+  receiveApiObservabilityMonitorPayload({
+    event: {
+      route: "/api/chat",
+      status: 503,
+      category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE,
+      message: `AG2 service unavailable ${index}`,
+      createdAt: "2026-06-25T21:29:50.000Z",
+    },
+  }, { store: receiverStore });
+}
+assert.equal(receiverStore.length, API_OBSERVABILITY_RECEIVER_EVENT_LIMIT);
+const receiverSnapshot = apiObservabilityReceiverSnapshot({
+  store: receiverStore,
+  now: "2026-06-25T21:30:00.000Z",
+});
+assert.equal(receiverSnapshot.dashboard.title, "Wikidata Explorer API Reliability");
+assert.equal(receiverSnapshot.retainedEvents, API_OBSERVABILITY_RECEIVER_EVENT_LIMIT);
+assert.equal(receiverSnapshot.recentEvents.length, 25);
+assert.equal(receiverSnapshot.alertResults.find((alert) => alert.id === "ag2-service-unavailable-spike").firing, true);
 
 const disabledMonitor = await sendApiFailureToMonitor(monitorPayload.event, { env: {} });
 assert.deepEqual(disabledMonitor, { sent: false, reason: "not-configured" });

@@ -111,9 +111,10 @@ Optional hosted monitoring:
 ```powershell
 API_OBSERVABILITY_WEBHOOK_URL=https://your-monitor.example.com/api/events
 API_OBSERVABILITY_WEBHOOK_TOKEN=generate-a-random-shared-token
+API_OBSERVABILITY_RECEIVER_TOKEN=generate-a-random-shared-token
 ```
 
-When configured, AI API routes post sanitized failure events plus matching alert-rule metadata to the webhook. HTTPS is required outside localhost, and prompts, raw payloads, provider keys, and bearer tokens are not sent.
+When configured, AI API routes post sanitized failure events plus matching alert-rule metadata to the webhook. The built-in `/api/observability/events` receiver can be used as the target when protected with `API_OBSERVABILITY_RECEIVER_TOKEN` or the shared webhook token; it retains only a bounded in-memory event window and exposes the evaluated dashboard snapshot behind the same bearer token. HTTPS is required outside localhost, and prompts, raw payloads, provider keys, and bearer tokens are not sent.
 
 Local environment files, provider keys, Pywikibot credentials, runtime files, caches, and research artifacts are ignored by default.
 
@@ -209,6 +210,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
 - `app/api/entity-summary/route.ts`: feature-flagged grounded entity summary endpoint
 - `app/api/ag2-workflow/route.ts`: feature-flagged specialist workflow endpoint with autonomy safety gating
+- `app/api/observability/events/route.ts`: token-protected built-in monitor receiver for sanitized API failure events, bounded recent-event retention, and alert/dashboard snapshots
 - `components/relationship-graph.tsx`: clickable, filterable entity relationship visualization with controlled depth/layout/filter state, grouped and timeline evidence layouts, secondary entity previews, pinned relationship comparison, selected-edge evidence summaries, and statement detail drawers
 - `components/ErrorBoundary.tsx`: reusable client-side recovery boundary with customizable fallback and sanitized error callbacks
 - `components/nav/main-nav.tsx`: primary nav with AI links hidden unless the AI feature flag is enabled
@@ -232,7 +234,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/ag2-remote-service.mjs`: tested remote AG2 service client for `/run` payloads, bearer auth, success responses, and service error mapping
 - `lib/ag2-errors.mjs`: shared AG2 bridge error type for local and remote runtime failures
 - `lib/ag2-service-auth.mjs`: shared AG2 service bearer-token validation helper
-- `lib/api-observability.mjs`: sanitized API failure classifier/logger plus optional hosted monitor webhook delivery and dashboard/alert-rule contract for AI route validation, safety, disabled-mode, OpenAI, AG2 service, Wikidata, and Commons outage categories
+- `lib/api-observability.mjs`: sanitized API failure classifier/logger plus optional hosted monitor webhook delivery, built-in receiver helpers, and dashboard/alert-rule contract for AI route validation, safety, disabled-mode, OpenAI, AG2 service, Wikidata, and Commons outage categories
 - `lib/ai-rate-limit.mjs`: in-memory public AI route throttling helper
 - `agents/wikidata_ag2_agent.py`: bounded AG2 agent bridge for chat, research, graph analysis, suggestions, verification, comparison, reports, and shared citation-style grounding requirements
 - `agents/ag2_service.py`: token-protected FastAPI wrapper for the containerized AG2 runtime
@@ -241,7 +243,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-workspace-snapshot.mjs`: portable workspace snapshot and saved-slot tests for review statuses, dismissed findings, agent-run history, supported artifact versioning, bounds, and secret-shaped text redaction
 - `scripts/test-github-actions-maintenance.mjs`: CI workflow maintenance test that keeps GitHub Actions on Node 24-compatible action lines while the app runtime remains tested on Node 20+
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
-- `scripts/test-api-observability.mjs`: safe logging/category/dashboard-alert/webhook tests that ensure API failure events, monitor payloads, and observability rules do not expose prompts, keys, bearer tokens, or raw payloads
+- `scripts/test-api-observability.mjs`: safe logging/category/dashboard-alert/webhook/receiver tests that ensure API failure events, monitor payloads, observability rules, and retained receiver events do not expose prompts, keys, bearer tokens, or raw payloads
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
 - `scripts/test-ag2-chat-context.mjs`: bounded AG2 chat context sanitizer checks for entity, statement, graph focus, and path export handoff
 - `scripts/test-ag2-grounding-validation.mjs`: route-level AG2 response grounding validation tests for required Wikidata IDs and `Grounding references`
