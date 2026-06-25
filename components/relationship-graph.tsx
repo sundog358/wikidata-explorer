@@ -226,13 +226,13 @@ function SelectControl({
   onChange: (value: string) => void;
 }) {
   return (
-    <label htmlFor={id} className="grid gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+    <label htmlFor={id} className="grid min-w-0 gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
       <span>{label}</span>
       <select
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-950 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50"
+        className="h-9 w-full min-w-0 truncate rounded-md border border-slate-200 bg-white px-2 pr-8 text-sm text-slate-950 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50"
       >
         {children}
       </select>
@@ -337,7 +337,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
               {relationshipGraphSummary(item, allNodes, matchingNodes)} {matchingNodes.length > nodes.length ? `Showing the first ${nodes.length} matching nodes.` : ""}
             </p>
           </div>
-          <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => {
+          <Button type="button" variant="outline" size="sm" className="shrink-0 gap-2" onClick={() => {
             setGraphFilters(DEFAULT_RELATIONSHIP_GRAPH_FILTERS);
             selectNode(null);
           }} disabled={!hasActiveFilters}>
@@ -346,7 +346,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
           </Button>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
           <SelectControl id="graph-depth-filter" label="Depth" value={filters.depth} onChange={(value) => updateFilter("depth", value as Required<RelationshipGraphFilters>["depth"])}>
             <option value="1">1-hop statements</option>
             <option value="2">2-hop evidence</option>
