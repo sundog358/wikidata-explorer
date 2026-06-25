@@ -20,6 +20,7 @@ const checks = [
     name: "02-search-q42-graph-desktop.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    fixtureRoutes: true,
     viewport: { width: 1440, height: 1000 },
   },
   {
@@ -44,6 +45,7 @@ const checks = [
     name: "06-search-q42-mobile.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    fixtureRoutes: true,
     viewport: { width: 390, height: 844 },
   },
   {
