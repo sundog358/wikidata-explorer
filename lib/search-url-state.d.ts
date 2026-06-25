@@ -2,7 +2,7 @@ export type SearchWorkbenchTab = "graph" | "compare" | "statements" | "aliases" 
 
 export type SearchGraphFilters = {
   depth: "1" | "2" | "property";
-  layout: "radial" | "property";
+  layout: "radial" | "property" | "timeline";
   kind: "all" | "item" | "property";
   rank: "all" | "preferred" | "normal" | "deprecated";
   propertyId: string;

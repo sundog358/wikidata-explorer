@@ -73,6 +73,11 @@ try {
   if (graphUrl.searchParams.get("gdepth") !== "property" || graphUrl.searchParams.get("glayout") !== "property" || graphUrl.searchParams.get("gprop") !== "P31") {
     throw new Error(`Expected graph depth, layout, and property filters in URL, got ${page.url()}`);
   }
+  await page.getByLabel("Layout").selectOption("timeline");
+  const timelineUrl = new URL(page.url());
+  if (timelineUrl.searchParams.get("glayout") !== "timeline") {
+    throw new Error(`Expected timeline graph layout in URL, got ${page.url()}`);
+  }
 
   await page.getByTestId("graph-focus-Q5").click();
   await page.getByTestId("selected-graph-node-description").waitFor({ state: "visible" });
@@ -167,6 +172,7 @@ try {
   console.log("PASS search tab and graph filter state update the URL");
   console.log("PASS graph depth controls support selected-property expansion");
   console.log("PASS grouped-by-property graph layout updates URL state");
+  console.log("PASS timeline graph layout updates URL state");
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");

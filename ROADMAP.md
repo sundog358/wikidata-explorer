@@ -22,9 +22,9 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - AI agents are feature-flagged off in public mode, with API routes failing closed and tested.
 - Optional AG2 runtime supports local Python/conda or a token-protected FastAPI container through `AG2_SERVICE_URL`.
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
-- Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, and selected-path Markdown/JSON exports.
+- Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property layout, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, and selected-path Markdown/JSON exports.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, and Markdown comparison exports.
-- The current local branch adds a grouped-by-property graph layout mode with shareable URL state.
+- The current local branch adds a timeline evidence graph layout mode with shareable URL state.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -44,13 +44,13 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 
 ## Ready For Next Production Deploy
 
-- Grouped-by-property graph layout is implemented and verified locally through the graph layout control and `glayout=property` URL state.
+- Timeline evidence graph layout is implemented locally through the graph layout control and `glayout=timeline` URL state.
 
 ## Portfolio Readiness
 
 Current local grade: 9.25 / 10
 
-The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
+The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, timeline evidence layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
 To reach 9.5:
 
@@ -79,7 +79,7 @@ Goal: make the first five minutes of the demo obvious and impressive.
 
 ### 2. Graph Exploration Depth
 
-Status: depth, preview, history, detail-drawer, and pinned-comparison slices shipped in production; grouped-by-property layout implemented locally.
+Status: depth, preview, history, detail-drawer, pinned-comparison, and grouped-by-property layout slices shipped in production; timeline evidence layout implemented locally.
 
 Goal: make the graph the signature feature.
 
@@ -88,8 +88,9 @@ Goal: make the graph the signature feature.
 - Implemented pinned relationship history for selected graph relationships.
 - Implemented a selected statement detail drawer for statement ID, value, data type, depth/source context, qualifiers, and references.
 - Implemented multi-edge comparison views for pinned relationships.
-- Implemented grouped-by-property layout mode locally.
-- Next: deploy grouped layout and add timeline-like layout for date-heavy entities.
+- Implemented grouped-by-property layout mode.
+- Implemented timeline evidence layout mode locally for date-heavy relationship evidence.
+- Next: deploy timeline layout and continue accessibility checks for graph controls.
 - Keep graph URL state stable for filters, selected focus, and future export views.
 
 ### 3. Entity Comparison
@@ -190,9 +191,9 @@ Status: shipped
 
 Status: in progress
 
-- Shipped: graph filters, depth controls, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
-- Ready for deploy: grouped-by-property graph layout mode.
-- Next: timeline-like layout for date-heavy entities.
+- Shipped: graph filters, depth controls, grouped-by-property layout, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
+- Ready for deploy: timeline evidence graph layout mode.
+- Next: graph accessibility checks for layout/depth controls and keyboard navigation.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 

@@ -33,7 +33,7 @@ type RelationshipGraphNode = {
 
 export type RelationshipGraphFilters = {
   depth: "1" | "2" | "property";
-  layout: "radial" | "property";
+  layout: "radial" | "property" | "timeline";
   kind: "all" | "item" | "property";
   rank: "all" | WikidataStatement["rank"];
   propertyId: string;
@@ -43,6 +43,7 @@ export type RelationshipGraphFilters = {
 type PositionedGraphNode = RelationshipGraphNode & {
   x: number;
   y: number;
+  timelineLabel?: string;
 };
 
 type GraphNodeTerm = {
@@ -212,6 +213,65 @@ function positionNodesByProperty(graphNodes: RelationshipGraphNode[]): Positione
   });
 }
 
+function yearFromWikidataTime(value: unknown): number | null {
+  const match = String(value || "").match(/^([+-]?\d{1,})/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  return Number.isFinite(year) ? year : null;
+}
+
+function timelineYearFromNode(node: RelationshipGraphNode): number | null {
+  const directYear = yearFromWikidataTime(node.statement?.value?.content?.time);
+  if (directYear !== null) return directYear;
+
+  for (const qualifier of node.statement?.qualifiers || []) {
+    const qualifierYear = yearFromWikidataTime(qualifier?.value?.content?.time);
+    if (qualifierYear !== null) return qualifierYear;
+  }
+
+  for (const reference of node.statement?.references || []) {
+    for (const part of reference.parts || []) {
+      const referenceYear = yearFromWikidataTime(part?.value?.content?.time);
+      if (referenceYear !== null) return referenceYear;
+    }
+  }
+
+  return null;
+}
+
+function formatTimelineYear(year: number): string {
+  if (year < 0) return `${Math.abs(year)} BCE`;
+  return String(year);
+}
+
+function positionNodesByTimeline(graphNodes: RelationshipGraphNode[]): PositionedGraphNode[] {
+  const indexedNodes = graphNodes.map((node, index) => ({ node, index, year: timelineYearFromNode(node) }));
+  const orderedNodes = indexedNodes.sort((a, b) => {
+    if (a.year === null && b.year === null) return a.index - b.index;
+    if (a.year === null) return 1;
+    if (b.year === null) return -1;
+    return a.year - b.year || a.index - b.index;
+  });
+  const columnCount = Math.min(4, Math.max(1, orderedNodes.length));
+  const rowCount = Math.ceil(orderedNodes.length / columnCount);
+  const positioned = new Map<string, PositionedGraphNode>();
+
+  orderedNodes.forEach((item, orderedIndex) => {
+    const columnIndex = orderedIndex % columnCount;
+    const rowIndex = Math.floor(orderedIndex / columnCount);
+    const x = columnCount === 1 ? 50 : 16 + (columnIndex / Math.max(1, columnCount - 1)) * 68;
+    const y = rowCount === 1 ? 50 : 18 + (rowIndex / Math.max(1, rowCount - 1)) * 64;
+    positioned.set(item.node.id, {
+      ...item.node,
+      x,
+      y,
+      timelineLabel: item.year === null ? "Undated" : formatTimelineYear(item.year),
+    });
+  });
+
+  return graphNodes.map((node) => positioned.get(node.id) || { ...node, x: 50, y: 50, timelineLabel: "Undated" });
+}
+
 function SelectControl({
   id,
   label,
@@ -253,7 +313,9 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
   const visibleNodeLimit = filters.depth === "1" ? 14 : 24;
   const nodes = useMemo(() => {
     const visibleNodes = matchingNodes.slice(0, visibleNodeLimit);
-    return filters.layout === "property" ? positionNodesByProperty(visibleNodes) : positionNodes(visibleNodes);
+    if (filters.layout === "property") return positionNodesByProperty(visibleNodes);
+    if (filters.layout === "timeline") return positionNodesByTimeline(visibleNodes);
+    return positionNodes(visibleNodes);
   }, [filters.layout, matchingNodes, visibleNodeLimit]);
   const propertyOptions = useMemo(() => graphPropertyOptions(allNodes), [allNodes]);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
@@ -355,6 +417,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
           <SelectControl id="graph-layout-filter" label="Layout" value={filters.layout} onChange={(value) => updateFilter("layout", value as Required<RelationshipGraphFilters>["layout"])}>
             <option value="radial">Radial</option>
             <option value="property">Grouped by property</option>
+            <option value="timeline">Timeline evidence</option>
           </SelectControl>
           <SelectControl id="graph-kind-filter" label="Target type" value={filters.kind} onChange={(value) => updateFilter("kind", value as Required<RelationshipGraphFilters>["kind"])}>
             <option value="all">All targets</option>
@@ -388,7 +451,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
         </div>
       ) : (
         <>
-          <div className="relative min-h-[440px] overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <div className={`relative overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 ${filters.layout === "timeline" ? "min-h-[560px]" : "min-h-[440px]"}`}>
             <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" role="img" aria-label={`Relationship graph for ${entityLabel(item)}`}>
               <defs>
                 <radialGradient id="graph-center" cx="50%" cy="50%" r="60%">
@@ -408,7 +471,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                       y2={node.y}
                       stroke={active ? "#0284c7" : "#94a3b8"}
                       strokeWidth={active ? "0.55" : "0.35"}
-                      strokeDasharray={filters.layout === "property" ? "0.8 1.4" : "1.2 1.2"}
+                      strokeDasharray={filters.layout === "radial" ? "1.2 1.2" : "0.8 1.4"}
                     />
                     <circle cx={node.x} cy={node.y} r={active ? "1.7" : "1.2"} fill={node.kind === "property" ? "#10b981" : "#0284c7"} />
                   </g>
@@ -432,7 +495,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   onFocus={() => selectNode(node)}
                   onMouseEnter={() => setHoveredNodeId(node.id)}
                   onMouseLeave={() => setHoveredNodeId(null)}
-                  className={`absolute w-44 -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white p-2 text-left text-xs shadow-sm transition hover:border-sky-300 hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800 ${
+                  className={`absolute ${filters.layout === "timeline" ? "w-40" : "w-44"} -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white p-2 text-left text-xs shadow-sm transition hover:border-sky-300 hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800 ${
                     selected || node.id === hoveredNodeId ? "z-30" : "z-20"
                   } ${
                     selected ? "border-sky-400 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"
@@ -449,6 +512,9 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                     <GitBranch className="h-3 w-3" />
                     {node.rank}
                   </div>
+                  {filters.layout === "timeline" && node.timelineLabel && (
+                    <div className="mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">{node.timelineLabel}</div>
+                  )}
                 </button>
               );
             })}
