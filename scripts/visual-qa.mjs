@@ -20,6 +20,7 @@ const checks = [
     name: "02-search-q42-graph-desktop.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    waitTextState: "content",
     waitTestId: "selected-entity-id",
     waitTestText: "Q42",
     fixtureRoutes: true,
@@ -47,6 +48,7 @@ const checks = [
     name: "06-search-q42-mobile.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    waitTextState: "content",
     waitTestId: "selected-entity-id",
     waitTestText: "Q42",
     fixtureRoutes: true,
@@ -84,6 +86,7 @@ const checks = [
     name: "11-search-q42-graph-desktop-dark.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    waitTextState: "content",
     waitTestId: "selected-entity-id",
     waitTestText: "Q42",
     colorScheme: "dark",
@@ -104,6 +107,7 @@ const checks = [
     name: "13-search-q42-mobile-dark.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    waitTextState: "content",
     waitTestId: "selected-entity-id",
     waitTestText: "Q42",
     colorScheme: "dark",
@@ -145,6 +149,22 @@ function trackBrowserErrors(page) {
   });
 
   return browserErrors;
+}
+
+async function waitForVisualText(page, check) {
+  if (check.waitTextState === "content") {
+    await page.waitForFunction(
+      (text) => document.body?.textContent?.includes(text),
+      check.waitText,
+      { timeout: 20000 },
+    );
+    return;
+  }
+
+  await page.getByText(check.waitText, { exact: false }).first().waitFor({
+    state: "visible",
+    timeout: 20000,
+  });
 }
 
 await rm(outDir, { recursive: true, force: true });
@@ -196,10 +216,7 @@ try {
           );
         }
       }
-      await page.getByText(check.waitText, { exact: false }).first().waitFor({
-        state: "visible",
-        timeout: 20000,
-      });
+      await waitForVisualText(page, check);
       if (check.focusTestId) {
         await page.getByTestId(check.focusTestId).scrollIntoViewIfNeeded({ timeout: 20000 });
       }
