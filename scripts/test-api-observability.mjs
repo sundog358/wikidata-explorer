@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import {
   API_FAILURE_CATEGORIES,
   API_OBSERVABILITY_ALERT_RULES,
+  apiObservabilityMonitorConfig,
+  apiObservabilityMonitorPayload,
   apiObservabilityDashboardSpec,
   apiFailureEvent,
   classifyApiFailure,
   evaluateApiFailureAlerts,
   logApiFailure,
+  reportApiFailure,
   sanitizeLogMessage,
+  sendApiFailureToMonitor,
 } from "../lib/api-observability.mjs";
 import { AI_DISABLED_MESSAGE } from "../lib/ai-feature-flags.mjs";
 
@@ -52,6 +56,57 @@ assert.equal(logged.route, "/api/ag2-workflow");
 assert.equal(logs.length, 1);
 assert.match(logs[0], /"event":"api_failure"/);
 assert.doesNotMatch(logs[0], /messages|statements|OPENAI_API_KEY/);
+
+assert.deepEqual(apiObservabilityMonitorConfig({}), { enabled: false, reason: "not-configured" });
+assert.deepEqual(apiObservabilityMonitorConfig({ API_OBSERVABILITY_WEBHOOK_URL: "not a url" }), { enabled: false, reason: "invalid-url" });
+assert.deepEqual(apiObservabilityMonitorConfig({ API_OBSERVABILITY_WEBHOOK_URL: "http://monitor.example.com/events" }), { enabled: false, reason: "insecure-url" });
+assert.equal(apiObservabilityMonitorConfig({ API_OBSERVABILITY_WEBHOOK_URL: "https://monitor.example.com/events" }).enabled, true);
+assert.equal(apiObservabilityMonitorConfig({ API_OBSERVABILITY_WEBHOOK_URL: "http://127.0.0.1:3002/events" }).enabled, true);
+
+const monitorPayload = apiObservabilityMonitorPayload({
+  route: "/api/chat",
+  status: 502,
+  message: "The AG2 response did not include required Wikidata grounding references. Bearer abcdefghijklmnop",
+});
+assert.equal(monitorPayload.source, "wikidata-explorer");
+assert.equal(monitorPayload.event.category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
+assert.equal(monitorPayload.alertRules[0].id, "ag2-grounding-invalid");
+assert.doesNotMatch(JSON.stringify(monitorPayload), /abcdefghijklmnop/);
+
+const disabledMonitor = await sendApiFailureToMonitor(monitorPayload.event, { env: {} });
+assert.deepEqual(disabledMonitor, { sent: false, reason: "not-configured" });
+
+const fetchCalls = [];
+const sentMonitor = await sendApiFailureToMonitor(monitorPayload.event, {
+  env: {
+    API_OBSERVABILITY_WEBHOOK_URL: "https://monitor.example.com/events",
+    API_OBSERVABILITY_WEBHOOK_TOKEN: "monitor-token-value",
+  },
+  fetchImpl: async (url, init) => {
+    fetchCalls.push({ url, init });
+    return { ok: true, status: 202 };
+  },
+});
+assert.deepEqual(sentMonitor, { sent: true, status: 202 });
+assert.equal(fetchCalls[0].url, "https://monitor.example.com/events");
+assert.equal(fetchCalls[0].init.method, "POST");
+assert.equal(fetchCalls[0].init.headers.authorization, "Bearer monitor-token-value");
+const sentBody = JSON.parse(fetchCalls[0].init.body);
+assert.equal(sentBody.event.category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
+assert.equal(sentBody.alertRules[0].severity, "critical");
+
+const reportLogs = [];
+const reported = await reportApiFailure({
+  route: "/api/chat",
+  status: 502,
+  message: "The AG2 response did not include required Wikidata grounding references.",
+}, {
+  env: { API_OBSERVABILITY_WEBHOOK_URL: "https://monitor.example.com/events" },
+  fetchImpl: async () => ({ ok: true, status: 202 }),
+  logger: { warn: (message) => reportLogs.push(message) },
+});
+assert.equal(reported.category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
+assert.equal(reportLogs.length, 1);
 
 const categoriesWithAlerts = new Set(API_OBSERVABILITY_ALERT_RULES.map((rule) => rule.category));
 assert.deepEqual(categoriesWithAlerts, new Set(Object.values(API_FAILURE_CATEGORIES)));

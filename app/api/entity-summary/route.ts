@@ -3,13 +3,13 @@ import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs
 import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
 import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
 import { AG2_GROUNDING_ERROR_MESSAGE, validateAg2Grounding } from "@/lib/ag2-grounding-validation.mjs";
-import { API_FAILURE_CATEGORIES, logApiFailure } from "@/lib/api-observability.mjs";
+import { API_FAILURE_CATEGORIES, reportApiFailure } from "@/lib/api-observability.mjs";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 const ROUTE_NAME = "/api/entity-summary";
 
-function aiRateLimitResponse(req: Request) {
+async function aiRateLimitResponse(req: Request) {
   const limit = checkAiRateLimit({
     key: aiRateLimitKey(req.headers),
     env: process.env,
@@ -17,7 +17,7 @@ function aiRateLimitResponse(req: Request) {
 
   if (limit.allowed) return null;
 
-  logApiFailure({
+  await reportApiFailure({
     route: ROUTE_NAME,
     status: 429,
     category: API_FAILURE_CATEGORIES.REQUEST_RATE_LIMITED,
@@ -63,7 +63,7 @@ const requestSchema = z.object({
 
 export async function POST(req: Request) {
   if (!aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS })) {
-    logApiFailure({
+    await reportApiFailure({
       route: ROUTE_NAME,
       status: 404,
       category: API_FAILURE_CATEGORIES.AG2_DISABLED,
@@ -72,14 +72,14 @@ export async function POST(req: Request) {
     return Response.json({ error: AI_DISABLED_MESSAGE }, { status: 404 });
   }
 
-  const limited = aiRateLimitResponse(req);
+  const limited = await aiRateLimitResponse(req);
   if (limited) return limited;
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    logApiFailure({
+    await reportApiFailure({
       route: ROUTE_NAME,
       status: 400,
       category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
-    logApiFailure({
+    await reportApiFailure({
       route: ROUTE_NAME,
       status: 400,
       category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
     }
     return Response.json({ summary: result.summary, grounding });
   } catch (error) {
-    logApiFailure({
+    await reportApiFailure({
       route: ROUTE_NAME,
       status: error instanceof Ag2BridgeError ? error.status : 500,
       error,

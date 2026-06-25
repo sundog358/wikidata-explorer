@@ -55,6 +55,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Portable workspace snapshots now export and restore review task statuses, dismissed review findings, and saved AG2 run history with tested artifact validation.
 - GitHub Actions CI now uses Node 24-compatible action lines for checkout, setup-node, Chrome setup, and artifact upload, with a regression test to keep the workflow current.
 - AI-enabled AG2 routes now reject ungrounded responses that lack `Grounding references` or supplied Wikidata IDs, and emit an `ag2-grounding-invalid` observability category.
+- AI API routes can now deliver sanitized failure events and matching alert-rule metadata to an optional hosted monitor webhook.
 - API observability now includes a tested dashboard/alert contract with category panels, severity thresholds, time windows, and runbook text on top of sanitized failure events.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 - The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
@@ -86,7 +87,7 @@ To reach 10:
 
 - Ship an optional hosted AG2 container demo now that AI-enabled routes enforce traceable, citation-style Wikidata ID references in responses.
 - Add account/project-backed persistence for workspace snapshots, curation tasks, and agent history beyond portable browser artifacts.
-- Connect the tested observability dashboard/alert contract to a hosted production monitor.
+- Configure a hosted production monitor endpoint for the tested observability webhook and alert contract.
 
 ## Next Priorities
 
@@ -212,7 +213,8 @@ Observability:
 - Shipped a client-side error boundary around the explorer workflow with reset/reload recovery and sanitized client failure telemetry.
 - Track API error categories: Wikidata unavailable, Commons unavailable, AG2 disabled, request validation, safety policy, request rate limit, OpenAI key missing, OpenAI quota/rate limit, and AG2 service unavailable.
 - Track AG2 grounding invalid responses as a critical alert category before any public AI-enabled demo traffic.
-- Shipped a tested dashboard/alert rule contract for category panels, severity thresholds, alert windows, and runbook text; next step is wiring it to the hosted production monitor.
+- Shipped optional hosted monitor webhook delivery for sanitized API failure events and matching alert-rule metadata.
+- Shipped a tested dashboard/alert rule contract for category panels, severity thresholds, alert windows, and runbook text; next step is configuring the hosted production receiver/dashboard.
 
 ## Maintenance
 

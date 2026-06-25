@@ -160,11 +160,31 @@ const ag2Server = createServer(async (request, response) => {
 ag2Server.listen(0, "127.0.0.1");
 await once(ag2Server, "listening");
 
+const monitorRequests = [];
+const monitorServer = createServer(async (request, response) => {
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  const bodyText = Buffer.concat(chunks).toString("utf8");
+  monitorRequests.push({
+    method: request.method,
+    url: request.url,
+    authorization: request.headers.authorization,
+    body: bodyText ? JSON.parse(bodyText) : {},
+  });
+  response.statusCode = 202;
+  response.end(JSON.stringify({ ok: true }));
+});
+
+monitorServer.listen(0, "127.0.0.1");
+await once(monitorServer, "listening");
+
 let nextServer = null;
 
 try {
   const ag2Address = ag2Server.address();
   const ag2BaseUrl = `http://127.0.0.1:${ag2Address.port}`;
+  const monitorAddress = monitorServer.address();
+  const monitorBaseUrl = `http://127.0.0.1:${monitorAddress.port}/events`;
   const nextPort = await availablePort();
   const nextBaseUrl = `http://127.0.0.1:${nextPort}`;
   const logs = [];
@@ -176,6 +196,8 @@ try {
       NEXT_PUBLIC_ENABLE_AI_AGENTS: "true",
       AG2_SERVICE_URL: ag2BaseUrl,
       AG2_SERVICE_TOKEN: strongToken,
+      API_OBSERVABILITY_WEBHOOK_URL: monitorBaseUrl,
+      API_OBSERVABILITY_WEBHOOK_TOKEN: "monitor-contract-token",
       AI_AGENT_RATE_LIMIT_MAX: "100",
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -234,6 +256,12 @@ try {
   assert.equal(ag2Requests[1].body.payload.entity.id, "Q42");
   assert.equal(ag2Requests[2].body.payload.graphFocus.propertyId, "P31");
   assert.equal(ag2Requests[2].body.payload.entity.statements[0].references[0].parts[0].propertyId, "P248");
+  assert.equal(monitorRequests.length, 1);
+  assert.equal(monitorRequests[0].method, "POST");
+  assert.equal(monitorRequests[0].url, "/events");
+  assert.equal(monitorRequests[0].authorization, "Bearer monitor-contract-token");
+  assert.equal(monitorRequests[0].body.event.category, "ag2-grounding-invalid");
+  assert.equal(monitorRequests[0].body.alertRules[0].id, "ag2-grounding-invalid");
 } finally {
   if (nextServer && nextServer.exitCode === null) {
     nextServer.kill();
@@ -245,6 +273,8 @@ try {
 
   ag2Server.close();
   await once(ag2Server, "close");
+  monitorServer.close();
+  await once(monitorServer, "close");
 }
 
 console.log("PASS AI-enabled AG2 API route success contracts");
