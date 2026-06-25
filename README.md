@@ -193,13 +193,14 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow with a client-side error boundary, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant with bounded visible-context handoff from the workbench
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
 - `app/api/entity-summary/route.ts`: feature-flagged grounded entity summary endpoint
 - `app/api/ag2-workflow/route.ts`: feature-flagged specialist workflow endpoint with autonomy safety gating
 - `components/relationship-graph.tsx`: clickable, filterable entity relationship visualization with controlled depth/layout/filter state, grouped and timeline evidence layouts, secondary entity previews, pinned relationship comparison, selected-edge evidence summaries, and statement detail drawers
+- `components/ErrorBoundary.tsx`: reusable client-side recovery boundary with customizable fallback and sanitized error callbacks
 - `components/nav/main-nav.tsx`: primary nav with AI links hidden unless the AI feature flag is enabled
 - `lib/wikidata.ts`: Wikidata API client and normalization helpers
 - `lib/site-config.mjs`: shared portfolio metadata, public URL, social-preview, favicon, and site-icon configuration
@@ -237,6 +238,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, Commons media, related-work, organization headquarters/media, author comparison, cross-type work/organization/person comparison, three-entity comparison, no-result, missing-entity, Wikidata outage, Commons outage, and language fallback fixtures to the live search workbench without external Wikidata calls
 - `scripts/test-entity-comparison.mjs`: deterministic two/three-entity comparison and Markdown/JSON export tests
 - `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests
+- `scripts/test-search-error-boundary.mjs`: search workbench error-boundary regression checks for fallback UI, reset wiring, and sanitized client telemetry
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
@@ -249,7 +251,7 @@ Optional AI-enabled mode remains a separate deployment step:
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract and sanitized API failure-category checks so the container bridge and production-safe route logging are checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract, sanitized API failure-category checks, and search workbench error-boundary checks so the container bridge, production-safe route logging, and client recovery shell are checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
 CI also runs install, verify, production trace checks, smoke, public metadata checks, public AI-off API contracts, mock AG2 enabled-mode API contracts, e2e, performance budgets, visual QA, and screenshot artifact upload on GitHub Actions.
 

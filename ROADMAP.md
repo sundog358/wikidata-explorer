@@ -51,6 +51,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Organization fixture coverage now adds Q95/Google with headquarters, founder, inception, website, logo/media, source-link, data-quality, and graph-regression checks.
 - Cross-type comparison coverage now exports a work/organization/person matrix for Q25169/Q95/Q42 and verifies shareable restore.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
+- The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
 
 ## Recently Confirmed In Production
 
@@ -74,7 +75,6 @@ The project is job-portfolio ready now. It shows product judgment, modern fronte
 To move beyond 9.5:
 
 - Add place/geographic fixtures so comparison examples cover place/work/organization/person mixes.
-- Add a client-side error boundary around the explorer workflow.
 
 To reach 10:
 
@@ -198,7 +198,7 @@ AI-enabled future mode:
 Observability:
 
 - Shipped lightweight server logging for AI route failures without leaking prompts, keys, or sensitive context.
-- Add a client-side error boundary around the explorer workflow.
+- Shipped a client-side error boundary around the explorer workflow with reset/reload recovery and sanitized client failure telemetry.
 - Track API error categories: Wikidata unavailable, Commons unavailable, AG2 disabled, request validation, safety policy, request rate limit, OpenAI key missing, OpenAI quota/rate limit, and AG2 service unavailable.
 
 ## Maintenance

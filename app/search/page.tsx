@@ -14,6 +14,7 @@ import { AG2_CHAT_CONTEXT_STORAGE_KEY, sanitizeChatVisibleContext } from "@/lib/
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
 import { RelationshipGraph, type RelationshipGraphFilters, type RelationshipGraphFocus } from "@/components/relationship-graph";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -425,7 +426,7 @@ function collectCommonsFiles(item: WikidataItem | null): string[] {
     .filter(Boolean);
 }
 
-export default function SearchPage() {
+function SearchWorkbench() {
   const initialWorkbenchState = getInitialWorkbenchState();
   const [searchTerm, setSearchTerm] = useState(getInitialSearchTerm);
   const [results, setResults] = useState<WikidataItem[]>([]);
@@ -2000,5 +2001,47 @@ export default function SearchPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SearchWorkbenchFallback({ reset }: { reset: () => void }) {
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="container mx-auto px-4 py-8">
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100" role="alert" data-testid="search-error-boundary">
+          <div className="font-semibold">The explorer workspace could not render.</div>
+          <p className="mt-2 max-w-2xl">
+            Your URL state is still available. Try restoring the workspace, or reload the route if the browser state was interrupted.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={reset}>
+              Try again
+            </Button>
+            <Button type="button" onClick={() => window.location.reload()}>
+              Reload search
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <ErrorBoundary
+      fallback={({ reset }) => <SearchWorkbenchFallback reset={reset} />}
+      onError={(error) => {
+        console.warn("[wikidata-explorer]", JSON.stringify({
+          event: "client_error_boundary",
+          route: "/search",
+          boundary: "search-workbench",
+          errorName: error.name,
+          message: "Search workbench render failed.",
+        }));
+      }}
+    >
+      <SearchWorkbench />
+    </ErrorBoundary>
   );
 }
