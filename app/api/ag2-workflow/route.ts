@@ -3,9 +3,11 @@ import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs
 import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
 import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
+import { API_FAILURE_CATEGORIES, logApiFailure } from "@/lib/api-observability.mjs";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+const ROUTE_NAME = "/api/ag2-workflow";
 
 function aiRateLimitResponse(req: Request) {
   const limit = checkAiRateLimit({
@@ -14,6 +16,13 @@ function aiRateLimitResponse(req: Request) {
   });
 
   if (limit.allowed) return null;
+
+  logApiFailure({
+    route: ROUTE_NAME,
+    status: 429,
+    category: API_FAILURE_CATEGORIES.REQUEST_RATE_LIMITED,
+    message: AI_RATE_LIMIT_MESSAGE,
+  });
 
   return Response.json(
     { error: AI_RATE_LIMIT_MESSAGE },
@@ -74,6 +83,12 @@ const requestSchema = z.object({
 
 export async function POST(req: Request) {
   if (!aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS })) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 404,
+      category: API_FAILURE_CATEGORIES.AG2_DISABLED,
+      message: AI_DISABLED_MESSAGE,
+    });
     return Response.json({ error: AI_DISABLED_MESSAGE }, { status: 404 });
   }
 
@@ -84,6 +99,12 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "Request body must be valid JSON.",
+    });
     return Response.json(
       { error: "Request body must be valid JSON." },
       { status: 400 },
@@ -92,6 +113,12 @@ export async function POST(req: Request) {
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "Invalid AG2 workflow request.",
+    });
     return Response.json(
       { error: "Invalid AG2 workflow request.", details: parsed.error.flatten() },
       { status: 400 },
@@ -109,6 +136,12 @@ export async function POST(req: Request) {
   });
 
   if (!safety.allowed) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 403,
+      category: API_FAILURE_CATEGORIES.SAFETY_POLICY,
+      message: "Autonomy safety policy blocked this workflow.",
+    });
     return Response.json(
       { error: "Autonomy safety policy blocked this workflow.", safety },
       { status: 403 },
@@ -116,12 +149,24 @@ export async function POST(req: Request) {
   }
 
   if (action !== "research" && !entity) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "This AG2 workflow requires visible entity context.",
+    });
     return Response.json(
       { error: "This AG2 workflow requires visible entity context." },
       { status: 400 },
     );
   }
   if (action === "compare" && !compareEntityId) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "Comparison requires a second Wikidata entity ID.",
+    });
     return Response.json(
       { error: "Comparison requires a second Wikidata entity ID." },
       { status: 400 },
@@ -140,7 +185,11 @@ export async function POST(req: Request) {
     });
     return Response.json({ result: result.result, safety });
   } catch (error) {
-    console.error("AG2 workflow route failed:", error);
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: error instanceof Ag2BridgeError ? error.status : 500,
+      error,
+    });
     if (error instanceof Ag2BridgeError) {
       return Response.json({ error: error.message }, { status: error.status });
     }

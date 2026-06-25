@@ -2,9 +2,11 @@ import { z } from "zod";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
 import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
+import { API_FAILURE_CATEGORIES, logApiFailure } from "@/lib/api-observability.mjs";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+const ROUTE_NAME = "/api/entity-summary";
 
 function aiRateLimitResponse(req: Request) {
   const limit = checkAiRateLimit({
@@ -13,6 +15,13 @@ function aiRateLimitResponse(req: Request) {
   });
 
   if (limit.allowed) return null;
+
+  logApiFailure({
+    route: ROUTE_NAME,
+    status: 429,
+    category: API_FAILURE_CATEGORIES.REQUEST_RATE_LIMITED,
+    message: AI_RATE_LIMIT_MESSAGE,
+  });
 
   return Response.json(
     { error: AI_RATE_LIMIT_MESSAGE },
@@ -53,6 +62,12 @@ const requestSchema = z.object({
 
 export async function POST(req: Request) {
   if (!aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS })) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 404,
+      category: API_FAILURE_CATEGORIES.AG2_DISABLED,
+      message: AI_DISABLED_MESSAGE,
+    });
     return Response.json({ error: AI_DISABLED_MESSAGE }, { status: 404 });
   }
 
@@ -63,6 +78,12 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "Request body must be valid JSON.",
+    });
     return Response.json(
       { error: "Request body must be valid JSON." },
       { status: 400 },
@@ -71,6 +92,12 @@ export async function POST(req: Request) {
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "Invalid entity summary request.",
+    });
     return Response.json(
       { error: "Invalid entity summary request.", details: parsed.error.flatten() },
       { status: 400 },
@@ -82,7 +109,11 @@ export async function POST(req: Request) {
     const result = await runAg2Agent({ mode: "entity_summary", entity: parsed.data.entity });
     return Response.json({ summary: result.summary });
   } catch (error) {
-    console.error("AG2 entity summary route failed:", error);
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: error instanceof Ag2BridgeError ? error.status : 500,
+      error,
+    });
     if (error instanceof Ag2BridgeError) {
       return Response.json({ error: error.message }, { status: error.status });
     }

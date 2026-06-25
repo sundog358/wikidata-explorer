@@ -3,9 +3,11 @@ import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs
 import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
 import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
 import { sanitizeChatVisibleContext } from "@/lib/ag2-chat-context.mjs";
+import { API_FAILURE_CATEGORIES, logApiFailure } from "@/lib/api-observability.mjs";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+const ROUTE_NAME = "/api/chat";
 
 function aiRateLimitResponse(req: Request) {
   const limit = checkAiRateLimit({
@@ -14,6 +16,13 @@ function aiRateLimitResponse(req: Request) {
   });
 
   if (limit.allowed) return null;
+
+  logApiFailure({
+    route: ROUTE_NAME,
+    status: 429,
+    category: API_FAILURE_CATEGORIES.REQUEST_RATE_LIMITED,
+    message: AI_RATE_LIMIT_MESSAGE,
+  });
 
   return Response.json(
     { error: AI_RATE_LIMIT_MESSAGE },
@@ -52,6 +61,12 @@ function messageContent(message: z.infer<typeof messageSchema>) {
 
 export async function POST(req: Request) {
   if (!aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS })) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 404,
+      category: API_FAILURE_CATEGORIES.AG2_DISABLED,
+      message: AI_DISABLED_MESSAGE,
+    });
     return Response.json({ error: AI_DISABLED_MESSAGE }, { status: 404 });
   }
 
@@ -62,6 +77,12 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "Request body must be valid JSON.",
+    });
     return Response.json(
       { error: "Request body must be valid JSON." },
       { status: 400 },
@@ -70,6 +91,12 @@ export async function POST(req: Request) {
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "Invalid chat request.",
+    });
     return Response.json(
       { error: "Invalid chat request.", details: parsed.error.flatten() },
       { status: 400 },
@@ -82,6 +109,12 @@ export async function POST(req: Request) {
   }));
   const context = parsed.data.context === undefined ? null : sanitizeChatVisibleContext(parsed.data.context);
   if (parsed.data.context !== undefined && !context) {
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: 400,
+      category: API_FAILURE_CATEGORIES.REQUEST_VALIDATION,
+      message: "Invalid chat context.",
+    });
     return Response.json(
       { error: "Invalid chat context." },
       { status: 400 },
@@ -93,7 +126,11 @@ export async function POST(req: Request) {
     const result = await runAg2Agent({ mode: "chat", messages, context: context || undefined });
     return Response.json({ message: result.message });
   } catch (error) {
-    console.error("AG2 chat route failed:", error);
+    logApiFailure({
+      route: ROUTE_NAME,
+      status: error instanceof Ag2BridgeError ? error.status : 500,
+      error,
+    });
     if (error instanceof Ag2BridgeError) {
       return Response.json({ error: error.message }, { status: error.status });
     }

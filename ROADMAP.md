@@ -50,6 +50,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Dark-mode visual QA now captures home, Q42 graph, Q42 comparison, and mobile search surfaces.
 - Organization fixture coverage now adds Q95/Google with headquarters, founder, inception, website, logo/media, source-link, data-quality, and graph-regression checks.
 - Cross-type comparison coverage now exports a work/organization/person matrix for Q25169/Q95/Q42 and verifies shareable restore.
+- AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 
 ## Recently Confirmed In Production
 
@@ -72,14 +73,14 @@ The project is job-portfolio ready now. It shows product judgment, modern fronte
 
 To move beyond 9.5:
 
-- Add production observability around API failure categories without leaking prompts, keys, or sensitive context.
 - Add place/geographic fixtures so comparison examples cover place/work/organization/person mixes.
+- Add a client-side error boundary around the explorer workflow.
 
 To reach 10:
 
 - Ship an optional hosted AG2 container demo with traceable, citation-style Wikidata ID references in responses.
 - Persist research workspace state for curation tasks and agent history.
-- Add production observability around route/API failure categories without leaking prompts, keys, or sensitive context.
+- Add production dashboards/alerts on top of the sanitized API failure categories.
 
 ## Next Priorities
 
@@ -196,9 +197,9 @@ AI-enabled future mode:
 
 Observability:
 
-- Add lightweight server logging for AI route failures without leaking prompts, keys, or sensitive context.
+- Shipped lightweight server logging for AI route failures without leaking prompts, keys, or sensitive context.
 - Add a client-side error boundary around the explorer workflow.
-- Track API error categories: Wikidata unavailable, Commons unavailable, AG2 disabled, OpenAI key missing, OpenAI quota/rate limit, and AG2 service unavailable.
+- Track API error categories: Wikidata unavailable, Commons unavailable, AG2 disabled, request validation, safety policy, request rate limit, OpenAI key missing, OpenAI quota/rate limit, and AG2 service unavailable.
 
 ## Maintenance
 
