@@ -44,6 +44,8 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Timeline evidence graph layout shipped with `glayout=timeline` URL state.
 - Graph node accessibility labels and keyboard-focus coverage shipped in the search interaction test.
 - Graph filter tab-order checks and reduced-motion coverage shipped in the search interaction test.
+- Graph filter labels/options, selected statement detail drawer coverage, and pinned relationship keyboard controls are covered in the search interaction test.
+- A concise case-study doc now explains the architecture, AI safety boundary, testing strategy, and deployment tradeoffs.
 
 ## Recently Confirmed In Production
 
@@ -59,21 +61,21 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 
 ## Portfolio Readiness
 
-Current local grade: 9.25 / 10
+Current local grade: 9.35 / 10
 
 The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, timeline evidence layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
 To reach 9.5:
 
-- Add accessibility checks for the new graph layout/depth controls, pinned comparison, and statement drawer.
-- Add accessibility checks for keyboard graph navigation, focus order, and reduced-motion behavior.
-- Ship performance budgets for `/search?q=Q42`, graph rendering, and shared comparison URL restore.
+- Add visual QA for dark mode so the portfolio proof covers both public themes.
+- Expand route-mocked fixture coverage to more varied non-biographical entity types beyond author/person/work/property paths.
+- Add successful mocked AG2 route coverage for enabled-mode responses without requiring provider credentials.
 
 To reach 10:
 
 - Ship an optional hosted AG2 container demo with traceable, citation-style Wikidata ID references in responses.
-- Expand route-mocked fixture coverage to more varied seeded entity types and API outage states.
-- Shipped a concise case-study doc that explains the architecture, AI safety boundary, testing strategy, and deployment tradeoffs.
+- Persist research workspace state for curation tasks and agent history.
+- Add production observability around route/API failure categories without leaking prompts, keys, or sensitive context.
 
 ## Next Priorities
 
@@ -90,7 +92,7 @@ Goal: make the first five minutes of the demo obvious and impressive.
 
 ### 2. Graph Exploration Depth
 
-Status: depth, preview, history, detail-drawer, pinned-comparison, grouped-by-property layout, timeline evidence layout, graph node accessibility, tab-order, and reduced-motion coverage shipped in production; performance budgets and deterministic fixture coverage are on `main`.
+Status: depth, preview, history, detail-drawer, pinned-comparison, grouped-by-property layout, timeline evidence layout, graph node accessibility, control labels/options, tab-order, keyboard-control focus, and reduced-motion coverage shipped in production; performance budgets and deterministic fixture coverage are on `main`.
 
 Goal: make the graph the signature feature.
 
@@ -102,7 +104,7 @@ Goal: make the graph the signature feature.
 - Implemented grouped-by-property layout mode.
 - Implemented timeline evidence layout mode for date-heavy relationship evidence.
 - Implemented accessible graph node labels and keyboard-focus coverage.
-- Implemented tab-order and reduced-motion coverage.
+- Implemented graph control label/option, tab-order, pinned-control focus, statement drawer, and reduced-motion coverage.
 - Implemented performance budgets for `/search?q=Q42` and graph rendering on `main`.
 - Implemented deterministic Wikidata fixtures and route-mocked browser coverage for graph/search/evidence/media/language regression on `main`.
 - Added broader seeded author fixture coverage with Q46248 for richer graph/comparison regression.
@@ -163,7 +165,7 @@ Next quality improvements:
 
 - Expand route-mocked fixtures to more varied seeded entity types beyond author/person/work/property coverage.
 - Add visual QA for dark mode.
-- Add accessibility checks for keyboard graph navigation and tab order.
+- Keep graph accessibility checks green for control labels, keyboard navigation, tab order, statement drawers, pinned history, and reduced-motion behavior.
 - Keep `/search?q=Q42` performance budgets and shared comparison URL restore green as graph/comparison features expand.
 - Expand API contract tests for successful mocked AG2 responses once a route-mocking harness exists.
 
@@ -213,7 +215,7 @@ Status: shipped
 Status: in progress
 
 - Shipped: graph filters, depth controls, grouped-by-property layout, timeline evidence layout, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
-- On `main`: performance budgets for `/search?q=Q42` and graph rendering.
+- On `main`: performance budgets for `/search?q=Q42` and graph rendering, plus accessibility checks for graph control labels/options, keyboard focus order, pinned controls, statement drawer content, and reduced-motion behavior.
 - On `main`: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language, author comparison, a related-work graph path, and basic error-state regression.
 - Next: more varied non-biographical seeded entities and richer comparison examples.
 
@@ -240,4 +242,4 @@ Status: later
 - Persisted curation tasks.
 - Persisted agent history.
 - Optional project/workspace storage.
-- Accessibility and performance budgets suitable for a production-facing research tool.
+- Broader accessibility and performance budgets suitable for a production-facing research tool as stored workspace features arrive.

@@ -5,6 +5,21 @@ const baseUrl = process.env.E2E_BASE_URL || "http://localhost:3000";
 const chromePath = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const aiEnabled = aiAgentsEnabled(process.env);
 
+async function assertSelectControl(page, id, expectedLabel, expectedOptions) {
+  const control = page.locator(`#${id}`);
+  await control.waitFor({ state: "visible" });
+  const labelText = await control.evaluate((select) => select.closest("label")?.querySelector("span")?.textContent?.trim() || "");
+  if (labelText !== expectedLabel) {
+    throw new Error(`Expected ${id} to be labelled "${expectedLabel}", got "${labelText}"`);
+  }
+  const optionText = await control.locator("option").allInnerTexts();
+  for (const expectedOption of expectedOptions) {
+    if (!optionText.includes(expectedOption)) {
+      throw new Error(`Expected ${id} to include option "${expectedOption}", got ${optionText.join(", ")}`);
+    }
+  }
+}
+
 const browser = await chromium.launch({
   executablePath: chromePath,
   headless: true,
@@ -96,6 +111,16 @@ try {
   }
   await page.getByRole("tab", { name: /Graph/ }).click();
   await page.getByTestId("graph-filters").waitFor({ state: "visible" });
+  await assertSelectControl(page, "graph-depth-filter", "Depth", ["1-hop statements", "2-hop evidence", "Selected property"]);
+  await assertSelectControl(page, "graph-layout-filter", "Layout", ["Radial", "Grouped by property", "Timeline evidence"]);
+  await assertSelectControl(page, "graph-kind-filter", "Target type", ["All targets", "Items only", "Properties only"]);
+  await assertSelectControl(page, "graph-rank-filter", "Rank", ["All ranks", "Preferred", "Normal", "Deprecated"]);
+  await assertSelectControl(page, "graph-property-filter", "Relationship", ["All relationships"]);
+  await assertSelectControl(page, "graph-evidence-filter", "Evidence", ["All evidence", "Referenced", "Unreferenced", "Has qualifiers"]);
+  const clearGraphFiltersLabel = await page.getByTestId("clear-graph-filters").getAttribute("aria-label");
+  if (clearGraphFiltersLabel !== "Clear graph filters") {
+    throw new Error(`Expected graph filter reset control to expose an aria-label, got ${clearGraphFiltersLabel}`);
+  }
   await page.getByLabel("Layout").selectOption("property");
   await page.getByLabel("Depth").selectOption("2");
   await page.getByLabel("Target type").selectOption("item");
@@ -156,8 +181,13 @@ try {
   }
   const statementDetailDrawer = await page.getByTestId("graph-statement-detail-drawer").innerText();
   const statementDetailText = statementDetailDrawer.toLowerCase();
-  if (!statementDetailText.includes("statement detail drawer") || !statementDetailText.includes("statement id") || !statementDetailText.includes("references")) {
+  if (!statementDetailText.includes("statement detail drawer") || !statementDetailText.includes("statement id") || !statementDetailText.includes("value") || !statementDetailText.includes("data type") || !statementDetailText.includes("context") || !statementDetailText.includes("qualifiers") || !statementDetailText.includes("references")) {
     throw new Error(`Expected selected graph detail drawer to include statement and reference details, got ${statementDetailDrawer}`);
+  }
+  await page.getByTestId("pin-graph-relationship").focus();
+  const focusedPinControl = await page.evaluate(() => document.activeElement?.getAttribute("data-testid"));
+  if (focusedPinControl !== "pin-graph-relationship") {
+    throw new Error(`Expected keyboard focus to reach the pin relationship control, got ${focusedPinControl}`);
   }
   await page.getByTestId("pin-graph-relationship").click();
   const graphFocusButtons = page.locator('[data-testid^="graph-focus-"]');
@@ -171,9 +201,18 @@ try {
   if (!pinnedHistory.includes("Pinned relationship history") || !pinnedHistory.includes("Q5")) {
     throw new Error(`Expected pinned relationship history to include Q5, got ${pinnedHistory}`);
   }
+  await page.getByTestId("clear-pinned-relationships").focus();
+  const focusedPinnedControl = await page.evaluate(() => document.activeElement?.getAttribute("data-testid"));
+  if (focusedPinnedControl !== "clear-pinned-relationships") {
+    throw new Error(`Expected keyboard focus to reach the clear pinned relationships control, got ${focusedPinnedControl}`);
+  }
+  const clearPinnedLabel = await page.getByTestId("clear-pinned-relationships").getAttribute("aria-label");
+  if (clearPinnedLabel !== "Clear pinned relationship history") {
+    throw new Error(`Expected clear pinned relationships control to expose an aria-label, got ${clearPinnedLabel}`);
+  }
   const pinnedComparison = await page.getByTestId("pinned-relationship-comparison").innerText();
   const pinnedComparisonText = pinnedComparison.toLowerCase();
-  if (!pinnedComparisonText.includes("pinned comparison") || !pinnedComparisonText.includes("2 edges") || !pinnedComparisonText.includes("strongest edge")) {
+  if (!pinnedComparisonText.includes("pinned comparison") || !pinnedComparisonText.includes("2 edges") || !pinnedComparisonText.includes("relationships") || !pinnedComparisonText.includes("ranks") || !pinnedComparisonText.includes("strongest edge")) {
     throw new Error(`Expected pinned comparison view to summarize multiple pinned edges, got ${pinnedComparison}`);
   }
   const graphEdgeEvidence = await page.getByTestId("graph-edge-evidence-summary").innerText();
@@ -253,12 +292,14 @@ try {
   console.log("PASS graph depth controls support selected-property expansion");
   console.log("PASS grouped-by-property graph layout updates URL state");
   console.log("PASS timeline graph layout updates URL state");
+  console.log("PASS graph filter controls expose labels and expected options");
   console.log("PASS graph nodes expose accessible relationship labels and keyboard focus");
   console.log("PASS graph filters keep predictable tab order and reduced-motion nodes disable transitions");
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");
   console.log("PASS selected graph statement detail drawer shows references");
+  console.log("PASS selected graph detail drawer and pinned controls are keyboard reachable");
   console.log("PASS richer graph node previews include secondary descriptions");
   console.log("PASS pinned relationship history keeps selected graph edges");
   console.log("PASS pinned relationship comparison summarizes multiple edges");

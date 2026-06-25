@@ -411,7 +411,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
               {relationshipGraphSummary(item, allNodes, matchingNodes)} {matchingNodes.length > nodes.length ? `Showing the first ${nodes.length} matching nodes.` : ""}
             </p>
           </div>
-          <Button type="button" variant="outline" size="sm" className="shrink-0 gap-2" onClick={() => {
+          <Button type="button" variant="outline" size="sm" className="shrink-0 gap-2" aria-label="Clear graph filters" data-testid="clear-graph-filters" onClick={() => {
             setGraphFilters(DEFAULT_RELATIONSHIP_GRAPH_FILTERS);
             selectNode(null);
           }} disabled={!hasActiveFilters}>
@@ -754,7 +754,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                     Keep important edges visible while comparing graph paths or moving between tabs.
                   </p>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => setPinnedNodes([])}>
+                <Button type="button" variant="outline" size="sm" aria-label="Clear pinned relationship history" data-testid="clear-pinned-relationships" onClick={() => setPinnedNodes([])}>
                   Clear pins
                 </Button>
               </div>
