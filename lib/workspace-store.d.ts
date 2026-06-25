@@ -41,6 +41,32 @@ export interface ProjectWorkspaceCurationTaskSummary {
   severityCounts: Record<"high" | "medium", number>;
 }
 
+export interface ProjectWorkspaceAgentRun {
+  id: string;
+  entityId: string;
+  entityLabel: string;
+  action: "research" | "graph" | "suggest" | "verify" | "compare" | "report";
+  title: string;
+  result: string;
+  safety?: unknown;
+  compareEntityId?: string;
+  graphFocus?: unknown;
+  createdAt: string;
+  workspaceSlotId: string;
+  workspaceSlotLabel: string;
+  workspaceEntityId: string;
+  workspaceEntityLabel: string;
+  workspaceUpdatedAt: string;
+}
+
+export interface ProjectWorkspaceAgentRunSummary {
+  total: number;
+  entities: number;
+  workspaces: number;
+  lastRunAt: string | null;
+  actionCounts: Record<"research" | "graph" | "suggest" | "verify" | "compare" | "report", number>;
+}
+
 export function normalizeWorkspaceProjectId(value?: unknown): string;
 export function workspaceStoreConfig(env?: Record<string, string | undefined>): WorkspaceStoreConfig;
 export function authorizeWorkspaceStore(headers?: Headers | Record<string, string | undefined>, env?: Record<string, string | undefined>):
@@ -48,6 +74,8 @@ export function authorizeWorkspaceStore(headers?: Headers | Record<string, strin
   | { authorized: true; config: Extract<WorkspaceStoreConfig, { enabled: true }> };
 export function buildProjectWorkspaceCurationTaskIndex(slots?: unknown): ProjectWorkspaceCurationTask[];
 export function summarizeProjectWorkspaceCurationTasks(slots?: unknown): ProjectWorkspaceCurationTaskSummary;
+export function buildProjectWorkspaceAgentRunIndex(slots?: unknown): ProjectWorkspaceAgentRun[];
+export function summarizeProjectWorkspaceAgentRuns(slots?: unknown): ProjectWorkspaceAgentRunSummary;
 export function readProjectWorkspaceSlots(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; projectId?: unknown }): Promise<WorkspaceStoreResult>;
 export function writeProjectWorkspaceSlots(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; projectId?: unknown; slots?: unknown }): Promise<WorkspaceStoreResult>;
 export function upsertProjectWorkspaceSlot(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; projectId?: unknown; slot?: unknown }): Promise<WorkspaceStoreResult>;

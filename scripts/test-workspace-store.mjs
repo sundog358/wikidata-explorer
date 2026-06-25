@@ -5,10 +5,12 @@ import path from "node:path";
 import { buildWorkspaceSnapshot } from "../lib/workspace-snapshot.mjs";
 import {
   authorizeWorkspaceStore,
+  buildProjectWorkspaceAgentRunIndex,
   buildProjectWorkspaceCurationTaskIndex,
   normalizeWorkspaceProjectId,
   readProjectWorkspaceSlots,
   removeProjectWorkspaceSlot,
+  summarizeProjectWorkspaceAgentRuns,
   summarizeProjectWorkspaceCurationTasks,
   upsertProjectWorkspaceSlot,
   workspaceStoreConfig,
@@ -105,6 +107,21 @@ try {
   });
   assert.equal(taskSummary.open, 1);
   assert.equal(taskSummary.severityCounts.high, 1);
+
+  const agentRunIndex = buildProjectWorkspaceAgentRunIndex(saved.slots);
+  assert.equal(agentRunIndex.length, 1);
+  assert.equal(agentRunIndex[0].id, "run-1");
+  assert.equal(agentRunIndex[0].action, "verify");
+  assert.equal(agentRunIndex[0].workspaceSlotId, "workspace-q42");
+  assert.equal(agentRunIndex[0].workspaceEntityLabel, "Douglas Adams");
+  assert.doesNotMatch(JSON.stringify(agentRunIndex), /FAKE_REDACTION_TEST_VALUE/);
+
+  const agentSummary = summarizeProjectWorkspaceAgentRuns(saved.slots);
+  assert.equal(agentSummary.total, 1);
+  assert.equal(agentSummary.entities, 1);
+  assert.equal(agentSummary.workspaces, 1);
+  assert.equal(agentSummary.actionCounts.verify, 1);
+  assert.equal(agentSummary.actionCounts.graph, 0);
 
   const persistedText = await readFile(path.join(storeDir, "review-team.json"), "utf8");
   assert.doesNotMatch(persistedText, /FAKE_REDACTION_TEST_VALUE/);

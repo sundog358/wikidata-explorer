@@ -58,6 +58,31 @@ try {
     workspaceEntityLabel: slot.entityLabel,
     workspaceUpdatedAt: slot.updatedAt,
   })));
+  const projectAgentRuns = () => projectWorkspaceSlots.flatMap((slot) => (slot.snapshot?.agentRuns || []).map((run) => ({
+    ...run,
+    workspaceSlotId: slot.id,
+    workspaceSlotLabel: slot.label,
+    workspaceEntityId: slot.entityId,
+    workspaceEntityLabel: slot.entityLabel,
+    workspaceUpdatedAt: slot.updatedAt,
+  })));
+  const projectAgentSummary = () => {
+    const runs = projectAgentRuns();
+    return {
+      total: runs.length,
+      entities: new Set(runs.map((run) => run.entityId).filter(Boolean)).size,
+      workspaces: new Set(runs.map((run) => run.workspaceSlotId).filter(Boolean)).size,
+      lastRunAt: runs[0]?.createdAt || null,
+      actionCounts: {
+        research: runs.filter((run) => run.action === "research").length,
+        graph: runs.filter((run) => run.action === "graph").length,
+        suggest: runs.filter((run) => run.action === "suggest").length,
+        verify: runs.filter((run) => run.action === "verify").length,
+        compare: runs.filter((run) => run.action === "compare").length,
+        report: runs.filter((run) => run.action === "report").length,
+      },
+    };
+  };
 
   await page.route("**/api/workspaces**", async (route) => {
     const request = route.request();
@@ -75,7 +100,7 @@ try {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ projectId: "review-team", slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary() }),
+        body: JSON.stringify({ projectId: "review-team", slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary(), agentRuns: projectAgentRuns(), agentSummary: projectAgentSummary() }),
       });
       return;
     }
@@ -86,7 +111,7 @@ try {
       await route.fulfill({
         status: 202,
         contentType: "application/json",
-        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary() }),
+        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary(), agentRuns: projectAgentRuns(), agentSummary: projectAgentSummary() }),
       });
       return;
     }
@@ -96,7 +121,7 @@ try {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary() }),
+        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary(), agentRuns: projectAgentRuns(), agentSummary: projectAgentSummary() }),
       });
       return;
     }
@@ -164,6 +189,10 @@ try {
   if (!projectSummaryText.includes(`${expectedProjectSummary.open} open`) || !projectSummaryText.includes("1 ready") || !projectSummaryText.includes("1 workspaces")) {
     throw new Error(`Expected project workspace task summary after save, got ${projectSummaryText}`);
   }
+  const projectAgentSummaryText = await page.getByTestId("project-workspace-agent-summary").innerText();
+  if (!projectAgentSummaryText.includes("0 agent runs") || !projectAgentSummaryText.includes("No saved runs")) {
+    throw new Error(`Expected empty project workspace agent summary after save, got ${projectAgentSummaryText}`);
+  }
   await page.getByRole("button", { name: "Delete Project" }).click();
   await page.waitForFunction(() => document.querySelector('[data-testid="workspace-snapshot-message"]')?.textContent?.includes("Removed project workspace slot"));
   if (projectWorkspaceSlots.length !== 0) {
@@ -173,10 +202,26 @@ try {
   if (!emptyProjectSummaryText.includes("0 open") || !emptyProjectSummaryText.includes("0 saved tasks")) {
     throw new Error(`Expected project workspace task summary after delete, got ${emptyProjectSummaryText}`);
   }
+  const emptyProjectAgentSummaryText = await page.getByTestId("project-workspace-agent-summary").innerText();
+  if (!emptyProjectAgentSummaryText.includes("0 agent runs")) {
+    throw new Error(`Expected empty project workspace agent summary after delete, got ${emptyProjectAgentSummaryText}`);
+  }
   projectWorkspaceSlots.push({
     ...savedWorkspaceSlots[0],
     label: "Project loaded workspace",
     updatedAt: "2026-06-25T22:40:00.000Z",
+    snapshot: {
+      ...savedWorkspaceSlots[0].snapshot,
+      agentRuns: [{
+        id: "loaded-run-1",
+        entityId: "Q42",
+        entityLabel: "Douglas Adams",
+        action: "verify",
+        title: "Verifier",
+        result: "Grounded verification result",
+        createdAt: "2026-06-25T22:39:00.000Z",
+      }],
+    },
   });
   await page.getByTestId("load-project-workspace").click();
   await page.waitForFunction(() => document.querySelector('[data-testid="workspace-snapshot-message"]')?.textContent?.includes("Loaded 1 project workspace slot"));
@@ -188,6 +233,10 @@ try {
   const expectedLoadedSummary = projectTaskSummary();
   if (!loadedProjectSummaryText.includes(`${expectedLoadedSummary.open} open`) || !loadedProjectSummaryText.includes("1 ready")) {
     throw new Error(`Expected loaded project workspace task summary, got ${loadedProjectSummaryText}`);
+  }
+  const loadedAgentSummaryText = await page.getByTestId("project-workspace-agent-summary").innerText();
+  if (!loadedAgentSummaryText.includes("1 agent run") || !loadedAgentSummaryText.includes("1 verify") || !loadedAgentSummaryText.includes("1 entities")) {
+    throw new Error(`Expected loaded project workspace agent summary, got ${loadedAgentSummaryText}`);
   }
 
   await page.getByRole("tab", { name: /Statements/ }).click();

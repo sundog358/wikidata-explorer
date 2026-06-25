@@ -119,6 +119,14 @@ type ProjectWorkspaceTaskSummary = {
   severityCounts: Record<"high" | "medium", number>;
 };
 
+type ProjectWorkspaceAgentSummary = {
+  total: number;
+  entities: number;
+  workspaces: number;
+  lastRunAt: string | null;
+  actionCounts: Record<AgentAction, number>;
+};
+
 function normalizeShareableExportView(value: unknown): ShareableExportView | null {
   return value === "graph-markdown" || value === "graph-json" || value === "comparison-markdown" || value === "comparison-json" || value === "comparison-property" ? value : null;
 }
@@ -338,6 +346,31 @@ function normalizeProjectWorkspaceTaskSummary(value: unknown): ProjectWorkspaceT
   };
 }
 
+function normalizeProjectWorkspaceAgentSummary(value: unknown): ProjectWorkspaceAgentSummary | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const actionCounts = record.actionCounts && typeof record.actionCounts === "object" && !Array.isArray(record.actionCounts)
+    ? record.actionCounts as Record<string, unknown>
+    : {};
+  const numberValue = (item: unknown) => Math.max(0, Number.parseInt(String(item ?? 0), 10) || 0);
+  const lastRunAt = typeof record.lastRunAt === "string" && !Number.isNaN(Date.parse(record.lastRunAt)) ? record.lastRunAt : null;
+
+  return {
+    total: numberValue(record.total),
+    entities: numberValue(record.entities),
+    workspaces: numberValue(record.workspaces),
+    lastRunAt,
+    actionCounts: {
+      research: numberValue(actionCounts.research),
+      graph: numberValue(actionCounts.graph),
+      suggest: numberValue(actionCounts.suggest),
+      verify: numberValue(actionCounts.verify),
+      compare: numberValue(actionCounts.compare),
+      report: numberValue(actionCounts.report),
+    },
+  };
+}
+
 function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): ReviewQueueItem[] {
   if (!item) return [];
 
@@ -523,6 +556,7 @@ function SearchWorkbench() {
   const [projectWorkspaceToken, setProjectWorkspaceToken] = useState("");
   const [projectWorkspaceLoading, setProjectWorkspaceLoading] = useState<"load" | "save" | "delete" | null>(null);
   const [projectWorkspaceTaskSummary, setProjectWorkspaceTaskSummary] = useState<ProjectWorkspaceTaskSummary | null>(null);
+  const [projectWorkspaceAgentSummary, setProjectWorkspaceAgentSummary] = useState<ProjectWorkspaceAgentSummary | null>(null);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const queuedComparisonTargetRef = useRef<string | null>(initialWorkbenchState.comparisonTargetId);
   const queuedComparisonThirdTargetRef = useRef<string | null>(initialWorkbenchState.comparisonThirdTargetId);
@@ -783,7 +817,7 @@ function SearchWorkbench() {
     }
 
     const projectId = projectWorkspaceId.trim() || "default";
-    const response = await fetch(method === "GET" ? `/api/workspaces?project=${encodeURIComponent(projectId)}&includeTasks=true` : "/api/workspaces", {
+    const response = await fetch(method === "GET" ? `/api/workspaces?project=${encodeURIComponent(projectId)}&includeTasks=true&includeAgentRuns=true` : "/api/workspaces", {
       method,
       headers: {
         "content-type": "application/json",
@@ -800,6 +834,7 @@ function SearchWorkbench() {
       projectId: String(data.projectId || projectId),
       slots: readWorkspaceSlots(data.slots),
       taskSummary: normalizeProjectWorkspaceTaskSummary(data.taskSummary),
+      agentSummary: normalizeProjectWorkspaceAgentSummary(data.agentSummary),
     };
   }
 
@@ -810,6 +845,7 @@ function SearchWorkbench() {
       setSavedWorkspaceSlots(result.slots);
       setProjectWorkspaceId(result.projectId);
       setProjectWorkspaceTaskSummary(result.taskSummary);
+      setProjectWorkspaceAgentSummary(result.agentSummary);
       setWorkspaceSnapshotMessage(`Loaded ${result.slots.length} project workspace slot${result.slots.length === 1 ? "" : "s"} from ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -836,11 +872,13 @@ function SearchWorkbench() {
         projectId: projectWorkspaceId.trim() || "default",
         slot,
         includeTasks: true,
+        includeAgentRuns: true,
       });
       setSavedWorkspaceSlots(result.slots);
       setWorkspaceSlotName(label);
       setProjectWorkspaceId(result.projectId);
       setProjectWorkspaceTaskSummary(result.taskSummary);
+      setProjectWorkspaceAgentSummary(result.agentSummary);
       setWorkspaceSnapshotMessage(`Saved project workspace for ${getEntityLabel(selectedItem)} (${selectedItem.id}) to ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -856,10 +894,12 @@ function SearchWorkbench() {
         projectId: projectWorkspaceId.trim() || "default",
         slotId,
         includeTasks: true,
+        includeAgentRuns: true,
       });
       setSavedWorkspaceSlots(result.slots);
       setProjectWorkspaceId(result.projectId);
       setProjectWorkspaceTaskSummary(result.taskSummary);
+      setProjectWorkspaceAgentSummary(result.agentSummary);
       setWorkspaceSnapshotMessage(`Removed project workspace slot from ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -2236,6 +2276,28 @@ function SearchWorkbench() {
                               <div>
                                 <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceTaskSummary.statusCounts.resolved} resolved</div>
                                 <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceTaskSummary.workspaces} workspaces</div>
+                              </div>
+                            </div>
+                          )}
+                          {projectWorkspaceAgentSummary && (
+                            <div className="mt-2 grid gap-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 sm:grid-cols-4" data-testid="project-workspace-agent-summary">
+                              <div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceAgentSummary.total} agent run{projectWorkspaceAgentSummary.total === 1 ? "" : "s"}</div>
+                                <div className="text-slate-500 dark:text-slate-400">
+                                  {projectWorkspaceAgentSummary.lastRunAt ? `Last ${new Date(projectWorkspaceAgentSummary.lastRunAt).toLocaleDateString()}` : "No saved runs"}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceAgentSummary.actionCounts.verify} verify</div>
+                                <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceAgentSummary.actionCounts.graph} graph</div>
+                              </div>
+                              <div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceAgentSummary.actionCounts.report} reports</div>
+                                <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceAgentSummary.actionCounts.compare} comparisons</div>
+                              </div>
+                              <div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceAgentSummary.entities} entities</div>
+                                <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceAgentSummary.workspaces} workspaces</div>
                               </div>
                             </div>
                           )}
