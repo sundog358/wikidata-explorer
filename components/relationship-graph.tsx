@@ -126,6 +126,29 @@ function sourceLabel(source: RelationshipGraphNode["source"]) {
   return "Statement edge";
 }
 
+function comparePinnedRelationships(nodes: RelationshipGraphNode[]) {
+  const propertyIds = new Set(nodes.map((node) => node.propertyId));
+  const rankIds = new Set(nodes.map((node) => node.rank));
+  const depthIds = new Set(nodes.map((node) => String(node.depth)));
+  const totalReferences = nodes.reduce((sum, node) => sum + node.referenceCount, 0);
+  const totalQualifiers = nodes.reduce((sum, node) => sum + node.qualifierCount, 0);
+  const bestSupported = nodes.reduce<RelationshipGraphNode | null>((best, node) => {
+    if (!best) return node;
+    const nodeEvidence = node.referenceCount * 2 + node.qualifierCount;
+    const bestEvidence = best.referenceCount * 2 + best.qualifierCount;
+    return nodeEvidence > bestEvidence ? node : best;
+  }, null);
+
+  return {
+    propertyCount: propertyIds.size,
+    rankCount: rankIds.size,
+    depthCount: depthIds.size,
+    totalReferences,
+    totalQualifiers,
+    bestSupported,
+  };
+}
+
 async function fetchGraphNodeTerms(ids: string[]): Promise<Record<string, GraphNodeTerm>> {
   const uniqueIds = Array.from(new Set(ids.filter((id) => /^[PQ]\d+$/.test(id)))).slice(0, 24);
   if (!uniqueIds.length) return {};
@@ -213,6 +236,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
   const hoveredNode = nodes.find((node) => node.id === hoveredNodeId) || null;
   const previewNode = hoveredNode || selectedNode;
   const hasActiveFilters = Object.entries(filters).some(([key, value]) => DEFAULT_RELATIONSHIP_GRAPH_FILTERS[key as keyof typeof DEFAULT_RELATIONSHIP_GRAPH_FILTERS] !== value);
+  const pinnedComparison = useMemo(() => comparePinnedRelationships(pinnedNodes), [pinnedNodes]);
 
   function setSelectedGraphNodeId(nextId: string | null) {
     if (onSelectedNodeIdChange) {
@@ -640,6 +664,69 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                     </div>
                   </button>
                 ))}
+              </div>
+
+              <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900" data-testid="pinned-relationship-comparison">
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-950 dark:text-slate-50">Pinned comparison</div>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                      Compare pinned edges by relationship, rank, depth, and evidence strength.
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{pinnedNodes.length} edge{pinnedNodes.length === 1 ? "" : "s"}</Badge>
+                </div>
+                <div className="grid gap-2 text-sm md:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Relationships</div>
+                    <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{pinnedComparison.propertyCount}</div>
+                  </div>
+                  <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ranks</div>
+                    <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{pinnedComparison.rankCount}</div>
+                  </div>
+                  <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Evidence</div>
+                    <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">{pinnedComparison.totalReferences} ref / {pinnedComparison.totalQualifiers} qual</div>
+                  </div>
+                  <div className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Strongest edge</div>
+                    <div className="mt-1 truncate text-sm font-semibold text-slate-950 dark:text-slate-50">{pinnedComparison.bestSupported?.label || "None"}</div>
+                  </div>
+                </div>
+                {pinnedNodes.length < 2 && (
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                    Pin another relationship to compare evidence and rank differences side by side.
+                  </p>
+                )}
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[720px] text-left text-sm">
+                    <thead className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <tr>
+                        <th className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">Edge</th>
+                        <th className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">Relationship</th>
+                        <th className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">Rank</th>
+                        <th className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">Depth</th>
+                        <th className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">Evidence</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pinnedNodes.map((node) => (
+                        <tr key={`${node.id}-${node.statement.id}`} className="text-slate-700 dark:text-slate-200">
+                          <td className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">
+                            <button type="button" onClick={() => selectNode(node)} className="font-medium text-sky-700 hover:text-sky-900 dark:text-sky-300 dark:hover:text-sky-100">
+                              {entityLabel(item)} {"->"} {node.label}
+                            </button>
+                          </td>
+                          <td className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">{node.property} ({node.propertyId})</td>
+                          <td className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">{node.rank}</td>
+                          <td className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">{node.depth}-hop {sourceLabel(node.source).toLowerCase()}</td>
+                          <td className="border-b border-slate-200 px-2 py-2 dark:border-slate-800">{node.referenceCount} ref / {node.qualifierCount} qual</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

@@ -85,9 +85,21 @@ try {
     throw new Error(`Expected selected graph detail drawer to include statement and reference details, got ${statementDetailDrawer}`);
   }
   await page.getByTestId("pin-graph-relationship").click();
+  const graphFocusButtons = page.locator('[data-testid^="graph-focus-"]');
+  const graphFocusButtonCount = await graphFocusButtons.count();
+  if (graphFocusButtonCount < 2) {
+    throw new Error(`Expected at least two graph focus buttons for pinned comparison, got ${graphFocusButtonCount}`);
+  }
+  await graphFocusButtons.nth(1).click();
+  await page.getByTestId("pin-graph-relationship").click();
   const pinnedHistory = await page.getByTestId("pinned-relationship-history").innerText();
   if (!pinnedHistory.includes("Pinned relationship history") || !pinnedHistory.includes("Q5")) {
     throw new Error(`Expected pinned relationship history to include Q5, got ${pinnedHistory}`);
+  }
+  const pinnedComparison = await page.getByTestId("pinned-relationship-comparison").innerText();
+  const pinnedComparisonText = pinnedComparison.toLowerCase();
+  if (!pinnedComparisonText.includes("pinned comparison") || !pinnedComparisonText.includes("2 edges") || !pinnedComparisonText.includes("strongest edge")) {
+    throw new Error(`Expected pinned comparison view to summarize multiple pinned edges, got ${pinnedComparison}`);
   }
   const graphEdgeEvidence = await page.getByTestId("graph-edge-evidence-summary").innerText();
   const graphEdgeEvidenceText = graphEdgeEvidence.toLowerCase();
@@ -106,6 +118,7 @@ try {
     }
   }
 
+  await page.getByTestId("graph-focus-Q5").click();
   const graphPathSummary = await page.getByTestId("graph-path-export-summary").innerText();
   if (!graphPathSummary.includes("Douglas Adams") || !graphPathSummary.includes("P31") || !graphPathSummary.includes("human")) {
     throw new Error(`Expected graph path export to summarize Q42 -> Q5, got ${graphPathSummary}`);
@@ -158,6 +171,7 @@ try {
   console.log("PASS selected graph statement detail drawer shows references");
   console.log("PASS richer graph node previews include secondary descriptions");
   console.log("PASS pinned relationship history keeps selected graph edges");
+  console.log("PASS pinned relationship comparison summarizes multiple edges");
   console.log("PASS selected graph edge evidence shows concrete references");
   console.log("PASS selected graph path export includes evidence details");
   console.log("PASS selected graph path export summarizes the chosen edge");
