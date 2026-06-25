@@ -26,7 +26,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🧾 Inspect statement ranks, referenced/unreferenced badges, statement IDs, qualifiers, references, and source hints in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
 - 🧑‍⚖️ Review entity data-quality findings with persisted browser-local task status and source-link hints
-- 💾 Save browser-local workspace slots or export/restore portable snapshots with review task state, dismissed findings, and saved AG2 run history
+- 💾 Save browser-local or token-protected project workspace slots, or export/restore portable snapshots with review task state, dismissed findings, and saved AG2 run history
 - 📤 Export evidence-grounded graph paths, review findings, task status, source hints, and safe QuickStatements draft comments
 - 🛡️ Classify specialist workflows through a tested autonomy safety layer before future bot/draft actions
 - ✅ Verify changes with lint, unit tests, production build, trace checks, route smoke tests, API contracts, e2e interaction tests, visual QA, and GitHub Actions
@@ -123,7 +123,7 @@ WORKSPACE_STORE_DIR=C:\path\to\durable\workspace-store
 WORKSPACE_STORE_TOKEN=generate-a-random-shared-token
 ```
 
-When configured, `/api/workspaces` provides bearer-token-protected project workspace slot persistence using the same sanitized portable snapshot format as browser-local slots. Use a durable mounted directory for hosted/self-hosted deployments; the public demo can leave it unset and fail closed.
+When configured, `/api/workspaces` provides bearer-token-protected project workspace slot persistence using the same sanitized portable snapshot format as browser-local slots. The Review Queue tab can load, save, and delete project slots when a private/self-hosted token is entered; the token is kept in browser session storage. Use a durable mounted directory for hosted/self-hosted deployments; the public demo can leave it unset and fail closed.
 
 Local environment files, provider keys, Pywikibot credentials, runtime files, caches, and research artifacts are ignored by default.
 
@@ -213,7 +213,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow with a client-side error boundary, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, browser-local workspace slots, portable workspace snapshots, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow with a client-side error boundary, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, browser-local and project workspace slots, portable workspace snapshots, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant with bounded visible-context handoff from the workbench
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
@@ -272,7 +272,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, observability receiver, project workspace store, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, workspace snapshot review-state export, browser-local workspace slots, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including labelled controls/options, timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison with keyboard-reachable controls, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, workspace snapshot review-state export, browser-local and mocked project workspace slots, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including labelled controls/options, timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison with keyboard-reachable controls, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, light/dark route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA

@@ -29,6 +29,52 @@ const browser = await chromium.launch({
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(30000);
+  const projectWorkspaceSlots = [];
+
+  await page.route("**/api/workspaces**", async (route) => {
+    const request = route.request();
+    const authorization = request.headers().authorization || "";
+    if (authorization !== "Bearer project-token") {
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Workspace store is unavailable.", reason: "unauthorized" }),
+      });
+      return;
+    }
+
+    if (request.method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ projectId: "review-team", slots: projectWorkspaceSlots }),
+      });
+      return;
+    }
+
+    const body = request.postDataJSON();
+    if (request.method() === "POST") {
+      projectWorkspaceSlots.splice(0, projectWorkspaceSlots.length, body.slot, ...projectWorkspaceSlots.filter((slot) => slot.id !== body.slot.id));
+      await route.fulfill({
+        status: 202,
+        contentType: "application/json",
+        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots }),
+      });
+      return;
+    }
+
+    if (request.method() === "DELETE") {
+      projectWorkspaceSlots.splice(0, projectWorkspaceSlots.length, ...projectWorkspaceSlots.filter((slot) => slot.id !== body.slotId));
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots }),
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
 
   await page.goto(new URL("/search?q=Q42", baseUrl).toString(), {
     waitUntil: "commit",
@@ -71,6 +117,29 @@ try {
   const savedWorkspaceSlots = await page.evaluate(() => JSON.parse(window.localStorage.getItem("wikidata-explorer.workspaceSlots.v1") || "[]"));
   if (savedWorkspaceSlots[0]?.snapshot?.entity?.id !== "Q42" || !Object.values(savedWorkspaceSlots[0]?.snapshot?.review?.taskStatuses || {}).includes("ready_to_draft")) {
     throw new Error(`Expected browser workspace slot to persist Q42 review state, got ${JSON.stringify(savedWorkspaceSlots)}`);
+  }
+  await page.getByTestId("project-workspace-id").fill("review-team");
+  await page.getByTestId("project-workspace-token").fill("project-token");
+  await page.getByTestId("save-project-workspace").click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="workspace-snapshot-message"]')?.textContent?.includes("Saved project workspace"));
+  if (projectWorkspaceSlots[0]?.snapshot?.entity?.id !== "Q42" || !Object.values(projectWorkspaceSlots[0]?.snapshot?.review?.taskStatuses || {}).includes("ready_to_draft")) {
+    throw new Error(`Expected project workspace save to include Q42 review state, got ${JSON.stringify(projectWorkspaceSlots)}`);
+  }
+  await page.getByRole("button", { name: "Delete Project" }).click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="workspace-snapshot-message"]')?.textContent?.includes("Removed project workspace slot"));
+  if (projectWorkspaceSlots.length !== 0) {
+    throw new Error(`Expected project workspace delete to remove slot, got ${JSON.stringify(projectWorkspaceSlots)}`);
+  }
+  projectWorkspaceSlots.push({
+    ...savedWorkspaceSlots[0],
+    label: "Project loaded workspace",
+    updatedAt: "2026-06-25T22:40:00.000Z",
+  });
+  await page.getByTestId("load-project-workspace").click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="workspace-snapshot-message"]')?.textContent?.includes("Loaded 1 project workspace slot"));
+  const loadedProjectSlotsText = await page.getByTestId("saved-workspace-slots").innerText();
+  if (!loadedProjectSlotsText.includes("Project loaded workspace")) {
+    throw new Error(`Expected loaded project workspace slot to appear locally, got ${loadedProjectSlotsText}`);
   }
 
   await page.getByRole("tab", { name: /Statements/ }).click();

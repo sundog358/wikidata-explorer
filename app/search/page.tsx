@@ -118,6 +118,8 @@ const AGENT_RUNS_STORAGE_KEY = "wikidata-explorer.agentRuns.v1";
 const DISMISSED_REVIEW_STORAGE_KEY = "wikidata-explorer.dismissedReviewItems.v1";
 const REVIEW_TASK_STATUS_STORAGE_KEY = "wikidata-explorer.reviewTaskStatus.v1";
 const WORKSPACE_SLOTS_STORAGE_KEY = "wikidata-explorer.workspaceSlots.v1";
+const PROJECT_WORKSPACE_ID_STORAGE_KEY = "wikidata-explorer.projectWorkspaceId.v1";
+const PROJECT_WORKSPACE_TOKEN_STORAGE_KEY = "wikidata-explorer.projectWorkspaceToken.v1";
 
 const AI_AGENTS_ENABLED = aiAgentsEnabled({
   NEXT_PUBLIC_ENABLE_AI_AGENTS: process.env.NEXT_PUBLIC_ENABLE_AI_AGENTS,
@@ -479,6 +481,9 @@ function SearchWorkbench() {
   const [workspaceSnapshotMessage, setWorkspaceSnapshotMessage] = useState<string | null>(null);
   const [workspaceSlotName, setWorkspaceSlotName] = useState("");
   const [savedWorkspaceSlots, setSavedWorkspaceSlots] = useState<WorkspaceSlotState[]>([]);
+  const [projectWorkspaceId, setProjectWorkspaceId] = useState("default");
+  const [projectWorkspaceToken, setProjectWorkspaceToken] = useState("");
+  const [projectWorkspaceLoading, setProjectWorkspaceLoading] = useState<"load" | "save" | "delete" | null>(null);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const queuedComparisonTargetRef = useRef<string | null>(initialWorkbenchState.comparisonTargetId);
   const queuedComparisonThirdTargetRef = useRef<string | null>(initialWorkbenchState.comparisonThirdTargetId);
@@ -490,6 +495,8 @@ function SearchWorkbench() {
       setDismissedReviewIds(readJsonArray<string>(DISMISSED_REVIEW_STORAGE_KEY));
       setReviewTaskStatuses(readJsonRecord<ReviewTaskStatus>(REVIEW_TASK_STATUS_STORAGE_KEY, REVIEW_TASK_STATUS_OPTIONS.map((option) => option.value)));
       setSavedWorkspaceSlots(readWorkspaceSlots(window.localStorage.getItem(WORKSPACE_SLOTS_STORAGE_KEY)));
+      setProjectWorkspaceId(window.localStorage.getItem(PROJECT_WORKSPACE_ID_STORAGE_KEY) || "default");
+      setProjectWorkspaceToken(window.sessionStorage.getItem(PROJECT_WORKSPACE_TOKEN_STORAGE_KEY) || "");
       storageHydratedRef.current = true;
     }, 0);
 
@@ -516,6 +523,20 @@ function SearchWorkbench() {
     if (!storageHydratedRef.current || typeof window === "undefined") return;
     window.localStorage.setItem(WORKSPACE_SLOTS_STORAGE_KEY, JSON.stringify(savedWorkspaceSlots));
   }, [savedWorkspaceSlots]);
+
+  useEffect(() => {
+    if (!storageHydratedRef.current || typeof window === "undefined") return;
+    window.localStorage.setItem(PROJECT_WORKSPACE_ID_STORAGE_KEY, projectWorkspaceId.trim() || "default");
+  }, [projectWorkspaceId]);
+
+  useEffect(() => {
+    if (!storageHydratedRef.current || typeof window === "undefined") return;
+    if (projectWorkspaceToken.trim()) {
+      window.sessionStorage.setItem(PROJECT_WORKSPACE_TOKEN_STORAGE_KEY, projectWorkspaceToken.trim());
+    } else {
+      window.sessionStorage.removeItem(PROJECT_WORKSPACE_TOKEN_STORAGE_KEY);
+    }
+  }, [projectWorkspaceToken]);
 
   useEffect(() => {
     let cancelled = false;
@@ -713,6 +734,92 @@ function SearchWorkbench() {
   function deleteWorkspaceSlot(slotId: string) {
     setSavedWorkspaceSlots((slots) => readWorkspaceSlots(removeWorkspaceSlot(slots, slotId)));
     setWorkspaceSnapshotMessage("Removed saved browser workspace.");
+  }
+
+  async function requestProjectWorkspaceSlots(method: "GET" | "POST" | "DELETE", body?: unknown) {
+    const token = projectWorkspaceToken.trim();
+    if (!token) {
+      throw new Error("Enter a project workspace token before syncing.");
+    }
+
+    const projectId = projectWorkspaceId.trim() || "default";
+    const response = await fetch(method === "GET" ? `/api/workspaces?project=${encodeURIComponent(projectId)}` : "/api/workspaces", {
+      method,
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+      },
+      ...(method === "GET" ? {} : { body: JSON.stringify(body) }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(String(data.error || data.reason || "Project workspace sync failed."));
+    }
+
+    return {
+      projectId: String(data.projectId || projectId),
+      slots: readWorkspaceSlots(data.slots),
+    };
+  }
+
+  async function loadProjectWorkspaceSlots() {
+    setProjectWorkspaceLoading("load");
+    try {
+      const result = await requestProjectWorkspaceSlots("GET");
+      setSavedWorkspaceSlots(result.slots);
+      setProjectWorkspaceId(result.projectId);
+      setWorkspaceSnapshotMessage(`Loaded ${result.slots.length} project workspace slot${result.slots.length === 1 ? "" : "s"} from ${result.projectId}.`);
+    } catch (syncError) {
+      setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
+    } finally {
+      setProjectWorkspaceLoading(null);
+    }
+  }
+
+  async function saveProjectWorkspaceSlot() {
+    if (!selectedItem) return;
+    const label = workspaceSlotName.trim() || `${getEntityLabel(selectedItem)} workspace`;
+    const now = new Date().toISOString();
+    const slot = {
+      id: `workspace-${selectedItem.id}`,
+      label,
+      snapshot: workspaceSnapshot,
+      createdAt: savedWorkspaceSlots.find((item) => item.id === `workspace-${selectedItem.id}`)?.createdAt || now,
+      updatedAt: now,
+    };
+
+    setProjectWorkspaceLoading("save");
+    try {
+      const result = await requestProjectWorkspaceSlots("POST", {
+        projectId: projectWorkspaceId.trim() || "default",
+        slot,
+      });
+      setSavedWorkspaceSlots(result.slots);
+      setWorkspaceSlotName(label);
+      setProjectWorkspaceId(result.projectId);
+      setWorkspaceSnapshotMessage(`Saved project workspace for ${getEntityLabel(selectedItem)} (${selectedItem.id}) to ${result.projectId}.`);
+    } catch (syncError) {
+      setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
+    } finally {
+      setProjectWorkspaceLoading(null);
+    }
+  }
+
+  async function deleteProjectWorkspaceSlot(slotId: string) {
+    setProjectWorkspaceLoading("delete");
+    try {
+      const result = await requestProjectWorkspaceSlots("DELETE", {
+        projectId: projectWorkspaceId.trim() || "default",
+        slotId,
+      });
+      setSavedWorkspaceSlots(result.slots);
+      setProjectWorkspaceId(result.projectId);
+      setWorkspaceSnapshotMessage(`Removed project workspace slot from ${result.projectId}.`);
+    } catch (syncError) {
+      setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
+    } finally {
+      setProjectWorkspaceLoading(null);
+    }
   }
 
   function updateShareableExportView(nextView: ShareableExportView | null, tab: SearchWorkbenchTab) {
@@ -2045,6 +2152,28 @@ function SearchWorkbench() {
                             Save Browser Slot
                           </Button>
                         </div>
+                        <div className="mb-3 border-t border-slate-200 pt-3 dark:border-slate-800" data-testid="project-workspace-sync">
+                          <div className="mb-2 flex flex-col gap-1">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Project workspace sync</div>
+                            <p className="text-xs text-slate-600 dark:text-slate-300">For private/self-hosted stores configured with the token-protected workspace API.</p>
+                          </div>
+                          <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto_auto] lg:items-end">
+                            <label className="grid gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                              <span>Project ID</span>
+                              <Input value={projectWorkspaceId} onChange={(event) => setProjectWorkspaceId(event.currentTarget.value)} placeholder="default" aria-label="Project workspace ID" data-testid="project-workspace-id" />
+                            </label>
+                            <label className="grid gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                              <span>Sync token</span>
+                              <Input type="password" value={projectWorkspaceToken} onChange={(event) => setProjectWorkspaceToken(event.currentTarget.value)} placeholder="Stored for this browser session" aria-label="Project workspace token" data-testid="project-workspace-token" />
+                            </label>
+                            <Button type="button" variant="outline" size="sm" onClick={loadProjectWorkspaceSlots} disabled={projectWorkspaceLoading !== null || !projectWorkspaceToken.trim()} data-testid="load-project-workspace">
+                              {projectWorkspaceLoading === "load" ? "Loading" : "Load Project"}
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" onClick={saveProjectWorkspaceSlot} disabled={projectWorkspaceLoading !== null || !projectWorkspaceToken.trim()} data-testid="save-project-workspace">
+                              {projectWorkspaceLoading === "save" ? "Saving" : "Save Project Slot"}
+                            </Button>
+                          </div>
+                        </div>
                         {savedWorkspaceSlots.length === 0 ? (
                           <div className="rounded-md border border-dashed border-slate-300 p-3 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300">
                             No saved browser workspaces yet.
@@ -2063,6 +2192,9 @@ function SearchWorkbench() {
                                   </Button>
                                   <Button type="button" variant="outline" size="sm" onClick={() => deleteWorkspaceSlot(slot.id)}>
                                     Delete
+                                  </Button>
+                                  <Button type="button" variant="outline" size="sm" onClick={() => deleteProjectWorkspaceSlot(slot.id)} disabled={projectWorkspaceLoading !== null || !projectWorkspaceToken.trim()}>
+                                    Delete Project
                                   </Button>
                                 </div>
                               </div>
