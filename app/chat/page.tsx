@@ -2,10 +2,11 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { BrainCircuit, Database, Search, Send, Sparkles } from "lucide-react";
+import { BrainCircuit, Database, GitBranch, Search, Send, Sparkles, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { AG2_CHAT_CONTEXT_STORAGE_KEY, sanitizeChatVisibleContext } from "@/lib/ag2-chat-context.mjs";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 
 type ChatMessage = {
@@ -13,6 +14,8 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
 };
+
+type Ag2ChatVisibleContext = NonNullable<ReturnType<typeof sanitizeChatVisibleContext>>;
 
 const starterPrompts = [
   "Explain how Q42 is connected to notable works and occupations.",
@@ -59,14 +62,31 @@ function newMessage(role: ChatMessage["role"], content: string): ChatMessage {
   };
 }
 
+function initialVisibleContext(): Ag2ChatVisibleContext | null {
+  if (!AI_AGENTS_ENABLED || typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(AG2_CHAT_CONTEXT_STORAGE_KEY);
+    if (!raw) return null;
+    return sanitizeChatVisibleContext(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
 export default function ChatPage() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [visibleContext, setVisibleContext] = useState<Ag2ChatVisibleContext | null>(initialVisibleContext);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function submitPrompt(prompt: string) {
     setInput(prompt);
+  }
+
+  function clearVisibleContext() {
+    setVisibleContext(null);
+    if (typeof window !== "undefined") window.localStorage.removeItem(AG2_CHAT_CONTEXT_STORAGE_KEY);
   }
 
   async function submitMessage(event?: FormEvent<HTMLFormElement>) {
@@ -89,6 +109,7 @@ export default function ChatPage() {
             role: message.role,
             content: message.content,
           })),
+          context: visibleContext || undefined,
         }),
       });
 
@@ -153,6 +174,30 @@ export default function ChatPage() {
             </div>
             The chat endpoint validates requests, then runs a bounded AG2 agent through the local conda bridge or the containerized AG2 service while keeping provider keys server-side.
           </Card>
+
+          {visibleContext && (
+            <Card className="space-y-3 p-4 text-sm" data-testid="ag2-chat-visible-context">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2 font-semibold text-slate-950 dark:text-slate-50">
+                  <GitBranch className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                  Attached context
+                </div>
+                <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={clearVisibleContext}>
+                  <X className="h-3.5 w-3.5" />
+                  Clear
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {visibleContext.entity && <Badge variant="secondary">{visibleContext.entity.id}</Badge>}
+                {visibleContext.graphFocus && <Badge variant="outline">{visibleContext.graphFocus.propertyId} -&gt; {visibleContext.graphFocus.id}</Badge>}
+                {!!visibleContext.selectedStatements.length && <Badge variant="outline">{visibleContext.selectedStatements.length} statements</Badge>}
+                {visibleContext.graphPathExport && <Badge variant="outline">path export</Badge>}
+              </div>
+              <p className="text-xs leading-5 text-slate-600 dark:text-slate-300">
+                The next message will include the selected entity, statement evidence, graph focus, and selected-path export from the workbench.
+              </p>
+            </Card>
+          )}
         </aside>
 
         <section className="flex min-h-[calc(100vh-8rem)] flex-col rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">

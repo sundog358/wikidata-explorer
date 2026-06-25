@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, MessageSquare, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
 import { buildGraphPathJsonExport, buildGraphPathMarkdownExport } from "@/lib/graph-path-export.mjs";
 import { buildEntityComparison, buildEntityComparisonJsonExport, buildEntityComparisonMarkdownExport, buildEntitySetComparison, buildEntitySetComparisonJsonExport, buildEntitySetComparisonMarkdownExport } from "@/lib/entity-comparison.mjs";
@@ -10,6 +10,7 @@ import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-sour
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/search-url-state.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
+import { AG2_CHAT_CONTEXT_STORAGE_KEY, sanitizeChatVisibleContext } from "@/lib/ag2-chat-context.mjs";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
 import { RelationshipGraph, type RelationshipGraphFilters, type RelationshipGraphFocus } from "@/components/relationship-graph";
@@ -335,29 +336,42 @@ function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): Re
     .slice(0, 24);
 }
 
+function buildStatementContext(statement: WikidataStatement) {
+  return {
+    statementId: statement.id || "",
+    propertyId: statement.property.id,
+    propertyLabel: statement.property.label || statement.property.id,
+    rank: statement.rank,
+    value: formatValueText(statement.value),
+    qualifiers: statement.qualifiers.slice(0, 4).map((qualifier) => ({
+      propertyId: qualifier.property.id,
+      propertyLabel: qualifier.property.label || qualifier.property.id,
+      value: formatValueText(qualifier.value),
+    })),
+    references: statement.references.slice(0, 3).map((reference) => ({
+      hash: reference.hash,
+      parts: reference.parts.slice(0, 4).map((part) => ({
+        propertyId: part.property.id,
+        propertyLabel: part.property.label || part.property.id,
+        value: formatValueText(part.value),
+      })),
+    })),
+  };
+}
+
 function buildSummaryContext(item: WikidataItem) {
   return Object.values(item.statements)
     .flat()
     .slice(0, 16)
-    .map((statement) => ({
-      propertyId: statement.property.id,
-      propertyLabel: statement.property.label || statement.property.id,
-      rank: statement.rank,
-      value: formatValueText(statement.value),
-      qualifiers: statement.qualifiers.slice(0, 4).map((qualifier) => ({
-        propertyId: qualifier.property.id,
-        propertyLabel: qualifier.property.label || qualifier.property.id,
-        value: formatValueText(qualifier.value),
-      })),
-      references: statement.references.slice(0, 3).map((reference) => ({
-        hash: reference.hash,
-        parts: reference.parts.slice(0, 4).map((part) => ({
-          propertyId: part.property.id,
-          propertyLabel: part.property.label || part.property.id,
-          value: formatValueText(part.value),
-        })),
-      })),
-    }));
+    .map(buildStatementContext);
+}
+
+function buildSelectedStatementContext(item: WikidataItem, focus: RelationshipGraphFocus | null) {
+  const statements = Object.values(item.statements).flat();
+  const selectedStatements = focus
+    ? statements.filter((statement) => statement.id === focus.statementId || statement.property.id === focus.propertyId)
+    : statements;
+  return selectedStatements.slice(0, 4).map(buildStatementContext);
 }
 
 function getInitialSearchTerm() {
@@ -878,6 +892,40 @@ export default function SearchPage() {
     }
   }, [agentLoading, compareEntityId, selectedGraphFocus, selectedItem]);
 
+  function openChatWithVisibleContext() {
+    if (!AI_AGENTS_ENABLED) {
+      setError(AI_DISABLED_MESSAGE);
+      return;
+    }
+    if (!selectedItem || typeof window === "undefined") return;
+
+    const context = sanitizeChatVisibleContext({
+      source: "search-workbench",
+      createdAt: new Date().toISOString(),
+      entity: {
+        id: selectedItem.id,
+        type: selectedItem.type,
+        label: getEntityLabel(selectedItem),
+        description: getEntityDescription(selectedItem),
+        statements: buildSummaryContext(selectedItem),
+      },
+      graphFocus: selectedGraphFocus || undefined,
+      selectedStatements: buildSelectedStatementContext(selectedItem, selectedGraphFocus),
+      graphPathExport: selectedGraphFocus ? {
+        markdown: graphPathMarkdownDraft,
+        json: graphPathJsonDraft,
+      } : undefined,
+    });
+
+    if (!context) {
+      setError("Could not prepare selected context for the AG2 chat.");
+      return;
+    }
+
+    window.localStorage.setItem(AG2_CHAT_CONTEXT_STORAGE_KEY, JSON.stringify(context));
+    window.location.assign("/chat?context=workbench");
+  }
+
   useEffect(() => {
     const action = queuedAgentActionRef.current;
     if (!selectedItem || !action || agentLoading || agentResult?.entityId === selectedItem.id) return;
@@ -1215,6 +1263,19 @@ export default function SearchPage() {
                       </Button>
                     </div>
                   )}
+
+                  <div className="mb-3 flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 sm:flex-row sm:items-center sm:justify-between" data-testid="agent-chat-context-handoff">
+                    <div>
+                      <div className="font-semibold text-slate-950 dark:text-slate-50">Chat handoff</div>
+                      <p className="mt-1">
+                        Open AG2 chat with this entity, selected statements, and {selectedGraphFocus ? "the selected path export attached." : "the visible statement context attached."}
+                      </p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" className="shrink-0 gap-2" onClick={openChatWithVisibleContext}>
+                      <MessageSquare className="h-4 w-4" />
+                      Open Chat
+                    </Button>
+                  </div>
 
                   <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
                     <Button type="button" variant="outline" className="gap-2" onClick={() => runAgentWorkflow("research")} disabled={!!agentLoading}>

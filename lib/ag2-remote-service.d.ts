@@ -26,6 +26,7 @@ export type Ag2Payload =
   | {
       mode: "chat";
       messages: Array<{ role: string; content: string }>;
+      context?: unknown;
     };
 
 export type Ag2Result = {

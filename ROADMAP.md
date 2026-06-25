@@ -26,7 +26,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, optional three-entity property matrices, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
 - `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Q42/Q80/Q25169/P31 Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, Wikidata API outage, Commons outage, and language metadata outage responses.
 - Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, and safe curation exports.
-- AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
+- AG2 workflows support chat, selected workbench context handoff, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
 - Portfolio proof includes tracked screenshots, visual QA, metadata/social preview checks, favicon/site-icon coverage, production trace checks, route smoke tests, API contracts, e2e checks, and GitHub Actions CI.
 
@@ -138,7 +138,8 @@ Goal: help users evaluate data quality, not just browse facts.
 
 Goal: make AI assistance visibly grounded in selected Wikidata context.
 
-- Send selected graph nodes, selected statements, and selected path exports into the full AG2 chat surface.
+- Shipped selected graph nodes, selected statements, and selected path exports into the full AG2 chat surface.
+- Shipped visible workbench-to-chat handoff with bounded entity, statement, graph-focus, and selected-path export context.
 - Add citation-style references to Wikidata IDs, statement IDs, and source URLs in AI responses.
 - Persist agent result history beyond browser-local storage once a database layer is introduced.
 - Deploy the AG2 service container to a public/private host for an optional AI-enabled demo.
@@ -229,7 +230,7 @@ Status: in progress
 Status: partially shipped
 
 - Shipped: feature-flagged AG2 routes, local/container bridge, safety policy, remote service contract, disabled public mode.
-- Next: hosted optional AG2 demo, citation-style response grounding, selected graph/path context in chat.
+- Next: hosted optional AG2 demo and citation-style response grounding.
 
 ### Milestone 5: Research Workspace
 

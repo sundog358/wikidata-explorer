@@ -330,6 +330,75 @@ def graph_focus_lines(focus: Any) -> list[str]:
         f"- Value: {value}",
     ]
 
+
+def statement_context_lines(statements: Any, title: str) -> list[str]:
+    if not isinstance(statements, list) or not statements:
+        return []
+
+    lines = ["", title]
+    for index, statement in enumerate(statements[:6], start=1):
+        property_label = statement.get("propertyLabel") or statement.get("propertyId") or "unknown property"
+        property_id = statement.get("propertyId") or "unknown property ID"
+        rank = statement.get("rank") or "normal"
+        statement_id = statement.get("statementId") or "not supplied"
+        value = value_text(statement.get("value"))
+        lines.append(f"{index}. {property_label} ({property_id}) [{rank}] = {value} | statement={statement_id}")
+
+        for qualifier in (statement.get("qualifiers") or [])[:3]:
+            lines.append(
+                f"   qualifier: {qualifier.get('propertyLabel')} ({qualifier.get('propertyId')}) = {value_text(qualifier.get('value'))}"
+            )
+        for reference in (statement.get("references") or [])[:2]:
+            parts = reference.get("parts") or []
+            rendered = "; ".join(
+                f"{part.get('propertyLabel')} ({part.get('propertyId')}) = {value_text(part.get('value'))}"
+                for part in parts[:3]
+            )
+            if rendered:
+                lines.append(f"   reference: {rendered}")
+    return lines
+
+
+def graph_path_export_lines(export_value: Any) -> list[str]:
+    if not isinstance(export_value, dict):
+        return []
+
+    lines = ["", "Selected graph path export:"]
+    markdown = str(export_value.get("markdown") or "").strip()
+    json_export = str(export_value.get("json") or "").strip()
+    if markdown:
+        lines.append("Markdown:")
+        lines.append(markdown[:2500])
+    if json_export:
+        lines.append("JSON:")
+        lines.append(json_export[:2500])
+    return lines if len(lines) > 1 else []
+
+
+def chat_context_lines(context: Any) -> list[str]:
+    if not isinstance(context, dict):
+        return []
+
+    lines = [
+        "VISIBLE WIKIDATA CONTEXT",
+        "Use this supplied context when relevant. Cite Wikidata IDs, statement IDs, and source URLs from it; do not invent missing evidence.",
+    ]
+    source = context.get("source")
+    created_at = context.get("createdAt")
+    if source or created_at:
+        lines.append(f"Context source: {source or 'unknown'} {created_at or ''}".strip())
+
+    entity = context.get("entity")
+    if isinstance(entity, dict):
+        lines.extend(["", "Attached entity context:", *entity_context_lines(entity)])
+
+    lines.extend(graph_focus_lines(context.get("graphFocus")))
+    lines.extend(statement_context_lines(context.get("selectedStatements"), "Selected statement context:"))
+    lines.extend(graph_path_export_lines(context.get("graphPathExport")))
+    lines.append("END VISIBLE WIKIDATA CONTEXT")
+    return lines
+
+
 def build_entity_summary_prompt(entity: dict[str, Any]) -> str:
     return "\n".join(
         [
@@ -340,8 +409,12 @@ def build_entity_summary_prompt(entity: dict[str, Any]) -> str:
     )
 
 
-def build_chat_prompt(messages: list[dict[str, str]]) -> str:
+def build_chat_prompt(messages: list[dict[str, str]], context: Any = None) -> str:
     rendered = []
+    context_lines = chat_context_lines(context)
+    if context_lines:
+        rendered.append("\n".join(context_lines))
+
     for message in messages[-12:]:
         role = message.get("role", "user")
         content = message.get("content", "")
@@ -482,9 +555,10 @@ def handle(payload: dict[str, Any]) -> dict[str, Any]:
             system_message=(
                 "You are an AG2 research assistant for Wikidata Explorer. Help users reason about "
                 "Wikidata entities, properties, statement quality, references, graph exploration, and linked data. "
-                "Do not claim to have browsed live Wikidata unless context was supplied by the user."
+                "Do not claim to have browsed live Wikidata unless context was supplied by the user. "
+                "When visible context is supplied, ground answers in its Wikidata IDs, statement IDs, ranks, qualifiers, references, and source URLs."
             ),
-            prompt=build_chat_prompt(messages),
+            prompt=build_chat_prompt(messages, payload.get("context")),
             max_tokens=700,
         )
         return {"message": text}

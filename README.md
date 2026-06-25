@@ -21,7 +21,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`, a seeded Q42 proof path, or a shared comparison such as `/search?q=Q42&tab=compare&compare=Q80`
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
-- 🤖 Enable AG2 specialist agents for research, graph analysis, next-entity suggestions, citation verification, comparison, and Markdown reports
+- 🤖 Enable AG2 specialist agents for research, graph analysis, next-entity suggestions, citation verification, comparison, Markdown reports, and selected workbench context handoff into chat
 - 🐳 Run agents through local conda or a token-protected containerized FastAPI AG2 service
 - 🧾 Inspect statement ranks, referenced/unreferenced badges, statement IDs, qualifiers, references, and source hints in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
@@ -190,8 +190,8 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, graph focus, data-quality summary, evidence-aware statement details, and evidence review queue
-- `app/chat/page.tsx`: feature-flagged AG2 research assistant
+- `app/search/page.tsx`: main Wikidata explorer workflow, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
+- `app/chat/page.tsx`: feature-flagged AG2 research assistant with bounded visible-context handoff from the workbench
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
 - `app/api/entity-summary/route.ts`: feature-flagged grounded entity summary endpoint
@@ -212,6 +212,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
 - `lib/entity-comparison.mjs`: tested two/three-entity comparison helpers for shared properties, unique properties, property matrices, overlapping linked entities, and Markdown/JSON exports
 - `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, token-authenticated remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
+- `lib/ag2-chat-context.mjs`: shared sanitizer for bounded AG2 chat context handoff from selected entities, statements, graph focus, and path exports
 - `lib/ag2-remote-service.mjs`: tested remote AG2 service client for `/run` payloads, bearer auth, success responses, and service error mapping
 - `lib/ag2-errors.mjs`: shared AG2 bridge error type for local and remote runtime failures
 - `lib/ag2-service-auth.mjs`: shared AG2 service bearer-token validation helper
@@ -222,6 +223,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
+- `scripts/test-ag2-chat-context.mjs`: bounded AG2 chat context sanitizer checks for entity, statement, graph focus, and path export handoff
 - `scripts/test-ag2-remote-service.mjs`: mocked AG2 container contract test for remote `/run` success, auth, and sanitized service failures
 - `scripts/fixtures/wikidata-fixtures.mjs`: deterministic Q42/Q80/Q25169/P31 Wikidata fixtures for search, entity, graph, evidence, and comparison tests
 - `scripts/test-wikidata-fixtures.mjs`: fixture-backed regression tests for search results, detailed entities, graph filters, source hints, data quality, and comparison exports

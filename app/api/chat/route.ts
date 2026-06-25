@@ -2,6 +2,7 @@ import { z } from "zod";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
 import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
+import { sanitizeChatVisibleContext } from "@/lib/ag2-chat-context.mjs";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -37,6 +38,7 @@ const messageSchema = z.object({
 
 const requestSchema = z.object({
   messages: z.array(messageSchema).min(1).max(30),
+  context: z.unknown().optional(),
 });
 
 function messageContent(message: z.infer<typeof messageSchema>) {
@@ -78,10 +80,17 @@ export async function POST(req: Request) {
     role: message.role,
     content: messageContent(message),
   }));
+  const context = parsed.data.context === undefined ? null : sanitizeChatVisibleContext(parsed.data.context);
+  if (parsed.data.context !== undefined && !context) {
+    return Response.json(
+      { error: "Invalid chat context." },
+      { status: 400 },
+    );
+  }
 
   try {
     const { runAg2Agent } = await import("@/lib/ag2");
-    const result = await runAg2Agent({ mode: "chat", messages });
+    const result = await runAg2Agent({ mode: "chat", messages, context: context || undefined });
     return Response.json({ message: result.message });
   } catch (error) {
     console.error("AG2 chat route failed:", error);
