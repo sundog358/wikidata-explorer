@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import {
   API_FAILURE_CATEGORIES,
+  API_OBSERVABILITY_ALERT_RULES,
+  apiObservabilityDashboardSpec,
   apiFailureEvent,
   classifyApiFailure,
+  evaluateApiFailureAlerts,
   logApiFailure,
   sanitizeLogMessage,
 } from "../lib/api-observability.mjs";
@@ -48,5 +51,38 @@ assert.equal(logged.route, "/api/ag2-workflow");
 assert.equal(logs.length, 1);
 assert.match(logs[0], /"event":"api_failure"/);
 assert.doesNotMatch(logs[0], /messages|statements|OPENAI_API_KEY/);
+
+const categoriesWithAlerts = new Set(API_OBSERVABILITY_ALERT_RULES.map((rule) => rule.category));
+assert.deepEqual(categoriesWithAlerts, new Set(Object.values(API_FAILURE_CATEGORIES)));
+assert.equal(API_OBSERVABILITY_ALERT_RULES.every((rule) => /^[a-z0-9-]+$/.test(rule.id)), true);
+assert.equal(API_OBSERVABILITY_ALERT_RULES.every((rule) => ["critical", "warning", "info"].includes(rule.severity)), true);
+assert.equal(API_OBSERVABILITY_ALERT_RULES.every((rule) => rule.windowMinutes > 0 && rule.threshold > 0), true);
+assert.equal(API_OBSERVABILITY_ALERT_RULES.every((rule) => !/sk-|Bearer\s+|secret=/i.test(rule.runbook)), true);
+
+const dashboard = apiObservabilityDashboardSpec();
+assert.equal(dashboard.title, "Wikidata Explorer API Reliability");
+assert.equal(dashboard.eventName, "api_failure");
+assert.ok(dashboard.panels.some((panel) => panel.id === "failure-count-by-category" && panel.groupBy === "category"));
+dashboard.title = "mutated";
+assert.equal(apiObservabilityDashboardSpec().title, "Wikidata Explorer API Reliability");
+
+const now = "2026-06-25T21:30:00.000Z";
+const alertResults = evaluateApiFailureAlerts([
+  { event: "api_failure", category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE, createdAt: "2026-06-25T21:29:00.000Z" },
+  { event: "api_failure", category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE, createdAt: "2026-06-25T21:28:00.000Z" },
+  { event: "api_failure", category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE, createdAt: "2026-06-25T21:27:00.000Z" },
+  { event: "api_failure", category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE, createdAt: "2026-06-25T21:10:00.000Z" },
+  { event: "api_failure", category: API_FAILURE_CATEGORIES.OPENAI_KEY_MISSING, createdAt: "2026-06-25T21:29:30.000Z" },
+  { event: "other_event", category: API_FAILURE_CATEGORIES.UNKNOWN, createdAt: "2026-06-25T21:29:30.000Z" },
+], { now });
+const ag2Alert = alertResults.find((alert) => alert.id === "ag2-service-unavailable-spike");
+assert.equal(ag2Alert.count, 3);
+assert.equal(ag2Alert.firing, true);
+const openAiKeyAlert = alertResults.find((alert) => alert.id === "openai-key-missing");
+assert.equal(openAiKeyAlert.count, 1);
+assert.equal(openAiKeyAlert.firing, true);
+const unknownAlert = alertResults.find((alert) => alert.id === "unknown-api-failures");
+assert.equal(unknownAlert.count, 0);
+assert.equal(unknownAlert.firing, false);
 
 console.log("PASS API observability tests");

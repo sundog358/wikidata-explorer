@@ -52,6 +52,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Cross-type comparison coverage now exports a work/organization/person matrix for Q25169/Q95/Q42 and verifies shareable restore.
 - Place fixture coverage now adds Q90/Paris with country, administrative region, coordinate, image/media, source-link, graph-regression, and work/organization/place comparison checks.
 - Property-focused comparison exports now restore a selected property with `export=comparison-property&cprop=P...` and provide Markdown/JSON handoff text for reviewer workflows.
+- API observability now includes a tested dashboard/alert contract with category panels, severity thresholds, time windows, and runbook text on top of sanitized failure events.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 - The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
 
@@ -70,7 +71,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 
 ## Portfolio Readiness
 
-Current local grade: 9.6 / 10
+Current local grade: 9.7 / 10
 
 The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, timeline evidence layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
@@ -82,7 +83,7 @@ To reach 10:
 
 - Ship an optional hosted AG2 container demo with traceable, citation-style Wikidata ID references in responses.
 - Persist research workspace state for curation tasks and agent history.
-- Add production dashboards/alerts on top of the sanitized API failure categories.
+- Connect the tested observability dashboard/alert contract to a hosted production monitor.
 
 ## Next Priorities
 
@@ -204,6 +205,7 @@ Observability:
 - Shipped lightweight server logging for AI route failures without leaking prompts, keys, or sensitive context.
 - Shipped a client-side error boundary around the explorer workflow with reset/reload recovery and sanitized client failure telemetry.
 - Track API error categories: Wikidata unavailable, Commons unavailable, AG2 disabled, request validation, safety policy, request rate limit, OpenAI key missing, OpenAI quota/rate limit, and AG2 service unavailable.
+- Shipped a tested dashboard/alert rule contract for category panels, severity thresholds, alert windows, and runbook text; next step is wiring it to the hosted production monitor.
 
 ## Maintenance
 

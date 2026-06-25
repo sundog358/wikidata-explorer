@@ -220,14 +220,14 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/ag2-remote-service.mjs`: tested remote AG2 service client for `/run` payloads, bearer auth, success responses, and service error mapping
 - `lib/ag2-errors.mjs`: shared AG2 bridge error type for local and remote runtime failures
 - `lib/ag2-service-auth.mjs`: shared AG2 service bearer-token validation helper
-- `lib/api-observability.mjs`: sanitized API failure classifier/logger for AI route validation, safety, disabled-mode, OpenAI, AG2 service, Wikidata, and Commons outage categories
+- `lib/api-observability.mjs`: sanitized API failure classifier/logger plus dashboard/alert-rule contract for AI route validation, safety, disabled-mode, OpenAI, AG2 service, Wikidata, and Commons outage categories
 - `lib/ai-rate-limit.mjs`: in-memory public AI route throttling helper
 - `agents/wikidata_ag2_agent.py`: bounded AG2 agent bridge for chat, research, graph analysis, suggestions, verification, comparison, reports, and shared citation-style grounding requirements
 - `agents/ag2_service.py`: token-protected FastAPI wrapper for the containerized AG2 runtime
 - `agents/Dockerfile`: Docker image for hosting the AG2 service outside Vercel
 - `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
-- `scripts/test-api-observability.mjs`: safe logging/category tests that ensure API failure events do not expose prompts, keys, bearer tokens, or raw payloads
+- `scripts/test-api-observability.mjs`: safe logging/category/dashboard-alert tests that ensure API failure events and observability rules do not expose prompts, keys, bearer tokens, or raw payloads
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
 - `scripts/test-ag2-chat-context.mjs`: bounded AG2 chat context sanitizer checks for entity, statement, graph focus, and path export handoff
 - `scripts/test-ag2-prompt-grounding.mjs`: prompt-grounding regression checks for `Grounding references`, Wikidata IDs, statement IDs, and source URL instructions across AG2 modes
@@ -251,7 +251,7 @@ Optional AI-enabled mode remains a separate deployment step:
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract, sanitized API failure-category checks, and search workbench error-boundary checks so the container bridge, production-safe route logging, and client recovery shell are checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract, sanitized API failure-category/dashboard-alert checks, and search workbench error-boundary checks so the container bridge, production-safe route logging, alert contract, and client recovery shell are checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
 CI also runs install, verify, production trace checks, smoke, public metadata checks, public AI-off API contracts, mock AG2 enabled-mode API contracts, e2e, performance budgets, visual QA, and screenshot artifact upload on GitHub Actions.
 
