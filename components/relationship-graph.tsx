@@ -33,6 +33,7 @@ type RelationshipGraphNode = {
 
 export type RelationshipGraphFilters = {
   depth: "1" | "2" | "property";
+  layout: "radial" | "property";
   kind: "all" | "item" | "property";
   rank: "all" | WikidataStatement["rank"];
   propertyId: string;
@@ -84,6 +85,7 @@ const CENTER = { x: 50, y: 50 };
 const RADIUS = 34;
 export const DEFAULT_RELATIONSHIP_GRAPH_FILTERS: RelationshipGraphFilters = {
   depth: "1",
+  layout: "radial",
   kind: "all",
   rank: "all",
   propertyId: "all",
@@ -190,6 +192,26 @@ function positionNodes(graphNodes: RelationshipGraphNode[]): PositionedGraphNode
   });
 }
 
+function positionNodesByProperty(graphNodes: RelationshipGraphNode[]): PositionedGraphNode[] {
+  const propertyIds = Array.from(new Set(graphNodes.map((node) => node.sourcePropertyId || node.propertyId)));
+  const columnCount = Math.max(1, propertyIds.length);
+  const rowsByProperty = new Map(propertyIds.map((propertyId) => [propertyId, graphNodes.filter((node) => (node.sourcePropertyId || node.propertyId) === propertyId)]));
+
+  return graphNodes.map((node) => {
+    const propertyIndex = propertyIds.indexOf(node.sourcePropertyId || node.propertyId);
+    const rows = rowsByProperty.get(node.sourcePropertyId || node.propertyId) || [node];
+    const rowIndex = rows.findIndex((row) => row.id === node.id);
+    const x = columnCount === 1 ? 50 : 18 + (propertyIndex / Math.max(1, columnCount - 1)) * 64;
+    const y = rows.length === 1 ? 50 : 18 + (rowIndex / Math.max(1, rows.length - 1)) * 64;
+
+    return {
+      ...node,
+      x,
+      y,
+    };
+  });
+}
+
 function SelectControl({
   id,
   label,
@@ -229,7 +251,10 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
   const allNodes = useMemo(() => collectRelationshipGraphNodes(item), [item]);
   const matchingNodes = useMemo(() => filterRelationshipGraphNodes(allNodes, filters), [allNodes, filters]);
   const visibleNodeLimit = filters.depth === "1" ? 14 : 24;
-  const nodes = useMemo(() => positionNodes(matchingNodes.slice(0, visibleNodeLimit)), [matchingNodes, visibleNodeLimit]);
+  const nodes = useMemo(() => {
+    const visibleNodes = matchingNodes.slice(0, visibleNodeLimit);
+    return filters.layout === "property" ? positionNodesByProperty(visibleNodes) : positionNodes(visibleNodes);
+  }, [filters.layout, matchingNodes, visibleNodeLimit]);
   const propertyOptions = useMemo(() => graphPropertyOptions(allNodes), [allNodes]);
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
   const selectedEvidenceSummary = selectedNode ? relationshipEvidenceSummary(selectedNode) : null;
@@ -321,11 +346,15 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
           </Button>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
           <SelectControl id="graph-depth-filter" label="Depth" value={filters.depth} onChange={(value) => updateFilter("depth", value as Required<RelationshipGraphFilters>["depth"])}>
             <option value="1">1-hop statements</option>
             <option value="2">2-hop evidence</option>
             <option value="property">Selected property</option>
+          </SelectControl>
+          <SelectControl id="graph-layout-filter" label="Layout" value={filters.layout} onChange={(value) => updateFilter("layout", value as Required<RelationshipGraphFilters>["layout"])}>
+            <option value="radial">Radial</option>
+            <option value="property">Grouped by property</option>
           </SelectControl>
           <SelectControl id="graph-kind-filter" label="Target type" value={filters.kind} onChange={(value) => updateFilter("kind", value as Required<RelationshipGraphFilters>["kind"])}>
             <option value="all">All targets</option>
@@ -379,7 +408,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                       y2={node.y}
                       stroke={active ? "#0284c7" : "#94a3b8"}
                       strokeWidth={active ? "0.55" : "0.35"}
-                      strokeDasharray="1.2 1.2"
+                      strokeDasharray={filters.layout === "property" ? "0.8 1.4" : "1.2 1.2"}
                     />
                     <circle cx={node.x} cy={node.y} r={active ? "1.7" : "1.2"} fill={node.kind === "property" ? "#10b981" : "#0284c7"} />
                   </g>
@@ -403,7 +432,9 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   onFocus={() => selectNode(node)}
                   onMouseEnter={() => setHoveredNodeId(node.id)}
                   onMouseLeave={() => setHoveredNodeId(null)}
-                  className={`absolute z-20 w-44 -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white p-2 text-left text-xs shadow-sm transition hover:border-sky-300 hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800 ${
+                  className={`absolute w-44 -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white p-2 text-left text-xs shadow-sm transition hover:border-sky-300 hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800 ${
+                    selected || node.id === hoveredNodeId ? "z-30" : "z-20"
+                  } ${
                     selected ? "border-sky-400 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"
                   }`}
                   style={{ left: `${node.x}%`, top: `${node.y}%` }}

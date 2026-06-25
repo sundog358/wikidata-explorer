@@ -48,7 +48,7 @@ export default function Home() {
         <div className="max-w-4xl space-y-7">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
             <Sparkles className="h-4 w-4 text-sky-500" />
-            History Puzzle workspace
+            Evidence-first workspace
           </div>
 
           <div className="space-y-4">
@@ -56,7 +56,7 @@ export default function Home() {
               Wikidata Explorer
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-              Start with an entity, then use the History Puzzle frame to piece together statements, languages, source links, and graph paths into a trustworthy research trail.
+              Start with a Wikidata entity, then follow statements, languages, source links, and graph paths into a trustworthy research trail.
             </p>
           </div>
 

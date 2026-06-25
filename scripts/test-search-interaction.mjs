@@ -60,6 +60,7 @@ try {
 
   await page.getByRole("tab", { name: /Graph/ }).click();
   await page.getByTestId("graph-filters").waitFor({ state: "visible" });
+  await page.getByLabel("Layout").selectOption("property");
   await page.getByLabel("Depth").selectOption("2");
   await page.getByLabel("Target type").selectOption("item");
   await page.locator("#graph-property-filter").selectOption("P31");
@@ -69,8 +70,8 @@ try {
     throw new Error(`Expected graph filter summary after item filter, got ${filterSummary}`);
   }
   const graphUrl = new URL(page.url());
-  if (graphUrl.searchParams.get("gdepth") !== "property" || graphUrl.searchParams.get("gprop") !== "P31") {
-    throw new Error(`Expected graph depth and property filters in URL, got ${page.url()}`);
+  if (graphUrl.searchParams.get("gdepth") !== "property" || graphUrl.searchParams.get("glayout") !== "property" || graphUrl.searchParams.get("gprop") !== "P31") {
+    throw new Error(`Expected graph depth, layout, and property filters in URL, got ${page.url()}`);
   }
 
   await page.getByTestId("graph-focus-Q5").click();
@@ -165,6 +166,7 @@ try {
   console.log("PASS comparison Markdown export includes shared-property sections");
   console.log("PASS search tab and graph filter state update the URL");
   console.log("PASS graph depth controls support selected-property expansion");
+  console.log("PASS grouped-by-property graph layout updates URL state");
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");

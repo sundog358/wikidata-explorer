@@ -106,6 +106,7 @@ const AI_AGENTS_ENABLED = aiAgentsEnabled({
 
 const Q42_PROOF_GRAPH_FILTERS: RelationshipGraphFilters = {
   depth: "1",
+  layout: "radial",
   kind: "item",
   rank: "all",
   propertyId: "P31",
@@ -928,7 +929,7 @@ export default function SearchPage() {
                           Recruiter proof path
                         </div>
                         <p className="mt-1 max-w-3xl text-sm text-slate-700 dark:text-slate-200">
-                          Douglas Adams shows the full History Puzzle loop: graph context, evidence depth, draft-only exports, and the AI safety boundary in one review path.
+                          Douglas Adams shows the full Wikidata Explorer loop: graph context, evidence depth, draft-only exports, and the AI safety boundary in one review path.
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">

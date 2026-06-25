@@ -4,7 +4,7 @@ Last reviewed: June 25, 2026
 
 This roadmap tracks the path from a strong public portfolio app to a credible linked-data research workspace. The public Next.js app is live at `https://www.wikidataexplorer.com` with AI disabled by default; the AG2 runtime remains available locally or through the token-protected container service path.
 
-`Wikidata Explorer` is the public product name and domain. `History Puzzle` remains a narrative frame inside the demo: users are assembling a research picture from linked records, statement evidence, language labels, references, and graph paths.
+`Wikidata Explorer` is the public product name and domain. Users assemble a research picture from linked records, statement evidence, language labels, references, and graph paths.
 
 ## Product North Star
 
@@ -24,7 +24,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, and selected-path Markdown/JSON exports.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, and Markdown comparison exports.
-- The current local branch adds pinned relationship comparison views for comparing saved graph edges by relationship, rank, depth, and evidence strength.
+- The current local branch adds a grouped-by-property graph layout mode with shareable URL state.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -44,17 +44,17 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 
 ## Ready For Next Production Deploy
 
-- Pinned relationship comparison views are implemented and verified locally: saved graph edges can be compared by relationship, rank, depth, total references, total qualifiers, and strongest evidence.
+- Grouped-by-property graph layout is implemented and verified locally through the graph layout control and `glayout=property` URL state.
 
 ## Portfolio Readiness
 
-Current local grade: 9.2 / 10
+Current local grade: 9.25 / 10
 
-The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
+The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
 To reach 9.5:
 
-- Add accessibility checks for the new graph depth controls, pinned comparison, and statement drawer.
+- Add accessibility checks for the new graph layout/depth controls, pinned comparison, and statement drawer.
 - Add accessibility checks for keyboard graph navigation, focus order, and reduced-motion behavior.
 - Add performance budgets for `/search?q=Q42` and graph rendering.
 
@@ -79,7 +79,7 @@ Goal: make the first five minutes of the demo obvious and impressive.
 
 ### 2. Graph Exploration Depth
 
-Status: depth, preview, history, and detail-drawer slices shipped in production; pinned comparison implemented locally.
+Status: depth, preview, history, detail-drawer, and pinned-comparison slices shipped in production; grouped-by-property layout implemented locally.
 
 Goal: make the graph the signature feature.
 
@@ -87,9 +87,9 @@ Goal: make the graph the signature feature.
 - Implemented richer node previews from secondary entity lookups.
 - Implemented pinned relationship history for selected graph relationships.
 - Implemented a selected statement detail drawer for statement ID, value, data type, depth/source context, qualifiers, and references.
-- Implemented multi-edge comparison views for pinned relationships locally.
-- Next: deploy pinned comparison and add layout modes.
-- Add layout modes: radial, grouped by property, and timeline-like for date-heavy entities.
+- Implemented multi-edge comparison views for pinned relationships.
+- Implemented grouped-by-property layout mode locally.
+- Next: deploy grouped layout and add timeline-like layout for date-heavy entities.
 - Keep graph URL state stable for filters, selected focus, and future export views.
 
 ### 3. Entity Comparison
@@ -190,9 +190,9 @@ Status: shipped
 
 Status: in progress
 
-- Shipped: graph filters, depth controls, richer node previews, pinned relationship history, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
-- Ready for deploy: pinned relationship comparison views.
-- Next: graph layout modes.
+- Shipped: graph filters, depth controls, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
+- Ready for deploy: grouped-by-property graph layout mode.
+- Next: timeline-like layout for date-heavy entities.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 
