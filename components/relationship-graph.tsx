@@ -110,6 +110,17 @@ function evidenceLabel(node: RelationshipGraphNode) {
   return parts.length ? parts.join(" · ") : "No qualifiers or references";
 }
 
+function graphNodeAriaLabel(node: PositionedGraphNode): string {
+  const parts = [
+    `${node.label} (${node.id})`,
+    `relationship ${node.property} (${node.propertyId})`,
+    `${node.rank} rank`,
+    evidenceLabel(node),
+  ];
+  if (node.timelineLabel) parts.push(`timeline ${node.timelineLabel}`);
+  return parts.join(", ");
+}
+
 function formatGraphValueText(value: WikidataStatement["value"]): string {
   const content = value?.content;
   if (value?.type === "somevalue") return "Unknown value";
@@ -324,6 +335,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
   const previewNode = hoveredNode || selectedNode;
   const hasActiveFilters = Object.entries(filters).some(([key, value]) => DEFAULT_RELATIONSHIP_GRAPH_FILTERS[key as keyof typeof DEFAULT_RELATIONSHIP_GRAPH_FILTERS] !== value);
   const pinnedComparison = useMemo(() => comparePinnedRelationships(pinnedNodes), [pinnedNodes]);
+  const graphDescriptionId = `${item.id}-relationship-graph-description`;
 
   function setSelectedGraphNodeId(nextId: string | null) {
     if (onSelectedNodeIdChange) {
@@ -395,7 +407,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
               <Filter className="h-4 w-4 text-sky-600 dark:text-sky-300" />
               Graph filters
             </div>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300" data-testid="graph-filter-summary">
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300" data-testid="graph-filter-summary" aria-live="polite">
               {relationshipGraphSummary(item, allNodes, matchingNodes)} {matchingNodes.length > nodes.length ? `Showing the first ${nodes.length} matching nodes.` : ""}
             </p>
           </div>
@@ -452,7 +464,10 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
       ) : (
         <>
           <div className={`relative overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 ${filters.layout === "timeline" ? "min-h-[560px]" : "min-h-[440px]"}`}>
-            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" role="img" aria-label={`Relationship graph for ${entityLabel(item)}`}>
+            <p id={graphDescriptionId} className="sr-only">
+              Relationship graph nodes are focusable buttons. Focus a node to preview its statement evidence, or activate it to open that linked entity.
+            </p>
+            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" role="img" aria-label={`Relationship graph for ${entityLabel(item)}`} aria-describedby={graphDescriptionId}>
               <defs>
                 <radialGradient id="graph-center" cx="50%" cy="50%" r="60%">
                   <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.32" />
@@ -495,6 +510,8 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   onFocus={() => selectNode(node)}
                   onMouseEnter={() => setHoveredNodeId(node.id)}
                   onMouseLeave={() => setHoveredNodeId(null)}
+                  aria-label={graphNodeAriaLabel(node)}
+                  data-testid={`graph-node-${node.id}`}
                   className={`absolute ${filters.layout === "timeline" ? "w-40" : "w-44"} -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white p-2 text-left text-xs shadow-sm transition hover:border-sky-300 hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800 ${
                     selected || node.id === hoveredNodeId ? "z-30" : "z-20"
                   } ${

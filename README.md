@@ -224,7 +224,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison, graph depth/layout/filtering including timeline URL state, richer node previews, pinned relationship comparison, selected statement details, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison, graph depth/layout/filtering including timeline URL state, graph node accessibility semantics, richer node previews, pinned relationship comparison, selected statement details, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA

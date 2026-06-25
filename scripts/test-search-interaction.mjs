@@ -78,6 +78,16 @@ try {
   if (timelineUrl.searchParams.get("glayout") !== "timeline") {
     throw new Error(`Expected timeline graph layout in URL, got ${page.url()}`);
   }
+  const q5GraphNode = page.getByTestId("graph-node-Q5").first();
+  const q5AccessibleName = await q5GraphNode.getAttribute("aria-label");
+  if (!q5AccessibleName?.includes("human (Q5)") || !q5AccessibleName.includes("relationship instance of (P31)") || !q5AccessibleName.includes("normal rank")) {
+    throw new Error(`Expected Q5 graph node to expose relationship context in its accessible name, got ${q5AccessibleName}`);
+  }
+  await q5GraphNode.focus();
+  const focusedGraphNode = await page.evaluate(() => document.activeElement?.getAttribute("data-testid"));
+  if (focusedGraphNode !== "graph-node-Q5") {
+    throw new Error(`Expected keyboard focus to reach graph-node-Q5, got ${focusedGraphNode}`);
+  }
 
   await page.getByTestId("graph-focus-Q5").click();
   await page.getByTestId("selected-graph-node-description").waitFor({ state: "visible" });
@@ -135,12 +145,8 @@ try {
     throw new Error(`Expected graph path Markdown export to include evidence details, got ${graphMarkdownExport}`);
   }
 
-  const graphTarget = page
-    .locator('button[title*="human"]')
-    .filter({ hasText: "Q5" })
-    .first();
-
-  await graphTarget.click();
+  await q5GraphNode.focus();
+  await page.keyboard.press("Enter");
   await page.getByTestId("selected-entity-id").waitFor({ state: "visible" });
   await page.waitForFunction(() => {
     const node = document.querySelector('[data-testid="selected-entity-id"]');
@@ -173,6 +179,7 @@ try {
   console.log("PASS graph depth controls support selected-property expansion");
   console.log("PASS grouped-by-property graph layout updates URL state");
   console.log("PASS timeline graph layout updates URL state");
+  console.log("PASS graph nodes expose accessible relationship labels and keyboard focus");
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");
