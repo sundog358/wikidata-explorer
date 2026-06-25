@@ -1,4 +1,6 @@
 import { chromium } from "playwright-core";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { fixtureEntities, fixtureSearchWikidata } from "./fixtures/wikidata-fixtures.mjs";
 
 const baseUrl = process.env.E2E_BASE_URL || "http://localhost:3000";
@@ -190,7 +192,7 @@ function wikidataApiResponse(url) {
   return {};
 }
 
-async function installFixtureRoutes(page) {
+export async function installFixtureRoutes(page) {
   await page.route("https://www.wikidata.org/w/api.php?**", async (route) => {
     const url = new URL(route.request().url());
     await route.fulfill({
@@ -223,82 +225,88 @@ async function installFixtureRoutes(page) {
   });
 }
 
-const browser = await chromium.launch({
-  executablePath: chromePath,
-  headless: true,
-  args: ["--no-sandbox", "--disable-dev-shm-usage"],
-});
-
-try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-  page.setDefaultTimeout(30000);
-  await installFixtureRoutes(page);
-
-  await page.goto(new URL("/search?q=Q42&tab=graph&gdepth=property&gprop=P31", baseUrl).toString(), {
-    waitUntil: "commit",
+async function runFixtureFlow() {
+  const browser = await chromium.launch({
+    executablePath: chromePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-dev-shm-usage"],
   });
 
-  await page.getByTestId("selected-entity-id").waitFor({ state: "visible" });
-  const selectedEntity = (await page.getByTestId("selected-entity-id").innerText()).trim();
-  if (selectedEntity !== "Q42") {
-    throw new Error(`Expected fixture route to select Q42, got ${selectedEntity}`);
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    page.setDefaultTimeout(30000);
+    await installFixtureRoutes(page);
+
+    await page.goto(new URL("/search?q=Q42&tab=graph&gdepth=property&gprop=P31", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+
+    await page.getByTestId("selected-entity-id").waitFor({ state: "visible" });
+    const selectedEntity = (await page.getByTestId("selected-entity-id").innerText()).trim();
+    if (selectedEntity !== "Q42") {
+      throw new Error(`Expected fixture route to select Q42, got ${selectedEntity}`);
+    }
+
+    await page.getByTestId("graph-node-Q5").waitFor({ state: "visible" });
+    const q5AccessibleName = await page.getByTestId("graph-node-Q5").getAttribute("aria-label");
+    if (!q5AccessibleName?.includes("human (Q5)") || !q5AccessibleName.includes("instance of (P31)")) {
+      throw new Error(`Expected mocked Q42 graph to expose Q5 instance-of context, got ${q5AccessibleName}`);
+    }
+
+    const graphSummary = await page.getByTestId("graph-filter-summary").innerText();
+    if (!graphSummary.includes("Douglas Adams")) {
+      throw new Error(`Expected fixture graph summary to mention Douglas Adams, got ${graphSummary}`);
+    }
+
+    await page.getByRole("tab", { name: /Media/ }).click();
+    await page.getByText("File:Douglas adams portrait cropped.jpg").waitFor({ state: "visible" });
+    const mediaPanel = await page.getByRole("tabpanel").filter({ hasText: "image/jpeg" }).first().innerText();
+    if (!mediaPanel.includes("image/jpeg")) {
+      throw new Error(`Expected mocked Commons media to render image metadata, got ${mediaPanel}`);
+    }
+
+    await page.getByRole("tab", { name: /Languages/ }).click();
+    const languagesPanel = await page.getByRole("tabpanel").filter({ hasText: "French" }).first().innerText();
+    if (!languagesPanel.includes("English") || !languagesPanel.includes("French") || !languagesPanel.includes("Douglas Adams")) {
+      throw new Error(`Expected mocked language metadata to render English and French rows, got ${languagesPanel}`);
+    }
+
+    await page.getByRole("tab", { name: /Compare/ }).click();
+    await page.getByTestId("comparison-panel").getByRole("button", { name: "Compare" }).click();
+    await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
+    const comparisonJson = JSON.parse(await page.getByTestId("comparison-json-export").inputValue());
+    if (comparisonJson.source.id !== "Q42" || comparisonJson.target.id !== "Q80" || comparisonJson.summary.sharedPropertyCount !== 2) {
+      throw new Error(`Expected fixture comparison JSON for Q42/Q80 with two shared properties, got ${JSON.stringify(comparisonJson)}`);
+    }
+
+    await page.goto(new URL("/search?q=P31", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.waitForFunction(() => document.querySelector('[data-testid="selected-entity-id"]')?.textContent?.trim() === "P31");
+
+    await page.goto(new URL("/search?q=NoSuchFixtureTerm", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.getByText("No Wikidata entities matched that search.").waitFor({ state: "visible" });
+
+    await page.goto(new URL("/search?q=Q999999999", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.getByText("No Wikidata entity found for Q999999999").waitFor({ state: "visible" });
+
+    console.log("PASS fixture-backed search selects Q42 without live Wikidata");
+    console.log("PASS fixture-backed graph renders Q42 instance-of context");
+    console.log("PASS fixture-backed Commons media renders image metadata");
+    console.log("PASS fixture-backed language metadata renders labels");
+    console.log("PASS fixture-backed comparison exports Q42/Q80 JSON");
+    console.log("PASS fixture-backed direct PID lookup selects P31");
+    console.log("PASS fixture-backed empty search shows no-result error");
+    console.log("PASS fixture-backed missing entity shows not-found error");
+  } finally {
+    await browser.close().catch(() => {});
   }
+}
 
-  await page.getByTestId("graph-node-Q5").waitFor({ state: "visible" });
-  const q5AccessibleName = await page.getByTestId("graph-node-Q5").getAttribute("aria-label");
-  if (!q5AccessibleName?.includes("human (Q5)") || !q5AccessibleName.includes("instance of (P31)")) {
-    throw new Error(`Expected mocked Q42 graph to expose Q5 instance-of context, got ${q5AccessibleName}`);
-  }
-
-  const graphSummary = await page.getByTestId("graph-filter-summary").innerText();
-  if (!graphSummary.includes("Douglas Adams")) {
-    throw new Error(`Expected fixture graph summary to mention Douglas Adams, got ${graphSummary}`);
-  }
-
-  await page.getByRole("tab", { name: /Media/ }).click();
-  await page.getByText("File:Douglas adams portrait cropped.jpg").waitFor({ state: "visible" });
-  const mediaPanel = await page.getByRole("tabpanel").filter({ hasText: "image/jpeg" }).first().innerText();
-  if (!mediaPanel.includes("image/jpeg")) {
-    throw new Error(`Expected mocked Commons media to render image metadata, got ${mediaPanel}`);
-  }
-
-  await page.getByRole("tab", { name: /Languages/ }).click();
-  const languagesPanel = await page.getByRole("tabpanel").filter({ hasText: "French" }).first().innerText();
-  if (!languagesPanel.includes("English") || !languagesPanel.includes("French") || !languagesPanel.includes("Douglas Adams")) {
-    throw new Error(`Expected mocked language metadata to render English and French rows, got ${languagesPanel}`);
-  }
-
-  await page.getByRole("tab", { name: /Compare/ }).click();
-  await page.getByTestId("comparison-panel").getByRole("button", { name: "Compare" }).click();
-  await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
-  const comparisonJson = JSON.parse(await page.getByTestId("comparison-json-export").inputValue());
-  if (comparisonJson.source.id !== "Q42" || comparisonJson.target.id !== "Q80" || comparisonJson.summary.sharedPropertyCount !== 2) {
-    throw new Error(`Expected fixture comparison JSON for Q42/Q80 with two shared properties, got ${JSON.stringify(comparisonJson)}`);
-  }
-
-  await page.goto(new URL("/search?q=P31", baseUrl).toString(), {
-    waitUntil: "commit",
-  });
-  await page.waitForFunction(() => document.querySelector('[data-testid="selected-entity-id"]')?.textContent?.trim() === "P31");
-
-  await page.goto(new URL("/search?q=NoSuchFixtureTerm", baseUrl).toString(), {
-    waitUntil: "commit",
-  });
-  await page.getByText("No Wikidata entities matched that search.").waitFor({ state: "visible" });
-
-  await page.goto(new URL("/search?q=Q999999999", baseUrl).toString(), {
-    waitUntil: "commit",
-  });
-  await page.getByText("No Wikidata entity found for Q999999999").waitFor({ state: "visible" });
-
-  console.log("PASS fixture-backed search selects Q42 without live Wikidata");
-  console.log("PASS fixture-backed graph renders Q42 instance-of context");
-  console.log("PASS fixture-backed Commons media renders image metadata");
-  console.log("PASS fixture-backed language metadata renders labels");
-  console.log("PASS fixture-backed comparison exports Q42/Q80 JSON");
-  console.log("PASS fixture-backed direct PID lookup selects P31");
-  console.log("PASS fixture-backed empty search shows no-result error");
-  console.log("PASS fixture-backed missing entity shows not-found error");
-} finally {
-  await browser.close().catch(() => {});
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  await runFixtureFlow();
 }

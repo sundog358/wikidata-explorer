@@ -2,6 +2,7 @@ import { mkdir, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright-core";
 import { aiAgentsEnabled } from "../lib/ai-feature-flags.mjs";
+import { installFixtureRoutes } from "./test-search-fixture-flow.mjs";
 
 const baseUrl = process.env.VISUAL_QA_BASE_URL || "http://localhost:3000";
 const chromePath = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
@@ -63,6 +64,7 @@ const checks = [
     waitText: "Markdown comparison export",
     focusTestId: "comparison-panel",
     screenshotTestId: "comparison-panel",
+    fixtureRoutes: true,
     viewport: { width: 1440, height: 1000 },
   },
 ];
@@ -126,6 +128,10 @@ try {
     const browserErrors = trackBrowserErrors(page);
 
     try {
+      if (check.fixtureRoutes) {
+        await installFixtureRoutes(page);
+      }
+
       await page.goto(new URL(check.path, baseUrl).toString(), {
         waitUntil: "commit",
         timeout: 20000,
