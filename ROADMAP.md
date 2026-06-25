@@ -53,6 +53,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Place fixture coverage now adds Q90/Paris with country, administrative region, coordinate, image/media, source-link, graph-regression, and work/organization/place comparison checks.
 - Property-focused comparison exports now restore a selected property with `export=comparison-property&cprop=P...` and provide Markdown/JSON handoff text for reviewer workflows.
 - Portable workspace snapshots now export and restore review task statuses, dismissed review findings, and saved AG2 run history with tested artifact validation.
+- GitHub Actions CI now uses Node 24-compatible action lines for checkout, setup-node, Chrome setup, and artifact upload, with a regression test to keep the workflow current.
 - API observability now includes a tested dashboard/alert contract with category panels, severity thresholds, time windows, and runbook text on top of sanitized failure events.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 - The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
@@ -213,7 +214,7 @@ Observability:
 ## Maintenance
 
 - Monitor Next.js advisories and Vercel runtime behavior, especially while using Next 16 with webpack production builds.
-- Keep React, Next, AG2, Python container dependencies, Playwright Core, and GitHub Actions current.
+- Keep React, Next, AG2, Python container dependencies, Playwright Core, and GitHub Actions current; CI action refs now have a Node 24-compatible regression check.
 - Keep screenshots fresh after visual design changes.
 - Keep ignored local research artifacts out of git.
 - Periodically rerun the public-domain metadata/smoke/API checks after deployment changes.
