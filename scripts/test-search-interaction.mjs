@@ -40,6 +40,24 @@ try {
   if (!reviewPanel.includes("Ready to draft")) {
     throw new Error(`Expected review queue status to update to Ready to draft, got ${reviewPanel}`);
   }
+
+  await page.getByRole("tab", { name: /Compare/ }).click();
+  await page.getByTestId("comparison-panel").waitFor({ state: "visible" });
+  await page.getByTestId("comparison-panel").getByRole("button", { name: "Compare" }).click();
+  await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
+  const comparisonSummary = await page.getByTestId("comparison-summary").innerText();
+  if (!comparisonSummary.includes("Douglas Adams") || !comparisonSummary.includes("Q42") || !comparisonSummary.includes("Q80")) {
+    throw new Error(`Expected comparison summary to include Q42 and Q80, got ${comparisonSummary}`);
+  }
+  const sharedProperties = await page.getByTestId("comparison-shared-properties").innerText();
+  if (!sharedProperties.includes("instance of") && !sharedProperties.includes("occupation")) {
+    throw new Error(`Expected comparison to show recognizable shared properties, got ${sharedProperties}`);
+  }
+  const comparisonMarkdown = await page.getByTestId("comparison-markdown-export").inputValue();
+  if (!comparisonMarkdown.includes("Entity comparison") || !comparisonMarkdown.includes("Shared Properties")) {
+    throw new Error(`Expected comparison Markdown export to include summary sections, got ${comparisonMarkdown}`);
+  }
+
   await page.getByRole("tab", { name: /Graph/ }).click();
   await page.getByTestId("graph-filters").waitFor({ state: "visible" });
   await page.getByLabel("Target type").selectOption("item");
@@ -108,6 +126,8 @@ try {
 
   console.log("PASS search data quality summary renders for Q42");
   console.log("PASS search review queue status persists in the workbench");
+  console.log("PASS AI-off comparison workflow summarizes Q42 against Q80");
+  console.log("PASS comparison Markdown export includes shared-property sections");
   console.log("PASS search tab and graph filter state update the URL");
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");

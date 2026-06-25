@@ -1,4 +1,4 @@
-export type SearchWorkbenchTab = "graph" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
+export type SearchWorkbenchTab = "graph" | "compare" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
 
 export type SearchGraphFilters = {
   kind: "all" | "item" | "property";

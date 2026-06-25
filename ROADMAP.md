@@ -1,10 +1,10 @@
 # Wikidata Explorer Roadmap
 
-Last reviewed: June 24, 2026
+Last reviewed: June 25, 2026
 
-This roadmap tracks the path from a strong public portfolio app to a credible linked-data research workspace. The public Next.js app is live at `https://www.historypuzzle.com` with AI disabled by default; the AG2 runtime remains available locally or through the token-protected container service path.
+This roadmap tracks the path from a strong public portfolio app to a credible linked-data research workspace. The public Next.js app is live at `https://www.wikidataexplorer.com` with AI disabled by default; the AG2 runtime remains available locally or through the token-protected container service path. Items marked as ready for deploy are implemented and verified locally, but should not be treated as public-production features until the Vercel deployment catches up.
 
-`History Puzzle` is the public brand frame: users are assembling a research picture from linked records, statement evidence, language labels, references, and graph paths. `Wikidata Explorer` remains the product/tool name because it describes the technical surface directly.
+`Wikidata Explorer` is the public product name and domain. `History Puzzle` remains a narrative frame inside the demo: users are assembling a research picture from linked records, statement evidence, language labels, references, and graph paths.
 
 ## Product North Star
 
@@ -18,11 +18,12 @@ Every future feature should make that path clearer, faster, more evidence-ground
 
 The project is now beyond a prototype. It has a working public demo, a coherent portfolio story, and a solid verification loop.
 
-- Public Next.js 16 / React 19 app deployed on Vercel at `www.historypuzzle.com`.
+- Public Next.js 16 / React 19 app deployed on Vercel at `www.wikidataexplorer.com`.
 - AI agents are feature-flagged off in public mode, with API routes failing closed and tested.
 - Optional AG2 runtime supports local Python/conda or a token-protected FastAPI container through `AG2_SERVICE_URL`.
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed filters, selected-edge evidence summaries, and selected-path Markdown/JSON exports.
+- The current local branch adds an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, and Markdown comparison exports.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -30,25 +31,26 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 
 ## Recently Shipped
 
-- Public domain and canonical metadata moved to `https://www.historypuzzle.com`.
+- Public domain and canonical metadata moved to `https://www.wikidataexplorer.com`.
 - Facebook/Open Graph/Twitter link previews use the Millet `The Gleaners` JPEG through `/opengraph-image`.
 - Site icon and favicon now use `public/images/8sprocket.jpg`, with a generated `public/favicon.ico`.
 - Vercel production API route 500s were fixed by tracing the required Next runtime helper directories under the webpack build.
 - `.vercelignore` now preserves `public/images/**` for deployment.
 - `metadata:check` verifies canonical metadata, robots, sitemap, social preview image, favicon, and site icon.
 - Recruiter-ready Q42 proof path opens Douglas Adams with a selected P31 -> Q5 graph edge, evidence depth, safe exports, and visible AI boundary.
+- README now includes live deployment, CI, and visual QA links above the portfolio story.
+
+## Ready For Next Production Deploy
+
+- AI-off comparison workflow is implemented and verified locally: Q42 can be compared against a target entity such as Q80, with shared/unique properties, overlapping linked entities, and Markdown notes.
+- Search URL state now accepts the `compare` workbench tab so comparison views can become shareable after the current branch is deployed.
+- Before calling this live, deploy the current branch and re-check `https://www.wikidataexplorer.com/search?q=Q42` for the Compare tab.
 
 ## Portfolio Readiness
 
-Current grade: 8.8 / 10
+Current local grade: 9.0 / 10
 
-The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the demo unforgettable in a recruiter screen.
-
-To reach 9.0:
-
-- Refresh tracked screenshots so the README shows the new seeded Q42 proof path.
-- Add one polished comparison workflow that demonstrates research value beyond single-entity browsing.
-- Add a short README badge/link block for the live deployment, CI, and latest visual QA artifacts.
+The project is job-portfolio ready now. The local branch shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. Production remains just behind the local branch until the comparison work is deployed, so the remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
 To reach 9.5:
 
@@ -87,13 +89,17 @@ Goal: make the graph the signature feature.
 
 ### 3. Entity Comparison
 
+Status: implemented and verified locally; pending production deployment.
+
 Goal: support research workflows beyond single-entity browsing.
 
-- Compare two or three entities side by side.
-- Highlight shared properties, unique statements, and overlapping related entities.
-- Add seeded examples such as `Q42` vs another author and property-focused examples such as `P31`.
-- Export comparison summaries as Markdown.
-- Cover comparison with visual QA and API/utility tests where applicable.
+- Implemented two-entity comparison from the workbench in public AI-off mode.
+- Implemented shared properties, source-only properties, target-only properties, overlapping related entities, and Markdown comparison exports.
+- Covered comparison with deterministic utility tests and browser e2e coverage.
+- Next: deploy the current branch and verify the Compare tab on the public `www.wikidataexplorer.com` search page.
+- Next: compare three entities side by side.
+- Next: add seeded examples such as `Q42` vs another author and property-focused examples such as `P31`.
+- Next: add shareable comparison URLs and visual QA coverage for the comparison tab.
 
 ### 4. Evidence And Trust
 
@@ -140,7 +146,7 @@ Next quality improvements:
 Current public mode:
 
 - Vercel app runs with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false` and `ENABLE_AI_AGENTS=false`.
-- `NEXT_PUBLIC_SITE_URL` should stay aligned with `https://www.historypuzzle.com`.
+- `NEXT_PUBLIC_SITE_URL` should stay aligned with `https://www.wikidataexplorer.com`.
 - Public AI API routes should return the tested disabled response in public mode.
 - `npm run trace:check` should stay green so deployed API routes include required Next runtime helpers without bundling local repo clutter.
 
@@ -185,10 +191,11 @@ Status: in progress
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 
-Status: next
+Status: in progress
 
 - Shipped: selected graph path Markdown/JSON exports and safe curation exports.
-- Next: entity comparison UI, Markdown comparison exports, shareable export views.
+- Ready for deploy: AI-off two-entity comparison UI and Markdown comparison exports.
+- Next: production verification, three-entity comparison, shareable comparison URLs, and shareable export views.
 
 ### Milestone 4: Grounded AI Research Assistant
 

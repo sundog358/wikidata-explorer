@@ -5,6 +5,7 @@ import Image from "next/image";
 import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
 import { buildGraphPathJsonExport, buildGraphPathMarkdownExport } from "@/lib/graph-path-export.mjs";
+import { buildEntityComparison, buildEntityComparisonMarkdownExport } from "@/lib/entity-comparison.mjs";
 import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-source-hints.mjs";
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/search-url-state.mjs";
@@ -29,7 +30,7 @@ type AiSummaryState = {
 } | null;
 
 type AgentAction = "research" | "graph" | "suggest" | "verify" | "compare" | "report";
-type SearchWorkbenchTab = "graph" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
+type SearchWorkbenchTab = "graph" | "compare" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
 
 type AgentSafetyState = {
   decisionLabel: string;
@@ -395,6 +396,9 @@ export default function SearchPage() {
   const [agentResult, setAgentResult] = useState<AgentResultState>(null);
   const [agentLoading, setAgentLoading] = useState<AgentAction | null>(null);
   const [compareEntityId, setCompareEntityId] = useState("Q80");
+  const [comparisonItem, setComparisonItem] = useState<WikidataItem | null>(null);
+  const [comparisonLoading, setComparisonLoading] = useState(false);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
   const [selectedGraphFocus, setSelectedGraphFocus] = useState<RelationshipGraphFocus | null>(null);
   const [activeTab, setActiveTab] = useState<SearchWorkbenchTab>(() => normalizeWorkbenchTab(getInitialWorkbenchState().tab as SearchWorkbenchTab));
   const [graphFilters, setGraphFilters] = useState<RelationshipGraphFilters>(() => getInitialWorkbenchState().graphFilters as RelationshipGraphFilters);
@@ -531,6 +535,11 @@ export default function SearchPage() {
     entityId: selectedItem?.id,
     entityLabel: getEntityLabel(selectedItem),
   }, selectedGraphFocus), [selectedGraphFocus, selectedItem]);
+  const entityComparison = useMemo<ReturnType<typeof buildEntityComparison> | null>(() => {
+    if (!selectedItem || !comparisonItem) return null;
+    return buildEntityComparison(selectedItem, comparisonItem);
+  }, [comparisonItem, selectedItem]);
+  const comparisonMarkdownDraft = useMemo(() => entityComparison ? buildEntityComparisonMarkdownExport(entityComparison) : "", [entityComparison]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
     setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
@@ -654,6 +663,37 @@ export default function SearchPage() {
       setError(err instanceof Error ? err.message : "Could not load linked data.");
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  async function loadComparisonTarget() {
+    if (!selectedItem || comparisonLoading) return;
+
+    const entityId = compareEntityId.trim().toUpperCase();
+    if (!/^[QP]\d+$/.test(entityId)) {
+      setComparisonError("Enter a valid Wikidata ID to compare, such as Q80.");
+      return;
+    }
+
+    if (entityId === selectedItem.id) {
+      setComparisonError("Choose a different Wikidata ID for comparison.");
+      return;
+    }
+
+    setComparisonLoading(true);
+    setComparisonError(null);
+    setError(null);
+
+    try {
+      const entity = await client.getDetailedEntity(entityId);
+      setComparisonItem(entity);
+      setCompareEntityId(entity.id);
+      setActiveTab("compare");
+      replaceWorkbenchUrlState({ tab: "compare" });
+    } catch (err) {
+      setComparisonError(err instanceof Error ? err.message : `Could not load ${entityId} for comparison.`);
+    } finally {
+      setComparisonLoading(false);
     }
   }
 
@@ -1143,6 +1183,10 @@ export default function SearchPage() {
                       <Network className="mr-2 h-4 w-4" />
                       Graph
                     </TabsTrigger>
+                    <TabsTrigger value="compare">
+                      <GitCompareArrows className="mr-2 h-4 w-4" />
+                      Compare
+                    </TabsTrigger>
                     <TabsTrigger value="statements">Statements</TabsTrigger>
                     <TabsTrigger value="aliases">Aliases</TabsTrigger>
                     <TabsTrigger value="media">Media</TabsTrigger>
@@ -1208,6 +1252,147 @@ export default function SearchPage() {
                         </div>
                       </div>
                     )}
+                  </TabsContent>
+
+                  <TabsContent value="compare" className="space-y-4">
+                    <div className="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900" data-testid="comparison-panel">
+                      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-slate-50">
+                            <GitCompareArrows className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                            Entity comparison
+                          </div>
+                          <p className="mt-1 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
+                            Compare visible Wikidata statements for shared properties, source-only claims, target-only claims, and overlapping linked entities.
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Input
+                            value={compareEntityId}
+                            onChange={(event) => setCompareEntityId(event.currentTarget.value.toUpperCase())}
+                            placeholder="Q80"
+                            className="h-10 min-w-40 bg-white dark:bg-slate-950"
+                            aria-label="Comparison target entity ID"
+                          />
+                          <Button type="button" variant="outline" className="gap-2" onClick={loadComparisonTarget} disabled={comparisonLoading}>
+                            <GitCompareArrows className="h-4 w-4" />
+                            {comparisonLoading ? "Loading" : "Compare"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {comparisonError && (
+                        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                          {comparisonError}
+                        </div>
+                      )}
+
+                      {!entityComparison ? (
+                        <div className="rounded-md border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                          Start with the seeded target Q80 or enter another Q/P ID to compare against {selectedItem.id}.
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="grid gap-3 md:grid-cols-2" data-testid="comparison-summary">
+                            {[entityComparison.source, entityComparison.target].map((entity) => (
+                              <div key={entity.id} className="rounded-md border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                  <span className="font-semibold text-slate-950 dark:text-slate-50">{entity.label}</span>
+                                  <Badge variant="secondary">{entity.id}</Badge>
+                                </div>
+                                <p className="mb-3 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{entity.description}</p>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <Badge variant="outline">{entity.propertyCount} properties</Badge>
+                                  <Badge variant="outline">{entity.statementCount} statements</Badge>
+                                  <Badge variant="outline">{entity.referencedStatementCount} referenced</Badge>
+                                  <Badge variant="outline">{entity.sitelinkCount} sitelinks</Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                            <div className="rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-slate-800 dark:bg-slate-950">
+                              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Shared properties</div>
+                              <div className="mt-1 text-xl font-semibold text-slate-950 dark:text-slate-50">{entityComparison.sharedProperties.length}</div>
+                            </div>
+                            <div className="rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-slate-800 dark:bg-slate-950">
+                              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Unique to {entityComparison.source.id}</div>
+                              <div className="mt-1 text-xl font-semibold text-slate-950 dark:text-slate-50">{entityComparison.sourceUniqueProperties.length}</div>
+                            </div>
+                            <div className="rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-slate-800 dark:bg-slate-950">
+                              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Unique to {entityComparison.target.id}</div>
+                              <div className="mt-1 text-xl font-semibold text-slate-950 dark:text-slate-50">{entityComparison.targetUniqueProperties.length}</div>
+                            </div>
+                            <div className="rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-slate-800 dark:bg-slate-950">
+                              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Overlapping entities</div>
+                              <div className="mt-1 text-xl font-semibold text-slate-950 dark:text-slate-50">{entityComparison.overlappingEntities.length}</div>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-4 xl:grid-cols-3">
+                            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950" data-testid="comparison-shared-properties">
+                              <div className="mb-3 font-semibold text-slate-950 dark:text-slate-50">Shared properties</div>
+                              <div className="space-y-2">
+                                {entityComparison.sharedProperties.slice(0, 8).map((property) => (
+                                  <button key={property.id} type="button" onClick={() => loadEntity(property.id)} className="w-full rounded-md border border-slate-200 p-2 text-left hover:bg-sky-50 dark:border-slate-800 dark:hover:bg-slate-900">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="font-medium">{property.label}</span>
+                                      <Badge variant="outline">{property.id}</Badge>
+                                    </div>
+                                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{entityComparison.source.id}: {property.sourceCount}; {entityComparison.target.id}: {property.targetCount}</div>
+                                  </button>
+                                ))}
+                                {entityComparison.sharedProperties.length === 0 && <p className="text-slate-600 dark:text-slate-300">No shared properties in the loaded statement sets.</p>}
+                              </div>
+                            </div>
+
+                            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
+                              <div className="mb-3 font-semibold text-slate-950 dark:text-slate-50">Distinctive properties</div>
+                              <div className="grid gap-3">
+                                <div>
+                                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Only {entityComparison.source.label}</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {entityComparison.sourceUniqueProperties.slice(0, 8).map((property) => <Badge key={property.id} variant="outline">{property.label} {property.id}</Badge>)}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Only {entityComparison.target.label}</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {entityComparison.targetUniqueProperties.slice(0, 8).map((property) => <Badge key={property.id} variant="outline">{property.label} {property.id}</Badge>)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
+                              <div className="mb-3 font-semibold text-slate-950 dark:text-slate-50">Overlapping linked entities</div>
+                              <div className="space-y-2">
+                                {entityComparison.overlappingEntities.slice(0, 8).map((entity) => (
+                                  <button key={entity.id} type="button" onClick={() => loadEntity(entity.id)} className="w-full rounded-md border border-slate-200 p-2 text-left hover:bg-sky-50 dark:border-slate-800 dark:hover:bg-slate-900">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="font-medium">{entity.label}</span>
+                                      <Badge variant="outline">{entity.id}</Badge>
+                                    </div>
+                                  </button>
+                                ))}
+                                {entityComparison.overlappingEntities.length === 0 && <p className="text-slate-600 dark:text-slate-300">No overlapping linked entities in visible statement values.</p>}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <span className="font-semibold text-slate-950 dark:text-slate-50">Markdown comparison export</span>
+                              <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison Markdown", comparisonMarkdownDraft)}>
+                                {copiedDraft === "Comparison Markdown" ? "Copied" : "Copy"}
+                              </Button>
+                            </div>
+                            <textarea readOnly value={comparisonMarkdownDraft} className="h-52 w-full resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200" aria-label="Comparison Markdown export" data-testid="comparison-markdown-export" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </TabsContent>
 
                   <TabsContent value="statements" className="space-y-3">

@@ -56,7 +56,7 @@ export default function Home() {
               Wikidata Explorer
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-              History Puzzle is the public home for Wikidata Explorer: piece together entities, statements, languages, and source links into a trustworthy graph trail.
+              Start with an entity, then use the History Puzzle frame to piece together statements, languages, source links, and graph paths into a trustworthy research trail.
             </p>
           </div>
 

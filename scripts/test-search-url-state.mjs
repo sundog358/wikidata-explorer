@@ -6,8 +6,8 @@ assert.equal(defaultState.tab, "graph");
 assert.deepEqual(defaultState.graphFilters, { kind: "all", rank: "all", propertyId: "all", evidence: "all" });
 assert.equal(defaultState.graphFocusId, null);
 
-const state = readSearchWorkbenchState("?q=Q42&tab=review&gkind=item&grank=normal&gprop=p31&gevidence=referenced&gfocus=q5");
-assert.equal(state.tab, "review");
+const state = readSearchWorkbenchState("?q=Q42&tab=compare&gkind=item&grank=normal&gprop=p31&gevidence=referenced&gfocus=q5");
+assert.equal(state.tab, "compare");
 assert.deepEqual(state.graphFilters, { kind: "item", rank: "normal", propertyId: "P31", evidence: "referenced" });
 assert.equal(state.graphFocusId, "Q5");
 

@@ -2,9 +2,13 @@
 
 A portfolio-ready **Next.js 16** application for searching Wikidata, inspecting entity evidence, visualizing relationships, and optionally running **AG2-backed** linked-data research agents.
 
-Live demo: [www.historypuzzle.com](https://www.historypuzzle.com)
+Live demo: [www.wikidataexplorer.com](https://www.wikidataexplorer.com)
 
-History Puzzle is the public-facing frame for Wikidata Explorer: the app helps users assemble a trail of entities, statements, labels, references, and linked records into a trustworthy research picture.
+[![Live demo](https://img.shields.io/badge/live-www.wikidataexplorer.com-0ea5e9)](https://www.wikidataexplorer.com)
+[![CI](https://github.com/sundog358/wikidata-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/sundog358/wikidata-explorer/actions/workflows/ci.yml)
+[![Visual QA](https://img.shields.io/badge/visual%20QA-CI%20artifact-16a34a)](https://github.com/sundog358/wikidata-explorer/actions/workflows/ci.yml)
+
+Wikidata Explorer is the public product and domain. History Puzzle remains a narrative frame inside the demo: the app helps users assemble a trail of entities, statements, labels, references, and linked records into a trustworthy research picture.
 
 The public demo ships safely on Vercel with AI disabled by default, while the AG2 agent runtime can be enabled locally or hosted as a separate container service.
 
@@ -13,6 +17,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🔎 Search Wikidata by keyword or direct entity/property ID such as `Q42` or `P31`
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
 - 🕸️ Explore a clickable relationship graph with URL-backed filters, hover previews, selected-edge qualifier/reference summaries, and selected-path Markdown/JSON exports
+- ⚖️ Compare two entities without AI by shared properties, unique statements, overlapping linked entities, and Markdown research notes
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams` or a seeded Q42 proof path with graph focus, review, exports, and AI-boundary context
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
@@ -162,9 +167,9 @@ These tracked screenshots are refreshed from the visual QA flow. Run `npm run vi
 
 ## 🚢 Production Deployment
 
-Current public mode is live at [www.historypuzzle.com](https://www.historypuzzle.com):
+Current public mode is live at [www.wikidataexplorer.com](https://www.wikidataexplorer.com):
 
-1. Vercel runs the Next.js app with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false`, `ENABLE_AI_AGENTS=false`, and `NEXT_PUBLIC_SITE_URL=https://www.historypuzzle.com`.
+1. Vercel runs the Next.js app with `NEXT_PUBLIC_ENABLE_AI_AGENTS=false`, `ENABLE_AI_AGENTS=false`, and `NEXT_PUBLIC_SITE_URL=https://www.wikidataexplorer.com`.
 2. Public AI routes fail closed with the tested disabled response.
 3. `npm run metadata:check` verifies canonical metadata, robots, sitemap, the Millet social preview image, `8sprocket.jpg` site icon, and generated favicon.
 4. `npm run trace:check` keeps required Next runtime helpers in API route traces while excluding local repo clutter.
@@ -201,6 +206,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and formatter-aware external IDs
 - `lib/search-url-state.mjs`: tested shareable tab, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
+- `lib/entity-comparison.mjs`: tested two-entity comparison helper for shared properties, unique properties, overlapping linked entities, and Markdown exports
 - `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, token-authenticated remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
 - `lib/ag2-remote-service.mjs`: tested remote AG2 service client for `/run` payloads, bearer auth, success responses, and service error mapping
 - `lib/ag2-errors.mjs`: shared AG2 bridge error type for local and remote runtime failures
@@ -213,11 +219,12 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
 - `scripts/test-ag2-remote-service.mjs`: mocked AG2 container contract test for remote `/run` success, auth, and sanitized service failures
+- `scripts/test-entity-comparison.mjs`: deterministic entity comparison and Markdown export tests
 - `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, graph filtering, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison, graph filtering, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA
