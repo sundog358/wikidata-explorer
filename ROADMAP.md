@@ -25,7 +25,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, selected-path Markdown/JSON exports, and shareable selected-path export views.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, optional three-entity property matrices, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
 - `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, light/dark visual QA coverage, deterministic Q42/Q80/Q90/Q95/Q25169/Q46248/P31 Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, Wikidata API outage, Commons outage, and language metadata outage responses.
-- Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, and safe curation exports.
+- Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, portable workspace snapshots, and safe curation exports.
 - AG2 workflows support chat, selected workbench context handoff, citation-style grounding requirements, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
 - Portfolio proof includes tracked screenshots, visual QA, metadata/social preview checks, favicon/site-icon coverage, production trace checks, route smoke tests, API contracts, e2e checks, GitHub Actions CI, and a standalone architecture/safety/testing/deployment case study.
@@ -52,6 +52,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Cross-type comparison coverage now exports a work/organization/person matrix for Q25169/Q95/Q42 and verifies shareable restore.
 - Place fixture coverage now adds Q90/Paris with country, administrative region, coordinate, image/media, source-link, graph-regression, and work/organization/place comparison checks.
 - Property-focused comparison exports now restore a selected property with `export=comparison-property&cprop=P...` and provide Markdown/JSON handoff text for reviewer workflows.
+- Portable workspace snapshots now export and restore review task statuses, dismissed review findings, and saved AG2 run history with tested artifact validation.
 - API observability now includes a tested dashboard/alert contract with category panels, severity thresholds, time windows, and runbook text on top of sanitized failure events.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 - The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
@@ -82,7 +83,7 @@ Beyond 9.5:
 To reach 10:
 
 - Ship an optional hosted AG2 container demo with traceable, citation-style Wikidata ID references in responses.
-- Persist research workspace state for curation tasks and agent history.
+- Add account/project-backed persistence for workspace snapshots, curation tasks, and agent history beyond portable browser artifacts.
 - Connect the tested observability dashboard/alert contract to a hosted production monitor.
 
 ## Next Priorities
@@ -147,7 +148,8 @@ Goal: help users evaluate data quality, not just browse facts.
 - Added visible badges for referenced vs unreferenced claims.
 - Extended source-link coverage into full statement detail views.
 - Added fallback support for uncommon external-ID formatter patterns beyond `$1`.
-- Promote review queue findings into persisted, source-backed curation tasks once a storage layer exists.
+- Shipped portable workspace snapshots for review task statuses, dismissed findings, and saved AG2 run history.
+- Promote review queue findings into account/project-backed, source-backed curation tasks once a storage layer exists.
 
 ### 5. AG2 Assistant Context
 
@@ -157,7 +159,8 @@ Goal: make AI assistance visibly grounded in selected Wikidata context.
 - Shipped visible workbench-to-chat handoff with bounded entity, statement, graph-focus, and selected-path export context.
 - Shipped citation-style grounding requirements for AG2 chat, summaries, graph analysis, suggestions, verification, comparison, and reports.
 - Shipped AI-enabled API route success contracts through a token-authenticated mock AG2 remote service for chat, entity summaries, and graph workflow responses.
-- Persist agent result history beyond browser-local storage once a database layer is introduced.
+- Shipped portable workspace snapshots that can carry saved AG2 run history between browser sessions.
+- Persist agent result history beyond portable browser artifacts once a database layer is introduced.
 - Deploy the AG2 service container to a public/private host for an optional AI-enabled demo.
 - Expand safety copy and policy UI for future live bot-ready actions, source requirements, and human approval states.
 
@@ -253,9 +256,10 @@ Status: partially shipped
 
 ### Milestone 5: Research Workspace
 
-Status: later
+Status: in progress
 
-- Persisted curation tasks.
-- Persisted agent history.
+- Shipped: portable workspace snapshots for review task statuses, dismissed findings, and saved AG2 run history.
+- Next: account/project-backed persisted curation tasks.
+- Next: account/project-backed persisted agent history.
 - Optional project/workspace storage.
 - Broader accessibility and performance budgets suitable for a production-facing research tool as stored workspace features arrive.

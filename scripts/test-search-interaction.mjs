@@ -55,6 +55,13 @@ try {
   if (!reviewPanel.includes("Ready to draft")) {
     throw new Error(`Expected review queue status to update to Ready to draft, got ${reviewPanel}`);
   }
+  const workspaceSnapshot = JSON.parse(await page.getByTestId("workspace-snapshot-json").inputValue());
+  if (workspaceSnapshot.artifactType !== "wikidata-explorer-workspace" || workspaceSnapshot.entity.id !== "Q42") {
+    throw new Error(`Expected workspace snapshot export for Q42, got ${JSON.stringify(workspaceSnapshot)}`);
+  }
+  if (!Object.values(workspaceSnapshot.review.taskStatuses).includes("ready_to_draft")) {
+    throw new Error(`Expected workspace snapshot to include persisted review task status, got ${JSON.stringify(workspaceSnapshot.review.taskStatuses)}`);
+  }
 
   await page.getByRole("tab", { name: /Statements/ }).click();
   const statementBadges = await page.getByTestId("statement-evidence-badges").allInnerTexts();

@@ -12,6 +12,7 @@ import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/searc
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 import { AG2_CHAT_CONTEXT_STORAGE_KEY, sanitizeChatVisibleContext } from "@/lib/ag2-chat-context.mjs";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
+import { buildWorkspaceSnapshot, parseWorkspaceSnapshot } from "@/lib/workspace-snapshot.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
 import { RelationshipGraph, type RelationshipGraphFilters, type RelationshipGraphFocus } from "@/components/relationship-graph";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -459,6 +460,8 @@ function SearchWorkbench() {
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
   const [reviewTaskStatuses, setReviewTaskStatuses] = useState<Record<string, ReviewTaskStatus>>({});
   const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
+  const [workspaceSnapshotInput, setWorkspaceSnapshotInput] = useState("");
+  const [workspaceSnapshotMessage, setWorkspaceSnapshotMessage] = useState<string | null>(null);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const queuedComparisonTargetRef = useRef<string | null>(initialWorkbenchState.comparisonTargetId);
   const queuedComparisonThirdTargetRef = useRef<string | null>(initialWorkbenchState.comparisonThirdTargetId);
@@ -618,6 +621,13 @@ function SearchWorkbench() {
   }, [defaultComparisonPropertyId, entityComparison, entitySetComparison, selectedComparisonPropertyId, shareableExportView]);
   const comparisonPropertyMarkdownDraft = useMemo(() => buildComparisonPropertyMarkdownExport(comparisonPropertyFocus), [comparisonPropertyFocus]);
   const comparisonPropertyJsonDraft = useMemo(() => buildComparisonPropertyJsonExport(comparisonPropertyFocus), [comparisonPropertyFocus]);
+  const workspaceSnapshotJson = useMemo(() => JSON.stringify(buildWorkspaceSnapshot({
+    entityId: selectedItem?.id,
+    entityLabel: getEntityLabel(selectedItem),
+    reviewTaskStatuses,
+    dismissedReviewIds,
+    savedAgentRuns,
+  }), null, 2), [dismissedReviewIds, reviewTaskStatuses, savedAgentRuns, selectedItem]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
     setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
@@ -629,6 +639,31 @@ function SearchWorkbench() {
       window.setTimeout(() => setCopiedDraft(null), 1800);
     } catch {
       setError(`Could not copy ${label}. Your browser may require manual selection.`);
+    }
+  }
+
+  function restoreWorkspaceSnapshot() {
+    const parsed = parseWorkspaceSnapshot(workspaceSnapshotInput);
+    if (!parsed.ok || !parsed.snapshot) {
+      setWorkspaceSnapshotMessage(parsed.error || "Could not restore this workspace snapshot.");
+      return;
+    }
+
+    const snapshotAgentRuns = parsed.snapshot.agentRuns as SavedAgentRun[];
+    setReviewTaskStatuses((current) => ({ ...current, ...parsed.snapshot.review.taskStatuses }));
+    setDismissedReviewIds((current) => Array.from(new Set([...current, ...parsed.snapshot.review.dismissedIds])).slice(-250));
+    setSavedAgentRuns((current) => {
+      const seen = new Set<string>();
+      return [...snapshotAgentRuns, ...current].filter((run) => {
+        if (seen.has(run.id)) return false;
+        seen.add(run.id);
+        return true;
+      }).slice(0, 40);
+    });
+    setWorkspaceSnapshotMessage(`Restored workspace snapshot for ${parsed.snapshot.entity.label} (${parsed.snapshot.entity.id}).`);
+    setWorkspaceSnapshotInput("");
+    if (selectedItem?.id !== parsed.snapshot.entity.id) {
+      void loadEntity(parsed.snapshot.entity.id);
     }
   }
 
@@ -1913,6 +1948,47 @@ function SearchWorkbench() {
                   </TabsContent>}
 
                   <TabsContent value="review" className="space-y-3">
+                    <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-900" data-testid="workspace-snapshot-panel">
+                      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="font-semibold text-slate-950 dark:text-slate-50">Workspace snapshot</div>
+                          <p className="mt-1 text-slate-600 dark:text-slate-300">
+                            Save or restore this entity state with review task statuses, dismissed findings, and AG2 run history as a portable JSON artifact.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline">{Object.keys(reviewTaskStatuses).length} statuses</Badge>
+                          <Badge variant="outline">{dismissedReviewIds.length} dismissed</Badge>
+                          <Badge variant="secondary">{savedAgentRuns.length} agent runs</Badge>
+                        </div>
+                      </div>
+                      {workspaceSnapshotMessage && (
+                        <div className="mb-3 rounded-md border border-sky-200 bg-sky-50 p-3 text-xs text-sky-950 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-100" data-testid="workspace-snapshot-message">
+                          {workspaceSnapshotMessage}
+                        </div>
+                      )}
+                      <div className="grid gap-3 xl:grid-cols-2">
+                        <div>
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Snapshot JSON</span>
+                            <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Workspace snapshot", workspaceSnapshotJson)} data-testid="copy-workspace-snapshot">
+                              {copiedDraft === "Workspace snapshot" ? "Copied" : "Copy"}
+                            </Button>
+                          </div>
+                          <textarea readOnly value={workspaceSnapshotJson} className="h-40 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Workspace snapshot JSON export" data-testid="workspace-snapshot-json" />
+                        </div>
+                        <div>
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Restore snapshot</span>
+                            <Button type="button" variant="outline" size="sm" onClick={restoreWorkspaceSnapshot} disabled={!workspaceSnapshotInput.trim()} data-testid="restore-workspace-snapshot">
+                              Restore
+                            </Button>
+                          </div>
+                          <textarea value={workspaceSnapshotInput} onChange={(event) => setWorkspaceSnapshotInput(event.currentTarget.value)} className="h-40 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Workspace snapshot JSON import" placeholder="Paste a Wikidata Explorer workspace snapshot JSON artifact..." data-testid="workspace-snapshot-input" />
+                        </div>
+                      </div>
+                    </div>
+
                     {reviewQueue.length === 0 ? (
                       <div className="rounded-md border border-dashed border-slate-300 p-5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
                         No active review flags for visible statements on {selectedItem.id}.

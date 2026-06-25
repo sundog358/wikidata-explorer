@@ -26,6 +26,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🧾 Inspect statement ranks, referenced/unreferenced badges, statement IDs, qualifiers, references, and source hints in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
 - 🧑‍⚖️ Review entity data-quality findings with persisted browser-local task status and source-link hints
+- 💾 Export and restore portable workspace snapshots with review task state, dismissed findings, and saved AG2 run history
 - 📤 Export evidence-grounded graph paths, review findings, task status, source hints, and safe QuickStatements draft comments
 - 🛡️ Classify specialist workflows through a tested autonomy safety layer before future bot/draft actions
 - ✅ Verify changes with lint, unit tests, production build, trace checks, route smoke tests, API contracts, e2e interaction tests, visual QA, and GitHub Actions
@@ -193,7 +194,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow with a client-side error boundary, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow with a client-side error boundary, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, portable workspace snapshots, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant with bounded visible-context handoff from the workbench
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
@@ -210,6 +211,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/ai-feature-flags.mjs`: shared public/server AI feature flag helper
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
+- `lib/workspace-snapshot.mjs`: tested portable workspace snapshot sanitizer for review task state, dismissed findings, and saved AG2 run history
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and external IDs with `$1`, URI-template, encoded-placeholder, and formatter-root fallbacks
 - `lib/search-url-state.mjs`: tested shareable tab, comparison-target, third-comparison-target, comparison-property, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
@@ -226,6 +228,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `agents/ag2_service.py`: token-protected FastAPI wrapper for the containerized AG2 runtime
 - `agents/Dockerfile`: Docker image for hosting the AG2 service outside Vercel
 - `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
+- `scripts/test-workspace-snapshot.mjs`: portable workspace snapshot tests for review statuses, dismissed findings, agent-run history, supported artifact versioning, and secret-shaped text redaction
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-api-observability.mjs`: safe logging/category/dashboard-alert tests that ensure API failure events and observability rules do not expose prompts, keys, bearer tokens, or raw payloads
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
@@ -243,7 +246,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including labelled controls/options, timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison with keyboard-reachable controls, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, workspace snapshot review-state export, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including labelled controls/options, timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison with keyboard-reachable controls, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, light/dark route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA
@@ -251,7 +254,7 @@ Optional AI-enabled mode remains a separate deployment step:
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract, sanitized API failure-category/dashboard-alert checks, and search workbench error-boundary checks so the container bridge, production-safe route logging, alert contract, and client recovery shell are checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract, sanitized API failure-category/dashboard-alert checks, portable workspace snapshot checks, and search workbench error-boundary checks so the container bridge, production-safe route logging, alert contract, workspace artifact format, and client recovery shell are checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
 CI also runs install, verify, production trace checks, smoke, public metadata checks, public AI-off API contracts, mock AG2 enabled-mode API contracts, e2e, performance budgets, visual QA, and screenshot artifact upload on GitHub Actions.
 
