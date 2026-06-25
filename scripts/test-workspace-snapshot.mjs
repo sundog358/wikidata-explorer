@@ -5,6 +5,7 @@ import {
   readWorkspaceSlotCollection,
   removeWorkspaceSlot,
   sanitizeWorkspaceAgentRuns,
+  sanitizeWorkspaceCurationTasks,
   sanitizeWorkspaceDismissedReviewIds,
   sanitizeWorkspaceSlot,
   sanitizeWorkspaceReviewTaskStatuses,
@@ -26,6 +27,37 @@ assert.deepEqual(reviewStatuses, {
 });
 
 assert.deepEqual(sanitizeWorkspaceDismissedReviewIds(["a", "a", "b\nc", "", null]), ["a", "b c"]);
+
+const curationTasks = sanitizeWorkspaceCurationTasks([
+  {
+    id: "Q42:Q42$abc:P31:unreferenced",
+    entityId: "q42",
+    propertyId: "p31",
+    propertyLabel: "instance of",
+    statementId: "Q42$abc",
+    severity: "high",
+    status: "ready_to_draft",
+    title: "Add source",
+    detail: "Needs source token=FAKE_REDACTION_TEST_VALUE",
+    value: "human",
+    sourceHints: [
+      { kind: "stated-in", label: "stated in", value: "Some source", url: "https://www.wikidata.org/wiki/Q42" },
+      { kind: "bad", label: "secret", value: "Bearer FAKE_REDACTION_TEST_VALUE" },
+    ],
+  },
+  {
+    id: "bad",
+    entityId: "bad-id",
+    propertyId: "P31",
+  },
+]);
+assert.equal(curationTasks.length, 1);
+assert.equal(curationTasks[0].entityId, "Q42");
+assert.equal(curationTasks[0].propertyId, "P31");
+assert.equal(curationTasks[0].severity, "high");
+assert.equal(curationTasks[0].status, "ready_to_draft");
+assert.equal(curationTasks[0].sourceHints[0].url, "https://www.wikidata.org/wiki/Q42");
+assert.doesNotMatch(JSON.stringify(curationTasks), /FAKE_REDACTION_TEST_VALUE/);
 
 const sanitizedRuns = sanitizeWorkspaceAgentRuns([
   {
@@ -75,6 +107,7 @@ const snapshot = buildWorkspaceSnapshot({
   entityLabel: "Douglas Adams",
   reviewTaskStatuses: reviewStatuses,
   dismissedReviewIds: ["Q42:deprecated"],
+  curationTasks,
   savedAgentRuns: sanitizedRuns,
   createdAt,
 });
@@ -83,12 +116,14 @@ assert.equal(snapshot.artifactType, "wikidata-explorer-workspace");
 assert.equal(snapshot.version, 1);
 assert.equal(snapshot.entity.id, "Q42");
 assert.equal(snapshot.review.dismissedIds[0], "Q42:deprecated");
+assert.equal(snapshot.review.curationTasks[0].title, "Add source");
 assert.equal(snapshot.agentRuns.length, 1);
 
 const parsed = parseWorkspaceSnapshot(JSON.stringify(snapshot));
 assert.equal(parsed.ok, true);
 assert.equal(parsed.snapshot.entity.id, "Q42");
 assert.equal(parsed.snapshot.review.taskStatuses["Q42:Q42$abc:P31:deprecated"], "ready_to_draft");
+assert.equal(parsed.snapshot.review.curationTasks[0].propertyId, "P31");
 
 const unsupported = parseWorkspaceSnapshot(JSON.stringify({ artifactType: "other", version: 1 }));
 assert.equal(unsupported.ok, false);

@@ -670,8 +670,9 @@ function SearchWorkbench() {
     entityLabel: getEntityLabel(selectedItem),
     reviewTaskStatuses,
     dismissedReviewIds,
+    curationTasks: reviewQueueWithStatus,
     savedAgentRuns,
-  }), [dismissedReviewIds, reviewTaskStatuses, savedAgentRuns, selectedItem]);
+  }), [dismissedReviewIds, reviewQueueWithStatus, reviewTaskStatuses, savedAgentRuns, selectedItem]);
   const workspaceSnapshotJson = useMemo(() => JSON.stringify(workspaceSnapshot, null, 2), [workspaceSnapshot]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {

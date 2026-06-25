@@ -13,6 +13,24 @@ export type WorkspaceSnapshot = {
   review: {
     taskStatuses: Record<string, WorkspaceReviewTaskStatus>;
     dismissedIds: string[];
+    curationTasks: Array<{
+      id: string;
+      entityId: string;
+      propertyId: string;
+      propertyLabel: string;
+      statementId: string;
+      severity: "medium" | "high";
+      status: WorkspaceReviewTaskStatus;
+      title: string;
+      detail: string;
+      value: string;
+      sourceHints: Array<{
+        kind: string;
+        label: string;
+        value: string;
+        url?: string;
+      }>;
+    }>;
   };
   agentRuns: unknown[];
 };
@@ -29,12 +47,14 @@ export type WorkspaceSlot = {
 
 export function sanitizeWorkspaceReviewTaskStatuses(statuses?: unknown): Record<string, WorkspaceReviewTaskStatus>;
 export function sanitizeWorkspaceDismissedReviewIds(ids?: unknown): string[];
+export function sanitizeWorkspaceCurationTasks(tasks?: unknown): WorkspaceSnapshot["review"]["curationTasks"];
 export function sanitizeWorkspaceAgentRuns(runs?: unknown): unknown[];
 export function buildWorkspaceSnapshot(input?: {
   entityId?: string;
   entityLabel?: string;
   reviewTaskStatuses?: unknown;
   dismissedReviewIds?: unknown;
+  curationTasks?: unknown;
   savedAgentRuns?: unknown;
   createdAt?: string | Date;
 }): WorkspaceSnapshot;

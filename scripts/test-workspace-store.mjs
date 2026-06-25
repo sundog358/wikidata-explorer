@@ -45,6 +45,19 @@ try {
     createdAt,
     reviewTaskStatuses: { "Q42:claim:P31:unreferenced": "ready_to_draft" },
     dismissedReviewIds: ["Q42:old-warning"],
+    curationTasks: [{
+      id: "Q42:claim:P31:unreferenced",
+      entityId: "Q42",
+      propertyId: "P31",
+      propertyLabel: "instance of",
+      statementId: "Q42$claim",
+      severity: "high",
+      status: "ready_to_draft",
+      title: "Add source",
+      detail: "Persist this curation task token=FAKE_REDACTION_TEST_VALUE",
+      value: "human",
+      sourceHints: [{ kind: "stated-in", label: "stated in", value: "Some source", url: "https://www.wikidata.org/wiki/Q42" }],
+    }],
     savedAgentRuns: [{
       id: "run-1",
       entityId: "Q42",
@@ -71,6 +84,7 @@ try {
   assert.equal(saved.slots.length, 1);
   assert.equal(saved.slots[0].entityId, "Q42");
   assert.equal(saved.slots[0].snapshot.review.taskStatuses["Q42:claim:P31:unreferenced"], "ready_to_draft");
+  assert.equal(saved.slots[0].snapshot.review.curationTasks[0].status, "ready_to_draft");
   assert.doesNotMatch(JSON.stringify(saved.slots), /FAKE_REDACTION_TEST_VALUE/);
 
   const persistedText = await readFile(path.join(storeDir, "review-team.json"), "utf8");

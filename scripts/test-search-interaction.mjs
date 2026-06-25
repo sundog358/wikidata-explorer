@@ -108,6 +108,9 @@ try {
   if (!Object.values(workspaceSnapshot.review.taskStatuses).includes("ready_to_draft")) {
     throw new Error(`Expected workspace snapshot to include persisted review task status, got ${JSON.stringify(workspaceSnapshot.review.taskStatuses)}`);
   }
+  if (!workspaceSnapshot.review.curationTasks?.some((task) => task.entityId === "Q42" && task.propertyId && task.title && task.status === "ready_to_draft")) {
+    throw new Error(`Expected workspace snapshot to include persisted curation task details, got ${JSON.stringify(workspaceSnapshot.review.curationTasks)}`);
+  }
   await page.getByTestId("workspace-slot-name").fill("Q42 reviewer workspace");
   await page.getByTestId("save-workspace-slot").click();
   const savedWorkspaceSlotsText = await page.getByTestId("saved-workspace-slots").innerText();
@@ -124,6 +127,9 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-testid="workspace-snapshot-message"]')?.textContent?.includes("Saved project workspace"));
   if (projectWorkspaceSlots[0]?.snapshot?.entity?.id !== "Q42" || !Object.values(projectWorkspaceSlots[0]?.snapshot?.review?.taskStatuses || {}).includes("ready_to_draft")) {
     throw new Error(`Expected project workspace save to include Q42 review state, got ${JSON.stringify(projectWorkspaceSlots)}`);
+  }
+  if (!projectWorkspaceSlots[0]?.snapshot?.review?.curationTasks?.some((task) => task.entityId === "Q42" && task.status === "ready_to_draft")) {
+    throw new Error(`Expected project workspace save to include curation task details, got ${JSON.stringify(projectWorkspaceSlots)}`);
   }
   await page.getByRole("button", { name: "Delete Project" }).click();
   await page.waitForFunction(() => document.querySelector('[data-testid="workspace-snapshot-message"]')?.textContent?.includes("Removed project workspace slot"));

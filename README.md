@@ -26,7 +26,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🧾 Inspect statement ranks, referenced/unreferenced badges, statement IDs, qualifiers, references, and source hints in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
 - 🧑‍⚖️ Review entity data-quality findings with persisted browser-local task status and source-link hints
-- 💾 Save browser-local or token-protected project workspace slots, or export/restore portable snapshots with review task state, dismissed findings, and saved AG2 run history
+- 💾 Save browser-local or token-protected project workspace slots, or export/restore portable snapshots with curation task details, review state, dismissed findings, and saved AG2 run history
 - 📤 Export evidence-grounded graph paths, review findings, task status, source hints, and safe QuickStatements draft comments
 - 🛡️ Classify specialist workflows through a tested autonomy safety layer before future bot/draft actions
 - ✅ Verify changes with lint, unit tests, production build, trace checks, route smoke tests, API contracts, e2e interaction tests, visual QA, and GitHub Actions
@@ -123,7 +123,7 @@ WORKSPACE_STORE_DIR=C:\path\to\durable\workspace-store
 WORKSPACE_STORE_TOKEN=generate-a-random-shared-token
 ```
 
-When configured, `/api/workspaces` provides bearer-token-protected project workspace slot persistence using the same sanitized portable snapshot format as browser-local slots. The Review Queue tab can load, save, and delete project slots when a private/self-hosted token is entered; the token is kept in browser session storage. Use a durable mounted directory for hosted/self-hosted deployments; the public demo can leave it unset and fail closed.
+When configured, `/api/workspaces` provides bearer-token-protected project workspace slot persistence using the same sanitized portable snapshot format as browser-local slots. The Review Queue tab can load, save, and delete project slots with curation task details, review statuses, dismissed findings, and saved AG2 run history when a private/self-hosted token is entered; the token is kept in browser session storage. Use a durable mounted directory for hosted/self-hosted deployments; the public demo can leave it unset and fail closed.
 
 Local environment files, provider keys, Pywikibot credentials, runtime files, caches, and research artifacts are ignored by default.
 
@@ -232,7 +232,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/ai-feature-flags.mjs`: shared public/server AI feature flag helper
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
-- `lib/workspace-snapshot.mjs`: tested portable workspace snapshot and browser-local/project slot sanitizer for review task state, dismissed findings, and saved AG2 run history
+- `lib/workspace-snapshot.mjs`: tested portable workspace snapshot and browser-local/project slot sanitizer for curation task details, review task state, dismissed findings, and saved AG2 run history
 - `lib/workspace-store.mjs`: optional filesystem-backed project workspace slot store with bearer auth, project ID validation, bounded slot persistence, and secret redaction through snapshot sanitization
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and external IDs with `$1`, URI-template, encoded-placeholder, and formatter-root fallbacks
@@ -251,8 +251,8 @@ Optional AI-enabled mode remains a separate deployment step:
 - `agents/ag2_service.py`: token-protected FastAPI wrapper for the containerized AG2 runtime
 - `agents/Dockerfile`: Docker image for hosting the AG2 service outside Vercel
 - `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
-- `scripts/test-workspace-snapshot.mjs`: portable workspace snapshot and saved-slot tests for review statuses, dismissed findings, agent-run history, supported artifact versioning, bounds, and secret-shaped text redaction
-- `scripts/test-workspace-store.mjs`: project-backed workspace store tests for bearer auth, safe project IDs, filesystem persistence, bounded slots, removal, and sanitized stored snapshots
+- `scripts/test-workspace-snapshot.mjs`: portable workspace snapshot and saved-slot tests for curation task details, review statuses, dismissed findings, agent-run history, supported artifact versioning, bounds, and secret-shaped text redaction
+- `scripts/test-workspace-store.mjs`: project-backed workspace store tests for bearer auth, safe project IDs, filesystem persistence, bounded slots, removal, and sanitized stored curation snapshots
 - `scripts/test-github-actions-maintenance.mjs`: CI workflow maintenance test that keeps GitHub Actions on Node 24-compatible action lines while the app runtime remains tested on Node 20+
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-api-observability.mjs`: safe logging/category/dashboard-alert/webhook/receiver tests that ensure API failure events, monitor payloads, observability rules, and retained receiver events do not expose prompts, keys, bearer tokens, or raw payloads
