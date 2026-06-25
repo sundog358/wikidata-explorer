@@ -216,6 +216,15 @@ export async function installFixtureRoutes(page, options = {}) {
   });
 
   await page.route("https://commons.wikimedia.org/w/api.php?**", async (route) => {
+    if (options.commonsOutage) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { info: "Fixture Commons outage" } }),
+      });
+      return;
+    }
+
     const url = new URL(route.request().url());
     const titles = (url.searchParams.get("titles") || "").split("|").filter(Boolean);
     const pages = Object.fromEntries(
@@ -256,6 +265,33 @@ async function assertWikidataOutageStates(browser) {
   });
   await entityOutagePage.getByText("Failed to fetch entity Q42: Service Unavailable").waitFor({ state: "visible" });
   await entityOutagePage.close();
+}
+
+async function assertMetadataOutageStates(browser) {
+  const commonsOutagePage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  commonsOutagePage.setDefaultTimeout(30000);
+  await installFixtureRoutes(commonsOutagePage, { commonsOutage: true });
+  await commonsOutagePage.goto(new URL("/search?q=Q42", baseUrl).toString(), {
+    waitUntil: "commit",
+  });
+  await commonsOutagePage.getByTestId("selected-entity-id").waitFor({ state: "visible" });
+  await commonsOutagePage.getByRole("tab", { name: /Media/ }).click();
+  await commonsOutagePage.getByText("Commons media metadata could not be loaded. Try again later.").waitFor({ state: "visible" });
+  await commonsOutagePage.close();
+
+  const languageOutagePage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  languageOutagePage.setDefaultTimeout(30000);
+  await installFixtureRoutes(languageOutagePage, { wikidataOutageActions: ["query"] });
+  await languageOutagePage.goto(new URL("/search?q=Q42", baseUrl).toString(), {
+    waitUntil: "commit",
+  });
+  await languageOutagePage.getByTestId("selected-entity-id").waitFor({ state: "visible" });
+  await languageOutagePage.getByRole("tab", { name: /Languages/ }).click();
+  const languagePanel = await languageOutagePage.getByRole("tabpanel").filter({ hasText: "Douglas Adams" }).first().innerText();
+  if (!languagePanel.includes("en") || !languagePanel.includes("fr") || !languagePanel.includes("Douglas Adams")) {
+    throw new Error(`Expected language outage to fall back to language codes, got ${languagePanel}`);
+  }
+  await languageOutagePage.close();
 }
 
 async function runFixtureFlow() {
@@ -328,6 +364,7 @@ async function runFixtureFlow() {
     await page.getByText("No Wikidata entity found for Q999999999").waitFor({ state: "visible" });
 
     await assertWikidataOutageStates(browser);
+    await assertMetadataOutageStates(browser);
 
     console.log("PASS fixture-backed search selects Q42 without live Wikidata");
     console.log("PASS fixture-backed graph renders Q42 instance-of context");
@@ -338,6 +375,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed empty search shows no-result error");
     console.log("PASS fixture-backed missing entity shows not-found error");
     console.log("PASS fixture-backed Wikidata outage states show search and entity errors");
+    console.log("PASS fixture-backed Commons and language outage states stay usable");
   } finally {
     await browser.close().catch(() => {});
   }

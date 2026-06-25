@@ -395,6 +395,7 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [availableLanguages, setAvailableLanguages] = useState<Record<string, WikidataLanguage>>({});
   const [mediaInfo, setMediaInfo] = useState<Record<string, WikidataMediaInfo>>({});
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const [linkedData, setLinkedData] = useState<LinkedData | null>(null);
   const [aiSummary, setAiSummary] = useState<AiSummaryState>(null);
   const [agentResult, setAgentResult] = useState<AgentResultState>(null);
@@ -466,16 +467,21 @@ export default function SearchPage() {
     async function loadMedia() {
       if (!files.length) {
         setMediaInfo({});
+        setMediaError(null);
         return;
       }
 
       setMediaInfo({});
+      setMediaError(null);
 
       try {
         const media = await client.fetchCommonsMedia(files.slice(0, 12));
         if (!cancelled) setMediaInfo(media);
       } catch {
-        if (!cancelled) setMediaInfo({});
+        if (!cancelled) {
+          setMediaInfo({});
+          setMediaError("Commons media metadata could not be loaded. Try again later.");
+        }
       }
     }
 
@@ -1513,7 +1519,9 @@ export default function SearchPage() {
                   </TabsContent>
 
                   <TabsContent value="media">
-                    {Object.keys(mediaInfo).length === 0 ? (
+                    {mediaError ? (
+                      <p className="text-sm text-amber-700 dark:text-amber-300">{mediaError}</p>
+                    ) : Object.keys(mediaInfo).length === 0 ? (
                       <p className="text-sm text-slate-600 dark:text-slate-300">No Commons media found for this entity.</p>
                     ) : (
                       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
