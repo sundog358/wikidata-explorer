@@ -49,6 +49,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - AI-enabled AG2 API success contracts now run against a mock remote service for chat, entity summary, and graph workflow routes without provider credentials.
 - Dark-mode visual QA now captures home, Q42 graph, Q42 comparison, and mobile search surfaces.
 - Organization fixture coverage now adds Q95/Google with headquarters, founder, inception, website, logo/media, source-link, data-quality, and graph-regression checks.
+- Cross-type comparison coverage now exports a work/organization/person matrix for Q25169/Q95/Q42 and verifies shareable restore.
 
 ## Recently Confirmed In Production
 
@@ -60,7 +61,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Performance budgets are on `main` for Q42 route readiness, graph readiness, graph node count, and DOM size.
 - Light/dark visual QA is on `main` for the home page, Q42 graph, Q42 comparison, chat/agents/docs, and mobile search surfaces.
 - Deterministic Q42/Q80/Q95/Q25169/Q46248/P31 Wikidata fixtures are on `main` for search, entity, graph, evidence, media, data-quality, and comparison regression coverage.
-- A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Q25169 related-work graph context, Q95 organization headquarters/media context, Commons media, language metadata, Q42/Q80 comparison JSON export, Q42/Q46248 author comparison JSON export, direct P31 lookup, empty/missing results, Wikidata outage states, Commons outage states, and language fallback states without live Wikidata calls.
+- A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Q25169 related-work graph context, Q95 organization headquarters/media context, Commons media, language metadata, Q42/Q80 comparison JSON export, Q42/Q46248 author comparison JSON export, Q25169/Q95/Q42 cross-type comparison JSON export, direct P31 lookup, empty/missing results, Wikidata outage states, Commons outage states, and language fallback states without live Wikidata calls.
 - AI-enabled AG2 API success contracts are on `main` for `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` through a token-authenticated mock remote service.
 
 ## Portfolio Readiness
@@ -71,8 +72,8 @@ The project is job-portfolio ready now. It shows product judgment, modern fronte
 
 To move beyond 9.5:
 
-- Add richer comparison examples across organization/place/work/entity-type mixes.
 - Add production observability around API failure categories without leaking prompts, keys, or sensitive context.
+- Add place/geographic fixtures so comparison examples cover place/work/organization/person mixes.
 
 To reach 10:
 
@@ -129,7 +130,8 @@ Goal: support research workflows beyond single-entity browsing.
 - Implemented visual QA coverage and a tracked portfolio screenshot for the comparison tab on `main`.
 - Shipped structured JSON comparison exports and URL-backed export views for tool handoff and repeatable research notes.
 - Shipped seeded examples such as `Q42` vs another author (`Q46248`) and property-focused examples such as `P31`.
-- Next: add richer three-entity examples and property-focused export views.
+- Shipped a cross-type Q25169/Q95/Q42 comparison example covering a work, organization, and person.
+- Next: add place/geographic examples and property-focused export views.
 
 ### 4. Evidence And Trust
 
@@ -223,7 +225,8 @@ Status: in progress
 - Shipped: graph filters, depth controls, grouped-by-property layout, timeline evidence layout, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
 - On `main`: performance budgets for `/search?q=Q42` and graph rendering, plus accessibility checks for graph control labels/options, keyboard focus order, pinned controls, statement drawer content, and reduced-motion behavior.
 - On `main`: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language, organization graph/media coverage, author comparison, a related-work graph path, and basic error-state regression.
-- Next: richer comparison examples across organizations, places, works, and properties.
+- On `main`: cross-type comparison coverage for a work, organization, and person.
+- Next: richer comparison examples across places, organizations, works, and properties.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 
@@ -232,7 +235,7 @@ Status: in progress
 - Shipped: selected graph path Markdown/JSON exports, URL-backed selected-path export views, safe curation exports, public AI-off two-entity comparison UI, optional three-entity property matrices, and Markdown comparison exports.
 - Shipped in production: shareable comparison target URLs, structured JSON comparison exports, and URL-backed comparison export views for restored AI-off comparison links.
 - On `main`: comparison-tab visual QA coverage.
-- Next: richer comparison examples and property-focused export views.
+- Next: place/geographic comparison examples and property-focused export views.
 
 ### Milestone 4: Grounded AI Research Assistant
 

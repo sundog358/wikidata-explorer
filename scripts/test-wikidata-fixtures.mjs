@@ -115,4 +115,14 @@ assert.deepEqual(authorComparison.sharedProperties.map((property) => property.id
 assert.equal(authorComparison.overlappingEntities.some((entity) => entity.id === "Q36180"), true);
 assert.equal(authorComparison.targetUniqueProperties.some((property) => property.id === "P27"), true);
 
+const organizationComparison = buildEntityComparison(relatedWork, organizationTarget, { createdAt: "2026-06-25T12:00:00.000Z" });
+assert.equal(organizationComparison.source.id, "Q25169");
+assert.equal(organizationComparison.target.id, "Q95");
+assert.deepEqual(organizationComparison.sharedProperties.map((property) => property.id), ["P31"]);
+assert.equal(organizationComparison.targetUniqueProperties.some((property) => property.id === "P159"), true);
+const organizationComparisonJson = JSON.parse(buildEntityComparisonJsonExport(organizationComparison));
+assert.equal(organizationComparisonJson.target.id, "Q95");
+assert.equal(organizationComparisonJson.summary.sharedPropertyCount, 1);
+assert.equal(organizationComparisonJson.summary.targetUniquePropertyCount, 5);
+
 console.log("PASS deterministic Wikidata fixture tests");

@@ -388,6 +388,27 @@ async function runFixtureFlow() {
       throw new Error(`Expected fixture author comparison JSON for Q42/Q46248, got ${JSON.stringify(authorComparisonJson)}`);
     }
 
+    await page.goto(new URL("/search?q=Q25169&tab=compare&compare=Q95&compare2=Q42", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
+    await page.getByTestId("comparison-property-matrix").waitFor({ state: "visible" });
+    const crossTypeComparisonText = await page.getByTestId("comparison-panel").innerText();
+    if (!crossTypeComparisonText.includes("The Hitchhiker's Guide to the Galaxy") || !crossTypeComparisonText.includes("Google") || !crossTypeComparisonText.includes("Douglas Adams")) {
+      throw new Error(`Expected cross-type comparison to include work, organization, and person entities, got ${crossTypeComparisonText}`);
+    }
+    const crossTypeComparisonJson = JSON.parse(await page.getByTestId("comparison-json-export").inputValue());
+    if (crossTypeComparisonJson.artifactType !== "entity-set-comparison" || crossTypeComparisonJson.summary.entityCount !== 3 || !crossTypeComparisonJson.entities.some((entity) => entity.id === "Q95") || !crossTypeComparisonJson.propertyMatrix.some((property) => property.id === "P159")) {
+      throw new Error(`Expected fixture cross-type comparison JSON for Q25169/Q95/Q42 with organization properties, got ${JSON.stringify(crossTypeComparisonJson)}`);
+    }
+    await page.getByTestId("view-comparison-json-export").click();
+    await page.reload({ waitUntil: "commit" });
+    await page.getByTestId("comparison-property-matrix").waitFor({ state: "visible" });
+    const restoredCrossTypeExportView = await page.getByTestId("shareable-export-view").innerText();
+    if (!restoredCrossTypeExportView.includes("Q25169") || !restoredCrossTypeExportView.includes("Q95") || !restoredCrossTypeExportView.includes("Q42")) {
+      throw new Error(`Expected fixture cross-type comparison export view to restore after reload, got ${restoredCrossTypeExportView}`);
+    }
+
     await page.goto(new URL("/search?q=Q42&tab=graph&gdepth=property&gprop=P31&gfocus=Q5&export=graph-json", baseUrl).toString(), {
       waitUntil: "commit",
     });
@@ -458,6 +479,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed comparison exports Q42/Q80 JSON");
     console.log("PASS fixture-backed three-entity comparison matrix exports Q42/Q80/Q25169 JSON");
     console.log("PASS fixture-backed author comparison exports Q42/Q46248 JSON");
+    console.log("PASS fixture-backed cross-type comparison exports Q25169/Q95/Q42 JSON");
     console.log("PASS fixture-backed shareable export views restore comparison and graph handoffs");
     console.log("PASS fixture-backed direct PID lookup selects P31");
     console.log("PASS fixture-backed related work lookup selects Q25169 and graph author context");
