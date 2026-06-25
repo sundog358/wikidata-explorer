@@ -5,7 +5,7 @@ import Image from "next/image";
 import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, MessageSquare, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
 import { buildGraphPathJsonExport, buildGraphPathMarkdownExport } from "@/lib/graph-path-export.mjs";
-import { buildEntityComparison, buildEntityComparisonJsonExport, buildEntityComparisonMarkdownExport, buildEntitySetComparison, buildEntitySetComparisonJsonExport, buildEntitySetComparisonMarkdownExport } from "@/lib/entity-comparison.mjs";
+import { buildComparisonPropertyFocus, buildComparisonPropertyJsonExport, buildComparisonPropertyMarkdownExport, buildEntityComparison, buildEntityComparisonJsonExport, buildEntityComparisonMarkdownExport, buildEntitySetComparison, buildEntitySetComparisonJsonExport, buildEntitySetComparisonMarkdownExport } from "@/lib/entity-comparison.mjs";
 import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-source-hints.mjs";
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/search-url-state.mjs";
@@ -33,7 +33,7 @@ type AiSummaryState = {
 
 type AgentAction = "research" | "graph" | "suggest" | "verify" | "compare" | "report";
 type SearchWorkbenchTab = "graph" | "compare" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
-type ShareableExportView = "graph-markdown" | "graph-json" | "comparison-markdown" | "comparison-json";
+type ShareableExportView = "graph-markdown" | "graph-json" | "comparison-markdown" | "comparison-json" | "comparison-property";
 
 type AgentSafetyState = {
   decisionLabel: string;
@@ -100,7 +100,7 @@ type RunSearchOptions = {
 };
 
 function normalizeShareableExportView(value: unknown): ShareableExportView | null {
-  return value === "graph-markdown" || value === "graph-json" || value === "comparison-markdown" || value === "comparison-json" ? value : null;
+  return value === "graph-markdown" || value === "graph-json" || value === "comparison-markdown" || value === "comparison-json" || value === "comparison-property" ? value : null;
 }
 
 const AGENT_RUNS_STORAGE_KEY = "wikidata-explorer.agentRuns.v1";
@@ -396,7 +396,7 @@ function normalizeWorkbenchTab(tab: SearchWorkbenchTab): SearchWorkbenchTab {
   return tab;
 }
 
-function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null; comparisonTargetId?: string | null; comparisonThirdTargetId?: string | null; exportView?: ShareableExportView | null }) {
+function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null; comparisonTargetId?: string | null; comparisonThirdTargetId?: string | null; comparisonPropertyId?: string | null; exportView?: ShareableExportView | null }) {
   if (typeof window === "undefined") return;
   const params = new URLSearchParams(window.location.search);
   if (updates.q !== undefined) {
@@ -411,6 +411,7 @@ function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTa
     graphFocusId: Object.prototype.hasOwnProperty.call(updates, "graphFocusId") ? updates.graphFocusId || null : currentState.graphFocusId,
     comparisonTargetId: Object.prototype.hasOwnProperty.call(updates, "comparisonTargetId") ? updates.comparisonTargetId || null : currentState.comparisonTargetId,
     comparisonThirdTargetId: Object.prototype.hasOwnProperty.call(updates, "comparisonThirdTargetId") ? updates.comparisonThirdTargetId || null : currentState.comparisonThirdTargetId,
+    comparisonPropertyId: Object.prototype.hasOwnProperty.call(updates, "comparisonPropertyId") ? updates.comparisonPropertyId || null : currentState.comparisonPropertyId,
     exportView: Object.prototype.hasOwnProperty.call(updates, "exportView") ? updates.exportView || null : currentState.exportView,
   });
   const query = nextParams.toString();
@@ -453,6 +454,7 @@ function SearchWorkbench() {
   const [graphFilters, setGraphFilters] = useState<RelationshipGraphFilters>(() => initialWorkbenchState.graphFilters as RelationshipGraphFilters);
   const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(() => initialWorkbenchState.graphFocusId);
   const [shareableExportView, setShareableExportView] = useState<ShareableExportView | null>(() => normalizeShareableExportView(initialWorkbenchState.exportView));
+  const [selectedComparisonPropertyId, setSelectedComparisonPropertyId] = useState<string | null>(() => initialWorkbenchState.comparisonPropertyId);
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
   const [reviewTaskStatuses, setReviewTaskStatuses] = useState<Record<string, ReviewTaskStatus>>({});
@@ -608,6 +610,14 @@ function SearchWorkbench() {
     if (entitySetComparison) return buildEntitySetComparisonJsonExport(entitySetComparison);
     return entityComparison ? buildEntityComparisonJsonExport(entityComparison) : "";
   }, [entityComparison, entitySetComparison]);
+  const defaultComparisonPropertyId = entitySetComparison?.propertyMatrix[0]?.id || entityComparison?.sharedProperties[0]?.id || entityComparison?.sourceUniqueProperties[0]?.id || entityComparison?.targetUniqueProperties[0]?.id || null;
+  const comparisonPropertyFocus = useMemo(() => {
+    const comparison = entitySetComparison || entityComparison;
+    const propertyId = selectedComparisonPropertyId || (shareableExportView === "comparison-property" ? defaultComparisonPropertyId : null);
+    return comparison && propertyId ? buildComparisonPropertyFocus(comparison, propertyId) : null;
+  }, [defaultComparisonPropertyId, entityComparison, entitySetComparison, selectedComparisonPropertyId, shareableExportView]);
+  const comparisonPropertyMarkdownDraft = useMemo(() => buildComparisonPropertyMarkdownExport(comparisonPropertyFocus), [comparisonPropertyFocus]);
+  const comparisonPropertyJsonDraft = useMemo(() => buildComparisonPropertyJsonExport(comparisonPropertyFocus), [comparisonPropertyFocus]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
     setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
@@ -624,8 +634,19 @@ function SearchWorkbench() {
 
   function updateShareableExportView(nextView: ShareableExportView | null, tab: SearchWorkbenchTab) {
     setShareableExportView(nextView);
+    if (nextView !== "comparison-property") {
+      setSelectedComparisonPropertyId(null);
+    }
     setActiveTab(tab);
-    replaceWorkbenchUrlState({ tab, exportView: nextView });
+    replaceWorkbenchUrlState({ tab, exportView: nextView, comparisonPropertyId: nextView === "comparison-property" ? selectedComparisonPropertyId : null });
+  }
+
+  function updateComparisonPropertyExport(propertyId: string) {
+    const normalizedPropertyId = propertyId.toUpperCase();
+    setSelectedComparisonPropertyId(normalizedPropertyId);
+    setShareableExportView("comparison-property");
+    setActiveTab("compare");
+    replaceWorkbenchUrlState({ tab: "compare", exportView: "comparison-property", comparisonPropertyId: normalizedPropertyId });
   }
 
   const runSearch = useCallback(async (rawQuery: string, options: RunSearchOptions = {}) => {
@@ -674,6 +695,7 @@ function SearchWorkbench() {
         setGraphFilters(initialState.graphFilters as RelationshipGraphFilters);
         setSelectedGraphNodeId(initialState.graphFocusId);
         setShareableExportView(normalizeShareableExportView(initialState.exportView));
+        setSelectedComparisonPropertyId(initialState.comparisonPropertyId);
         setCompareEntityId(initialState.comparisonTargetId || "Q80");
         setCompareThirdEntityId(initialState.comparisonThirdTargetId || "Q25169");
       queuedComparisonTargetRef.current = initialState.comparisonTargetId;
@@ -745,9 +767,10 @@ function SearchWorkbench() {
     }
   }
 
-  const loadComparisonTarget = useCallback(async (targetId?: string, slot: "primary" | "third" = "primary") => {
+  const loadComparisonTarget = useCallback(async (targetId?: string, slot: "primary" | "third" = "primary", options: { preservePropertyExport?: boolean } = {}) => {
     if (!selectedItem || comparisonLoading) return;
 
+    const preservePropertyExport = Boolean(options.preservePropertyExport);
     const entityId = (targetId || (slot === "third" ? compareThirdEntityId : compareEntityId)).trim().toUpperCase();
     if (!/^[QP]\d+$/.test(entityId)) {
       setComparisonError("Enter a valid Wikidata ID to compare, such as Q80.");
@@ -772,18 +795,24 @@ function SearchWorkbench() {
         setComparisonItem(entity);
         setCompareEntityId(entity.id);
       }
+      if (!preservePropertyExport) {
+        setSelectedComparisonPropertyId(null);
+        setShareableExportView((current) => current === "comparison-property" ? null : current);
+      }
       setActiveTab("compare");
+      const nextExportView = !preservePropertyExport && shareableExportView === "comparison-property" ? null : shareableExportView;
+      const nextComparisonPropertyId = preservePropertyExport ? selectedComparisonPropertyId : null;
       if (slot === "third") {
-        replaceWorkbenchUrlState({ tab: "compare", comparisonThirdTargetId: entity.id });
+        replaceWorkbenchUrlState({ tab: "compare", comparisonThirdTargetId: entity.id, comparisonPropertyId: nextComparisonPropertyId, exportView: nextExportView });
       } else {
-        replaceWorkbenchUrlState({ tab: "compare", comparisonTargetId: entity.id });
+        replaceWorkbenchUrlState({ tab: "compare", comparisonTargetId: entity.id, comparisonPropertyId: nextComparisonPropertyId, exportView: nextExportView });
       }
     } catch (err) {
       setComparisonError(err instanceof Error ? err.message : `Could not load ${entityId} for comparison.`);
     } finally {
       setComparisonLoading(false);
     }
-  }, [compareEntityId, compareThirdEntityId, comparisonItem?.id, comparisonLoading, comparisonThirdItem?.id, selectedItem]);
+  }, [compareEntityId, compareThirdEntityId, comparisonItem?.id, comparisonLoading, comparisonThirdItem?.id, selectedComparisonPropertyId, selectedItem, shareableExportView]);
 
   async function summarizeEntity() {
     if (!AI_AGENTS_ENABLED) {
@@ -946,7 +975,7 @@ function SearchWorkbench() {
     }
 
     queuedComparisonTargetRef.current = null;
-    void loadComparisonTarget(normalizedTargetId);
+    void loadComparisonTarget(normalizedTargetId, "primary", { preservePropertyExport: true });
   }, [activeTab, comparisonItem?.id, comparisonLoading, loadComparisonTarget, selectedItem]);
 
   useEffect(() => {
@@ -960,7 +989,7 @@ function SearchWorkbench() {
     }
 
     queuedComparisonThirdTargetRef.current = null;
-    void loadComparisonTarget(normalizedTargetId, "third");
+    void loadComparisonTarget(normalizedTargetId, "third", { preservePropertyExport: true });
   }, [activeTab, comparisonItem, comparisonLoading, comparisonThirdItem?.id, loadComparisonTarget, selectedItem]);
 
   return (
@@ -1552,6 +1581,7 @@ function SearchWorkbench() {
                                         <th key={entity.id} className="border-b border-slate-200 px-3 py-2 dark:border-slate-800">{entity.id}</th>
                                       ))}
                                       <th className="border-b border-slate-200 px-3 py-2 dark:border-slate-800">Coverage</th>
+                                      <th className="border-b border-slate-200 px-3 py-2 dark:border-slate-800">Export</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -1562,6 +1592,11 @@ function SearchWorkbench() {
                                           <td key={cell.entityId} className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">{cell.count ? `${cell.count} (${cell.referencedCount} ref)` : "-"}</td>
                                         ))}
                                         <td className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">{row.sharedByAll ? "All" : `${row.presentCount}/${entitySetComparison.entities.length}`}</td>
+                                        <td className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+                                          <Button type="button" variant="outline" size="sm" onClick={() => updateComparisonPropertyExport(row.id)} data-testid={`focus-comparison-property-${row.id}`}>
+                                            Focus
+                                          </Button>
+                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -1575,13 +1610,20 @@ function SearchWorkbench() {
                               <div className="mb-3 font-semibold text-slate-950 dark:text-slate-50">Shared properties</div>
                               <div className="space-y-2">
                                 {entityComparison.sharedProperties.slice(0, 8).map((property) => (
-                                  <button key={property.id} type="button" onClick={() => loadEntity(property.id)} className="w-full rounded-md border border-slate-200 p-2 text-left hover:bg-sky-50 dark:border-slate-800 dark:hover:bg-slate-900">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <span className="font-medium">{property.label}</span>
-                                      <Badge variant="outline">{property.id}</Badge>
+                                  <div key={property.id} className="rounded-md border border-slate-200 p-2 dark:border-slate-800">
+                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                      <button type="button" onClick={() => loadEntity(property.id)} className="text-left hover:text-sky-700 dark:hover:text-sky-300">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <span className="font-medium">{property.label}</span>
+                                          <Badge variant="outline">{property.id}</Badge>
+                                        </div>
+                                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{entityComparison.source.id}: {property.sourceCount}; {entityComparison.target.id}: {property.targetCount}</div>
+                                      </button>
+                                      <Button type="button" variant="outline" size="sm" onClick={() => updateComparisonPropertyExport(property.id)} data-testid={`focus-comparison-property-${property.id}`}>
+                                        Export
+                                      </Button>
                                     </div>
-                                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{entityComparison.source.id}: {property.sourceCount}; {entityComparison.target.id}: {property.targetCount}</div>
-                                  </button>
+                                  </div>
                                 ))}
                                 {entityComparison.sharedProperties.length === 0 && <p className="text-slate-600 dark:text-slate-300">No shared properties in the loaded statement sets.</p>}
                               </div>
@@ -1630,12 +1672,12 @@ function SearchWorkbench() {
                                 </Button>
                               </div>
                               <p>
-                                This URL restores {entityComparison.source.id} against {entityComparison.target.id}{comparisonThirdItem ? ` and ${comparisonThirdItem.id}` : ""} with the selected comparison export open for handoff.
+                                This URL restores {entityComparison.source.id} against {entityComparison.target.id}{comparisonThirdItem ? ` and ${comparisonThirdItem.id}` : ""} with the selected comparison export open for handoff{comparisonPropertyFocus ? `, focused on ${comparisonPropertyFocus.property.label} (${comparisonPropertyFocus.property.id})` : ""}.
                               </p>
                             </div>
                           )}
 
-                          <div className="grid gap-4 xl:grid-cols-2">
+                          <div className="grid gap-4 xl:grid-cols-3">
                             <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
                               <div className="mb-2 flex items-center justify-between gap-2">
                                 <span className="font-semibold text-slate-950 dark:text-slate-50">Markdown comparison export</span>
@@ -1665,6 +1707,27 @@ function SearchWorkbench() {
                               </div>
                               <textarea readOnly value={comparisonJsonDraft} className={`h-52 w-full resize-y rounded-md border bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-200 ${shareableExportView === "comparison-json" ? "border-sky-300 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"}`} aria-label="Comparison JSON export" data-testid="comparison-json-export" />
                             </div>
+
+                            {comparisonPropertyFocus && (
+                              <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950" data-testid="comparison-property-export">
+                                <div className="mb-2 flex items-center justify-between gap-2">
+                                  <div>
+                                    <span className="font-semibold text-slate-950 dark:text-slate-50">Property-focused export</span>
+                                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{comparisonPropertyFocus.property.label} ({comparisonPropertyFocus.property.id}) across compared entities.</p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => updateComparisonPropertyExport(comparisonPropertyFocus.property.id)} data-testid="view-comparison-property-export">
+                                      {shareableExportView === "comparison-property" ? "Viewing" : "View"}
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison Property JSON", comparisonPropertyJsonDraft)}>
+                                      {copiedDraft === "Comparison Property JSON" ? "Copied" : "Copy"}
+                                    </Button>
+                                  </div>
+                                </div>
+                                <textarea readOnly value={comparisonPropertyMarkdownDraft} className="mb-3 h-32 w-full resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200" aria-label="Comparison property Markdown export" data-testid="comparison-property-markdown-export" />
+                                <textarea readOnly value={comparisonPropertyJsonDraft} className={`h-52 w-full resize-y rounded-md border bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-200 ${shareableExportView === "comparison-property" ? "border-sky-300 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"}`} aria-label="Comparison property JSON export" data-testid="comparison-property-json-export" />
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

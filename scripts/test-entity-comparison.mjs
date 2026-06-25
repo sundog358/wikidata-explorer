@@ -3,6 +3,9 @@ import {
   buildEntityComparison,
   buildEntityComparisonJsonExport,
   buildEntityComparisonMarkdownExport,
+  buildComparisonPropertyFocus,
+  buildComparisonPropertyJsonExport,
+  buildComparisonPropertyMarkdownExport,
   buildEntitySetComparison,
   buildEntitySetComparisonJsonExport,
   buildEntitySetComparisonMarkdownExport,
@@ -126,6 +129,17 @@ assert.equal(json.sharedProperties[0].id, "P31");
 assert.equal(json.overlappingEntities[0].url, "https://www.wikidata.org/wiki/Q5");
 assert.equal(json.safety.mode, "draft-only");
 
+const pairPropertyFocus = buildComparisonPropertyFocus(comparison, "P31");
+assert.equal(pairPropertyFocus.property.id, "P31");
+assert.equal(pairPropertyFocus.coverage.presentCount, 2);
+assert.equal(pairPropertyFocus.entities.find((entity) => entity.entityId === "Q1").referencedCount, 1);
+const pairPropertyMarkdown = buildComparisonPropertyMarkdownExport(pairPropertyFocus);
+assert.match(pairPropertyMarkdown, /Comparison property focus: instance of \(P31\)/);
+const pairPropertyJson = JSON.parse(buildComparisonPropertyJsonExport(pairPropertyFocus));
+assert.equal(pairPropertyJson.artifactType, "comparison-property-focus");
+assert.equal(pairPropertyJson.property.url, "https://www.wikidata.org/wiki/P31");
+assert.equal(pairPropertyJson.coverage.sharedByAll, true);
+
 const setComparison = buildEntitySetComparison([source, target, third], { createdAt: "2026-06-25T12:00:00.000Z" });
 assert.equal(setComparison.entities.length, 3);
 assert.equal(setComparison.sharedByAllProperties[0].id, "P31");
@@ -138,5 +152,14 @@ assert.equal(setJson.artifactType, "entity-set-comparison");
 assert.equal(setJson.summary.entityCount, 3);
 assert.equal(setJson.summary.sharedByAllPropertyCount, 1);
 assert.equal(setJson.propertyMatrix[0].id, "P31");
+
+const setPropertyFocus = buildComparisonPropertyFocus(setComparison, "P50");
+assert.equal(setPropertyFocus.property.id, "P50");
+assert.equal(setPropertyFocus.coverage.presentCount, 1);
+assert.equal(setPropertyFocus.entities.find((entity) => entity.entityId === "Q3").count, 1);
+const setPropertyJson = JSON.parse(buildComparisonPropertyJsonExport(setPropertyFocus));
+assert.equal(setPropertyJson.sourceArtifactType, "entity-set-comparison");
+assert.equal(setPropertyJson.coverage.entityCount, 3);
+assert.equal(buildComparisonPropertyFocus(setComparison, "P999"), null);
 
 console.log("PASS entity comparison tests");

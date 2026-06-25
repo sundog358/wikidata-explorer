@@ -440,6 +440,25 @@ async function runFixtureFlow() {
     if (placeComparisonJson.artifactType !== "entity-set-comparison" || placeComparisonJson.summary.entityCount !== 3 || !placeComparisonJson.entities.some((entity) => entity.id === "Q90") || !placeComparisonJson.propertyMatrix.some((property) => property.id === "P17")) {
       throw new Error(`Expected fixture place comparison JSON for Q25169/Q95/Q90 with geographic properties, got ${JSON.stringify(placeComparisonJson)}`);
     }
+    await page.getByTestId("focus-comparison-property-P17").click();
+    const propertyExportUrl = new URL(page.url());
+    if (propertyExportUrl.searchParams.get("export") !== "comparison-property" || propertyExportUrl.searchParams.get("cprop") !== "P17") {
+      throw new Error(`Expected property-focused comparison export URL state, got ${page.url()}`);
+    }
+    const propertyExportView = await page.getByTestId("shareable-export-view").innerText();
+    if (!propertyExportView.includes("country") || !propertyExportView.includes("P17")) {
+      throw new Error(`Expected shareable property export panel for P17 country, got ${propertyExportView}`);
+    }
+    const propertyExportJson = JSON.parse(await page.getByTestId("comparison-property-json-export").inputValue());
+    if (propertyExportJson.artifactType !== "comparison-property-focus" || propertyExportJson.property.id !== "P17" || !propertyExportJson.entities.some((entity) => entity.entityId === "Q90" && entity.count === 1)) {
+      throw new Error(`Expected focused P17 comparison property JSON with Paris coverage, got ${JSON.stringify(propertyExportJson)}`);
+    }
+    await page.reload({ waitUntil: "commit" });
+    await page.getByTestId("comparison-property-export").waitFor({ state: "visible" });
+    const restoredPropertyExportJson = JSON.parse(await page.getByTestId("comparison-property-json-export").inputValue());
+    if (restoredPropertyExportJson.property.id !== "P17") {
+      throw new Error(`Expected restored property-focused comparison export for P17, got ${JSON.stringify(restoredPropertyExportJson)}`);
+    }
 
     await page.goto(new URL("/search?q=Q42&tab=graph&gdepth=property&gprop=P31&gfocus=Q5&export=graph-json", baseUrl).toString(), {
       waitUntil: "commit",
@@ -529,6 +548,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed author comparison exports Q42/Q46248 JSON");
     console.log("PASS fixture-backed cross-type comparison exports Q25169/Q95/Q42 JSON");
     console.log("PASS fixture-backed place comparison exports Q25169/Q95/Q90 JSON");
+    console.log("PASS fixture-backed property-focused comparison export restores P17");
     console.log("PASS fixture-backed shareable export views restore comparison and graph handoffs");
     console.log("PASS fixture-backed direct PID lookup selects P31");
     console.log("PASS fixture-backed related work lookup selects Q25169 and graph author context");

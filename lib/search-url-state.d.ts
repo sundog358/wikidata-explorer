@@ -1,5 +1,5 @@
 export type SearchWorkbenchTab = "graph" | "compare" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
-export type SearchExportView = "graph-markdown" | "graph-json" | "comparison-markdown" | "comparison-json";
+export type SearchExportView = "graph-markdown" | "graph-json" | "comparison-markdown" | "comparison-json" | "comparison-property";
 
 export type SearchGraphFilters = {
   depth: "1" | "2" | "property";
@@ -18,6 +18,7 @@ export function readSearchWorkbenchState(input?: string | URLSearchParams): {
   graphFocusId: string | null;
   comparisonTargetId: string | null;
   comparisonThirdTargetId: string | null;
+  comparisonPropertyId: string | null;
   exportView: SearchExportView | "";
 };
 
@@ -27,5 +28,6 @@ export function writeSearchWorkbenchState(input?: string | URLSearchParams, stat
   graphFocusId?: string | null;
   comparisonTargetId?: string | null;
   comparisonThirdTargetId?: string | null;
+  comparisonPropertyId?: string | null;
   exportView?: SearchExportView | null;
 }): URLSearchParams;

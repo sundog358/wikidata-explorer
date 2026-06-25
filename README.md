@@ -17,7 +17,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🔎 Search Wikidata by keyword or direct entity/property ID such as `Q42` or `P31`
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
 - 🕸️ Explore a clickable relationship graph with URL-backed filters, depth controls, grouped-by-property and timeline evidence layouts, richer node previews, pinned relationship comparison, selected-edge statement details, and shareable selected-path Markdown/JSON export views
-- ⚖️ Compare two or three entities without AI by shared properties, distinctive statements, property matrices, overlapping linked entities, shareable comparison URLs, and shareable Markdown/JSON research export views
+- ⚖️ Compare two or three entities without AI by shared properties, distinctive statements, property matrices, overlapping linked entities, shareable comparison URLs, and shareable Markdown/JSON/property-focused research export views
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`, a seeded Q42 proof path, or a shared comparison such as `/search?q=Q42&tab=compare&compare=Q80`
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
@@ -212,7 +212,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and external IDs with `$1`, URI-template, encoded-placeholder, and formatter-root fallbacks
-- `lib/search-url-state.mjs`: tested shareable tab, comparison-target, third-comparison-target, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
+- `lib/search-url-state.mjs`: tested shareable tab, comparison-target, third-comparison-target, comparison-property, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
 - `lib/entity-comparison.mjs`: tested two/three-entity comparison helpers for shared properties, unique properties, property matrices, overlapping linked entities, and Markdown/JSON exports
 - `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, token-authenticated remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
@@ -235,8 +235,8 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-ag2-api-enabled-contracts.mjs`: starts a mock AG2 service plus an AI-enabled Next production server to prove `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` can return successful route responses without provider credentials
 - `scripts/fixtures/wikidata-fixtures.mjs`: deterministic Q42/Q80/Q90/Q95/Q25169/Q46248/P31 Wikidata fixtures for search, entity, graph, evidence, media, place, organization, and comparison tests
 - `scripts/test-wikidata-fixtures.mjs`: fixture-backed regression tests for search results, detailed entities, graph filters, source hints, data quality, place/organization/author/work/property fixtures, and comparison exports
-- `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, Commons media, related-work, place country/media, organization headquarters/media, author comparison, cross-type work/organization/person and work/organization/place comparisons, three-entity comparison, no-result, missing-entity, Wikidata outage, Commons outage, and language fallback fixtures to the live search workbench without external Wikidata calls
-- `scripts/test-entity-comparison.mjs`: deterministic two/three-entity comparison and Markdown/JSON export tests
+- `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, Commons media, related-work, place country/media, organization headquarters/media, author comparison, cross-type work/organization/person and work/organization/place comparisons, property-focused comparison export restore, three-entity comparison, no-result, missing-entity, Wikidata outage, Commons outage, and language fallback fixtures to the live search workbench without external Wikidata calls
+- `scripts/test-entity-comparison.mjs`: deterministic two/three-entity comparison plus Markdown/JSON/property-focused export tests
 - `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests
 - `scripts/test-search-error-boundary.mjs`: search workbench error-boundary regression checks for fallback UI, reset wiring, and sanitized client telemetry
 - `scripts/smoke-routes.mjs`: local route and API smoke checks

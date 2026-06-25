@@ -7,22 +7,25 @@ assert.deepEqual(defaultState.graphFilters, { depth: "1", layout: "radial", kind
 assert.equal(defaultState.graphFocusId, null);
 assert.equal(defaultState.comparisonTargetId, null);
 assert.equal(defaultState.comparisonThirdTargetId, null);
+assert.equal(defaultState.comparisonPropertyId, null);
 assert.equal(defaultState.exportView, "");
 
-const state = readSearchWorkbenchState("?q=Q42&tab=compare&compare=q80&compare2=q25169&export=comparison-json&gdepth=property&glayout=timeline&gkind=item&grank=normal&gprop=p31&gevidence=referenced&gfocus=q5");
+const state = readSearchWorkbenchState("?q=Q42&tab=compare&compare=q80&compare2=q25169&export=comparison-property&cprop=p31&gdepth=property&glayout=timeline&gkind=item&grank=normal&gprop=p31&gevidence=referenced&gfocus=q5");
 assert.equal(state.tab, "compare");
 assert.deepEqual(state.graphFilters, { depth: "property", layout: "timeline", kind: "item", rank: "normal", propertyId: "P31", evidence: "referenced" });
 assert.equal(state.graphFocusId, "Q5");
 assert.equal(state.comparisonTargetId, "Q80");
 assert.equal(state.comparisonThirdTargetId, "Q25169");
-assert.equal(state.exportView, "comparison-json");
+assert.equal(state.comparisonPropertyId, "P31");
+assert.equal(state.exportView, "comparison-property");
 
-const invalid = readSearchWorkbenchState("?tab=bad&compare=bad&compare2=bad&export=table&gdepth=wide&glayout=spiral&gkind=unknown&grank=old&gprop=Q42&gevidence=nope&gfocus=bad");
+const invalid = readSearchWorkbenchState("?tab=bad&compare=bad&compare2=bad&cprop=Q42&export=table&gdepth=wide&glayout=spiral&gkind=unknown&grank=old&gprop=Q42&gevidence=nope&gfocus=bad");
 assert.equal(invalid.tab, "graph");
 assert.deepEqual(invalid.graphFilters, { depth: "1", layout: "radial", kind: "all", rank: "all", propertyId: "all", evidence: "all" });
 assert.equal(invalid.graphFocusId, null);
 assert.equal(invalid.comparisonTargetId, null);
 assert.equal(invalid.comparisonThirdTargetId, null);
+assert.equal(invalid.comparisonPropertyId, null);
 assert.equal(invalid.exportView, "");
 
 const updated = writeSearchWorkbenchState("?q=Q42&agent=graph", {
@@ -31,7 +34,8 @@ const updated = writeSearchWorkbenchState("?q=Q42&agent=graph", {
   graphFocusId: "P361",
   comparisonTargetId: "Q80",
   comparisonThirdTargetId: "Q25169",
-  exportView: "graph-json",
+  comparisonPropertyId: "P31",
+  exportView: "comparison-property",
 });
 assert.equal(updated.get("q"), "Q42");
 assert.equal(updated.get("agent"), "graph");
@@ -45,9 +49,10 @@ assert.equal(updated.get("gevidence"), "qualified");
 assert.equal(updated.get("gfocus"), "P361");
 assert.equal(updated.get("compare"), "Q80");
 assert.equal(updated.get("compare2"), "Q25169");
-assert.equal(updated.get("export"), "graph-json");
+assert.equal(updated.get("cprop"), "P31");
+assert.equal(updated.get("export"), "comparison-property");
 
-const cleaned = writeSearchWorkbenchState(updated, { tab: "graph", graphFilters: { depth: "1", layout: "radial", kind: "all", rank: "all", propertyId: "all", evidence: "all" }, graphFocusId: null, comparisonTargetId: null, comparisonThirdTargetId: null, exportView: null });
+const cleaned = writeSearchWorkbenchState(updated, { tab: "graph", graphFilters: { depth: "1", layout: "radial", kind: "all", rank: "all", propertyId: "all", evidence: "all" }, graphFocusId: null, comparisonTargetId: null, comparisonThirdTargetId: null, comparisonPropertyId: null, exportView: null });
 assert.equal(cleaned.get("q"), "Q42");
 assert.equal(cleaned.has("tab"), false);
 assert.equal(cleaned.has("gdepth"), false);
@@ -59,6 +64,7 @@ assert.equal(cleaned.has("gevidence"), false);
 assert.equal(cleaned.has("gfocus"), false);
 assert.equal(cleaned.has("compare"), false);
 assert.equal(cleaned.has("compare2"), false);
+assert.equal(cleaned.has("cprop"), false);
 assert.equal(cleaned.has("export"), false);
 
 console.log("PASS search URL state tests");

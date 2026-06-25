@@ -51,6 +51,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Organization fixture coverage now adds Q95/Google with headquarters, founder, inception, website, logo/media, source-link, data-quality, and graph-regression checks.
 - Cross-type comparison coverage now exports a work/organization/person matrix for Q25169/Q95/Q42 and verifies shareable restore.
 - Place fixture coverage now adds Q90/Paris with country, administrative region, coordinate, image/media, source-link, graph-regression, and work/organization/place comparison checks.
+- Property-focused comparison exports now restore a selected property with `export=comparison-property&cprop=P...` and provide Markdown/JSON handoff text for reviewer workflows.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 - The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
 
@@ -64,18 +65,18 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Performance budgets are on `main` for Q42 route readiness, graph readiness, graph node count, and DOM size.
 - Light/dark visual QA is on `main` for the home page, Q42 graph, Q42 comparison, chat/agents/docs, and mobile search surfaces.
 - Deterministic Q42/Q80/Q90/Q95/Q25169/Q46248/P31 Wikidata fixtures are on `main` for search, entity, graph, evidence, media, data-quality, and comparison regression coverage.
-- A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Q25169 related-work graph context, Q95 organization headquarters/media context, Q90 place country/media context, Commons media, language metadata, Q42/Q80 comparison JSON export, Q42/Q46248 author comparison JSON export, Q25169/Q95/Q42 cross-type comparison JSON export, Q25169/Q95/Q90 work/organization/place comparison JSON export, direct P31 lookup, empty/missing results, Wikidata outage states, Commons outage states, and language fallback states without live Wikidata calls.
+- A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Q25169 related-work graph context, Q95 organization headquarters/media context, Q90 place country/media context, Commons media, language metadata, Q42/Q80 comparison JSON export, Q42/Q46248 author comparison JSON export, Q25169/Q95/Q42 cross-type comparison JSON export, Q25169/Q95/Q90 work/organization/place comparison JSON export, property-focused comparison export restore for P17, direct P31 lookup, empty/missing results, Wikidata outage states, Commons outage states, and language fallback states without live Wikidata calls.
 - AI-enabled AG2 API success contracts are on `main` for `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` through a token-authenticated mock remote service.
 
 ## Portfolio Readiness
 
-Current local grade: 9.5 / 10
+Current local grade: 9.6 / 10
 
 The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, timeline evidence layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
-To move beyond 9.5:
+Beyond 9.5:
 
-- Add property-focused comparison export views for reviewer handoff across entities and properties.
+- Shipped property-focused comparison export views for reviewer handoff across entities and properties.
 
 To reach 10:
 
@@ -116,7 +117,7 @@ Goal: make the graph the signature feature.
 - Added broader seeded author fixture coverage with Q46248 for richer graph/comparison regression.
 - Added organization fixture coverage with Q95 for non-biographical graph/media/evidence regression.
 - Added place fixture coverage with Q90 for geographic graph/media/evidence regression.
-- Next: add property-focused comparison export views.
+- Added property-focused comparison export restore coverage for selected comparison properties.
 - Keep graph URL state stable for filters, selected focus, and future export views.
 
 ### 3. Entity Comparison
@@ -135,7 +136,7 @@ Goal: support research workflows beyond single-entity browsing.
 - Shipped seeded examples such as `Q42` vs another author (`Q46248`) and property-focused examples such as `P31`.
 - Shipped a cross-type Q25169/Q95/Q42 comparison example covering a work, organization, and person.
 - Shipped a cross-type Q25169/Q95/Q90 comparison example covering a work, organization, and place.
-- Next: add property-focused export views.
+- Shipped URL-backed property-focused comparison export views with Markdown/JSON handoff for selected properties.
 
 ### 4. Evidence And Trust
 
@@ -230,7 +231,7 @@ Status: in progress
 - On `main`: performance budgets for `/search?q=Q42` and graph rendering, plus accessibility checks for graph control labels/options, keyboard focus order, pinned controls, statement drawer content, and reduced-motion behavior.
 - On `main`: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language, organization graph/media coverage, place graph/media coverage, author comparison, a related-work graph path, and basic error-state regression.
 - On `main`: cross-type comparison coverage for work/organization/person and work/organization/place mixes.
-- Next: property-focused comparison export views.
+- On `main`: property-focused comparison export restore for selected properties.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 
@@ -238,8 +239,8 @@ Status: in progress
 
 - Shipped: selected graph path Markdown/JSON exports, URL-backed selected-path export views, safe curation exports, public AI-off two-entity comparison UI, optional three-entity property matrices, and Markdown comparison exports.
 - Shipped in production: shareable comparison target URLs, structured JSON comparison exports, and URL-backed comparison export views for restored AI-off comparison links.
+- On `main`: property-focused comparison export views with `cprop` URL state and Markdown/JSON handoff.
 - On `main`: comparison-tab visual QA coverage.
-- Next: property-focused export views.
 
 ### Milestone 4: Grounded AI Research Assistant
 

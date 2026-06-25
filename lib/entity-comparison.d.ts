@@ -66,6 +66,30 @@ export type EntitySetComparison = {
   sharedByAllProperties: EntitySetComparisonPropertyRow[];
 };
 
+export type ComparisonPropertyFocus = {
+  generatedAt: string;
+  sourceArtifactType: "entity-comparison" | "entity-set-comparison";
+  property: {
+    id: string;
+    label: string;
+  };
+  entities: Array<{
+    entityId: string;
+    entityLabel: string;
+    count: number;
+    referencedCount: number;
+    qualifiedCount: number;
+    status: "present" | "missing";
+  }>;
+  coverage: {
+    entityCount: number;
+    presentCount: number;
+    totalStatementCount: number;
+    totalReferencedCount: number;
+    sharedByAll: boolean;
+  };
+};
+
 export function buildEntityComparison(source: WikidataItem, target: WikidataItem, options?: { createdAt?: string }): EntityComparison;
 
 export function buildEntityComparisonMarkdownExport(comparison: EntityComparison, options?: { limit?: number }): string;
@@ -77,3 +101,9 @@ export function buildEntitySetComparison(items: WikidataItem[], options?: { crea
 export function buildEntitySetComparisonMarkdownExport(comparison: EntitySetComparison, options?: { limit?: number }): string;
 
 export function buildEntitySetComparisonJsonExport(comparison: EntitySetComparison, options?: { limit?: number }): string;
+
+export function buildComparisonPropertyFocus(comparison: EntityComparison | EntitySetComparison, propertyId: string): ComparisonPropertyFocus | null;
+
+export function buildComparisonPropertyMarkdownExport(propertyFocus: ComparisonPropertyFocus | null): string;
+
+export function buildComparisonPropertyJsonExport(propertyFocus: ComparisonPropertyFocus | null): string;
