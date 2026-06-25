@@ -367,6 +367,19 @@ async function runFixtureFlow() {
       throw new Error(`Expected fixture comparison export view to restore after reload, got ${restoredComparisonExportView}`);
     }
 
+    await page.goto(new URL("/search?q=Q42&tab=compare&compare=Q46248", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
+    const authorComparisonText = await page.getByTestId("comparison-panel").innerText();
+    if (!authorComparisonText.includes("Terry Pratchett") || !authorComparisonText.includes("notable work")) {
+      throw new Error(`Expected fixture author comparison to include Terry Pratchett and notable-work overlap, got ${authorComparisonText}`);
+    }
+    const authorComparisonJson = JSON.parse(await page.getByTestId("comparison-json-export").inputValue());
+    if (authorComparisonJson.target.id !== "Q46248" || authorComparisonJson.summary.sharedPropertyCount < 4 || !authorComparisonJson.overlappingEntities.some((entity) => entity.id === "Q36180")) {
+      throw new Error(`Expected fixture author comparison JSON for Q42/Q46248, got ${JSON.stringify(authorComparisonJson)}`);
+    }
+
     await page.goto(new URL("/search?q=Q42&tab=graph&gdepth=property&gprop=P31&gfocus=Q5&export=graph-json", baseUrl).toString(), {
       waitUntil: "commit",
     });
@@ -420,6 +433,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed language metadata renders labels");
     console.log("PASS fixture-backed comparison exports Q42/Q80 JSON");
     console.log("PASS fixture-backed three-entity comparison matrix exports Q42/Q80/Q25169 JSON");
+    console.log("PASS fixture-backed author comparison exports Q42/Q46248 JSON");
     console.log("PASS fixture-backed shareable export views restore comparison and graph handoffs");
     console.log("PASS fixture-backed direct PID lookup selects P31");
     console.log("PASS fixture-backed related work lookup selects Q25169 and graph author context");

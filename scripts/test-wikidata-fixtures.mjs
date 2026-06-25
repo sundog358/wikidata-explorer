@@ -11,7 +11,7 @@ import {
 import { sourceHintsFromStatement } from "../lib/review-source-hints.mjs";
 import { fixtureDetailedEntity, fixtureEntityIds, fixtureSearchWikidata } from "./fixtures/wikidata-fixtures.mjs";
 
-assert.deepEqual(fixtureEntityIds().sort(), ["P31", "Q25169", "Q42", "Q80"]);
+assert.deepEqual(fixtureEntityIds().sort(), ["P31", "Q25169", "Q42", "Q46248", "Q80"]);
 
 const douglasResults = fixtureSearchWikidata("Douglas Adams");
 assert.equal(douglasResults.length, 1);
@@ -28,13 +28,20 @@ assert.equal(workResults.length, 1);
 assert.equal(workResults[0].id, "Q25169");
 assert.match(workResults[0].labels.en, /Hitchhiker/);
 
+const authorResults = fixtureSearchWikidata("Terry Pratchett");
+assert.equal(authorResults.length, 1);
+assert.equal(authorResults[0].id, "Q46248");
+assert.match(authorResults[0].descriptions.en, /fantasy author/);
+
 const source = fixtureDetailedEntity("Q42");
 const target = fixtureDetailedEntity("Q80");
 const relatedWork = fixtureDetailedEntity("Q25169");
+const authorTarget = fixtureDetailedEntity("Q46248");
 assert.equal(source.labels.en, "Douglas Adams");
 assert.equal(source.aliases.en.includes("DNA"), true);
 assert.equal(source.sitelinks.enwiki.url, "https://en.wikipedia.org/wiki/Douglas_Adams");
 assert.equal(relatedWork.statements.P50[0].value.content.id, "Q42");
+assert.equal(authorTarget.statements.P800[0].value.content.id, "Q1052459");
 assert.throws(() => fixtureDetailedEntity("Q999999999"), /No fixture Wikidata entity/);
 
 const q42GraphNodes = collectRelationshipGraphNodes(source);
@@ -77,5 +84,11 @@ const workComparison = buildEntityComparison(source, relatedWork, { createdAt: "
 assert.equal(workComparison.target.id, "Q25169");
 assert.equal(workComparison.overlappingEntities.some((entity) => entity.id === "Q42"), false);
 assert.equal(workComparison.targetUniqueProperties.some((property) => property.id === "P50"), true);
+
+const authorComparison = buildEntityComparison(source, authorTarget, { createdAt: "2026-06-25T12:00:00.000Z" });
+assert.equal(authorComparison.target.id, "Q46248");
+assert.deepEqual(authorComparison.sharedProperties.map((property) => property.id), ["P569", "P31", "P800", "P106"]);
+assert.equal(authorComparison.overlappingEntities.some((entity) => entity.id === "Q36180"), true);
+assert.equal(authorComparison.targetUniqueProperties.some((property) => property.id === "P27"), true);
 
 console.log("PASS deterministic Wikidata fixture tests");

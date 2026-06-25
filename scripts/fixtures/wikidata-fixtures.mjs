@@ -228,6 +228,107 @@ const fixtureEntities = {
       ],
     },
   },
+  Q46248: {
+    id: "Q46248",
+    type: "item",
+    labels: { en: "Terry Pratchett", fr: "Terry Pratchett" },
+    descriptions: { en: "English fantasy author (1948-2015)" },
+    aliases: { en: ["Sir Terry Pratchett", "Terence David John Pratchett"] },
+    sitelinks: {
+      enwiki: {
+        title: "Terry Pratchett",
+        badges: [],
+        url: "https://en.wikipedia.org/wiki/Terry_Pratchett",
+      },
+    },
+    statements: {
+      P31: [
+        {
+          id: "Q46248$fixture-P31-Q5",
+          rank: "normal",
+          propertyId: "P31",
+          explorable: true,
+          property: { id: "P31", label: "instance of", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q5", label: "human" } },
+          qualifiers: [],
+          references: [
+            {
+              hash: "fixture-reference-q46248-p31",
+              parts: [
+                {
+                  property: { id: "P248", label: "stated in", data_type: "wikibase-item" },
+                  value: { type: "wikibase-entityid", content: { id: "Q5375741", label: "Encyclopaedia Britannica Online" } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P106: [
+        {
+          id: "Q46248$fixture-P106-Q36180",
+          rank: "normal",
+          propertyId: "P106",
+          explorable: true,
+          property: { id: "P106", label: "occupation", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q36180", label: "writer" } },
+          qualifiers: [
+            {
+              property: { id: "P642", label: "of", data_type: "wikibase-item" },
+              value: { type: "wikibase-entityid", content: { id: "Q7725634", label: "literary work" } },
+            },
+          ],
+          references: [],
+        },
+      ],
+      P569: [
+        {
+          id: "Q46248$fixture-P569",
+          rank: "normal",
+          propertyId: "P569",
+          explorable: true,
+          property: { id: "P569", label: "date of birth", data_type: "time" },
+          value: { type: "time", content: { time: "+1948-04-28T00:00:00Z", precision: 11 } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+      P800: [
+        {
+          id: "Q46248$fixture-P800-Q1052459",
+          rank: "normal",
+          propertyId: "P800",
+          explorable: true,
+          property: { id: "P800", label: "notable work", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q1052459", label: "Good Omens" } },
+          qualifiers: [],
+          references: [
+            {
+              hash: "fixture-reference-q46248-p800",
+              parts: [
+                {
+                  property: { id: "P854", label: "reference URL", data_type: "url", formatter_url: null },
+                  value: { type: "url", content: { value: "https://www.wikidata.org/wiki/Q1052459" } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P27: [
+        {
+          id: "Q46248$fixture-P27-Q145",
+          rank: "normal",
+          propertyId: "P27",
+          explorable: true,
+          property: { id: "P27", label: "country of citizenship", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q145", label: "United Kingdom" } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+    },
+  },
   P31: {
     id: "P31",
     type: "property",
@@ -257,6 +358,9 @@ const fixtureSearchIndex = [
   { term: "adams", ids: ["Q42"] },
   { term: "tim", ids: ["Q80"] },
   { term: "berners", ids: ["Q80"] },
+  { term: "terry", ids: ["Q46248"] },
+  { term: "pratchett", ids: ["Q46248"] },
+  { term: "fantasy author", ids: ["Q46248"] },
   { term: "hitchhiker", ids: ["Q25169"] },
   { term: "galaxy", ids: ["Q25169"] },
   { term: "instance", ids: ["P31"] },
