@@ -353,6 +353,22 @@ async function runFixtureFlow() {
     });
     await page.waitForFunction(() => document.querySelector('[data-testid="selected-entity-id"]')?.textContent?.trim() === "P31");
 
+    await page.goto(new URL("/search?q=hitchhiker", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.getByRole("button", { name: /The Hitchhiker's Guide to the Galaxy/ }).click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="selected-entity-id"]')?.textContent?.trim() === "Q25169");
+
+    await page.goto(new URL("/search?q=Q25169&tab=graph&gdepth=property&gprop=P50", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.waitForFunction(() => document.querySelector('[data-testid="selected-entity-id"]')?.textContent?.trim() === "Q25169");
+    await page.getByTestId("graph-node-Q42").waitFor({ state: "visible" });
+    const q42AuthorNodeName = await page.getByTestId("graph-node-Q42").getAttribute("aria-label");
+    if (!q42AuthorNodeName?.includes("Douglas Adams (Q42)") || !q42AuthorNodeName.includes("author (P50)")) {
+      throw new Error(`Expected mocked Q25169 graph to expose Douglas Adams author context, got ${q42AuthorNodeName}`);
+    }
+
     await page.goto(new URL("/search?q=NoSuchFixtureTerm", baseUrl).toString(), {
       waitUntil: "commit",
     });
@@ -372,6 +388,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed language metadata renders labels");
     console.log("PASS fixture-backed comparison exports Q42/Q80 JSON");
     console.log("PASS fixture-backed direct PID lookup selects P31");
+    console.log("PASS fixture-backed related work lookup selects Q25169 and graph author context");
     console.log("PASS fixture-backed empty search shows no-result error");
     console.log("PASS fixture-backed missing entity shows not-found error");
     console.log("PASS fixture-backed Wikidata outage states show search and entity errors");

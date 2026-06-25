@@ -223,9 +223,9 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
 - `scripts/test-ag2-remote-service.mjs`: mocked AG2 container contract test for remote `/run` success, auth, and sanitized service failures
-- `scripts/fixtures/wikidata-fixtures.mjs`: deterministic Q42/Q80/P31 Wikidata fixtures for search, entity, graph, evidence, and comparison tests
+- `scripts/fixtures/wikidata-fixtures.mjs`: deterministic Q42/Q80/Q25169/P31 Wikidata fixtures for search, entity, graph, evidence, and comparison tests
 - `scripts/test-wikidata-fixtures.mjs`: fixture-backed regression tests for search results, detailed entities, graph filters, source hints, data quality, and comparison exports
-- `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, Commons media, no-result, missing-entity, Wikidata outage, Commons outage, and language fallback fixtures to the live search workbench without external Wikidata calls
+- `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, Commons media, related-work, no-result, missing-entity, Wikidata outage, Commons outage, and language fallback fixtures to the live search workbench without external Wikidata calls
 - `scripts/test-entity-comparison.mjs`: deterministic entity comparison and Markdown/JSON export tests
 - `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests
 - `scripts/smoke-routes.mjs`: local route and API smoke checks

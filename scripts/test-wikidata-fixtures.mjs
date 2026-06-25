@@ -11,7 +11,7 @@ import {
 import { sourceHintsFromStatement } from "../lib/review-source-hints.mjs";
 import { fixtureDetailedEntity, fixtureEntityIds, fixtureSearchWikidata } from "./fixtures/wikidata-fixtures.mjs";
 
-assert.deepEqual(fixtureEntityIds().sort(), ["P31", "Q42", "Q80"]);
+assert.deepEqual(fixtureEntityIds().sort(), ["P31", "Q25169", "Q42", "Q80"]);
 
 const douglasResults = fixtureSearchWikidata("Douglas Adams");
 assert.equal(douglasResults.length, 1);
@@ -23,11 +23,18 @@ const propertyResults = fixtureSearchWikidata("instance of");
 assert.equal(propertyResults[0].id, "P31");
 assert.equal(propertyResults[0].type, "property");
 
+const workResults = fixtureSearchWikidata("hitchhiker galaxy");
+assert.equal(workResults.length, 1);
+assert.equal(workResults[0].id, "Q25169");
+assert.match(workResults[0].labels.en, /Hitchhiker/);
+
 const source = fixtureDetailedEntity("Q42");
 const target = fixtureDetailedEntity("Q80");
+const relatedWork = fixtureDetailedEntity("Q25169");
 assert.equal(source.labels.en, "Douglas Adams");
 assert.equal(source.aliases.en.includes("DNA"), true);
 assert.equal(source.sitelinks.enwiki.url, "https://en.wikipedia.org/wiki/Douglas_Adams");
+assert.equal(relatedWork.statements.P50[0].value.content.id, "Q42");
 assert.throws(() => fixtureDetailedEntity("Q999999999"), /No fixture Wikidata entity/);
 
 const q42GraphNodes = collectRelationshipGraphNodes(source);
@@ -43,6 +50,10 @@ const q5Node = q42GraphNodes.find((node) => node.id === "Q5");
 assert.ok(q5Node);
 assert.deepEqual(relationshipEvidenceSummary(q5Node).references, ["stated in: Encyclopaedia Britannica Online Q5375741; retrieved: 2024-01-01"]);
 assert.equal(graphFocusFromNode(q5Node).statementId, "Q42$fixture-P31-Q5");
+
+const q25169GraphNodes = collectRelationshipGraphNodes(relatedWork);
+assert.ok(q25169GraphNodes.some((node) => node.id === "Q42" && node.propertyId === "P50"));
+assert.equal(filterRelationshipGraphNodes(q25169GraphNodes, { propertyId: "P50" })[0].label, "Douglas Adams");
 
 const qualitySummary = summarizeEntityDataQuality(source);
 assert.ok(qualitySummary.referencedStatementCount >= 2);
@@ -61,5 +72,10 @@ assert.equal(comparisonJson.source.id, "Q42");
 assert.equal(comparisonJson.target.id, "Q80");
 assert.equal(comparisonJson.summary.sharedPropertyCount, 2);
 assert.equal(comparisonJson.safety.mode, "draft-only");
+
+const workComparison = buildEntityComparison(source, relatedWork, { createdAt: "2026-06-25T12:00:00.000Z" });
+assert.equal(workComparison.target.id, "Q25169");
+assert.equal(workComparison.overlappingEntities.some((entity) => entity.id === "Q42"), false);
+assert.equal(workComparison.targetUniqueProperties.some((property) => property.id === "P50"), true);
 
 console.log("PASS deterministic Wikidata fixture tests");

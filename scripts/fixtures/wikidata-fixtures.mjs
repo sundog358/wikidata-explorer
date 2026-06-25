@@ -104,6 +104,68 @@ const fixtureEntities = {
       ],
     },
   },
+  Q25169: {
+    id: "Q25169",
+    type: "item",
+    labels: { en: "The Hitchhiker's Guide to the Galaxy", fr: "Le Guide du voyageur galactique" },
+    descriptions: { en: "science fiction comedy series created by Douglas Adams" },
+    aliases: { en: ["Hitchhiker's Guide", "HHGTTG"] },
+    sitelinks: {
+      enwiki: {
+        title: "The Hitchhiker's Guide to the Galaxy",
+        badges: [],
+        url: "https://en.wikipedia.org/wiki/The_Hitchhiker%27s_Guide_to_the_Galaxy",
+      },
+    },
+    statements: {
+      P31: [
+        {
+          id: "Q25169$fixture-P31-Q7725634",
+          rank: "normal",
+          propertyId: "P31",
+          explorable: true,
+          property: { id: "P31", label: "instance of", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q7725634", label: "literary work" } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+      P50: [
+        {
+          id: "Q25169$fixture-P50-Q42",
+          rank: "normal",
+          propertyId: "P50",
+          explorable: true,
+          property: { id: "P50", label: "author", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q42", label: "Douglas Adams" } },
+          qualifiers: [],
+          references: [
+            {
+              hash: "fixture-reference-q25169-p50",
+              parts: [
+                {
+                  property: { id: "P854", label: "reference URL", data_type: "url", formatter_url: null },
+                  value: { type: "url", content: { value: "https://www.wikidata.org/wiki/Q42" } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P577: [
+        {
+          id: "Q25169$fixture-P577",
+          rank: "normal",
+          propertyId: "P577",
+          explorable: true,
+          property: { id: "P577", label: "publication date", data_type: "time" },
+          value: { type: "time", content: { time: "+1979-10-12T00:00:00Z", precision: 11 } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+    },
+  },
   Q80: {
     id: "Q80",
     type: "item",
@@ -195,6 +257,8 @@ const fixtureSearchIndex = [
   { term: "adams", ids: ["Q42"] },
   { term: "tim", ids: ["Q80"] },
   { term: "berners", ids: ["Q80"] },
+  { term: "hitchhiker", ids: ["Q25169"] },
+  { term: "galaxy", ids: ["Q25169"] },
   { term: "instance", ids: ["P31"] },
 ];
 
