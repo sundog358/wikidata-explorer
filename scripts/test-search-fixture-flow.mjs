@@ -192,9 +192,22 @@ function wikidataApiResponse(url) {
   return {};
 }
 
-export async function installFixtureRoutes(page) {
+export async function installFixtureRoutes(page, options = {}) {
+  const wikidataOutageActions = new Set(options.wikidataOutageActions || []);
+
   await page.route("https://www.wikidata.org/w/api.php?**", async (route) => {
     const url = new URL(route.request().url());
+    const action = url.searchParams.get("action");
+
+    if (wikidataOutageActions.has(action)) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { info: "Fixture Wikidata outage" } }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -223,6 +236,26 @@ export async function installFixtureRoutes(page) {
       body: JSON.stringify({ query: { pages } }),
     });
   });
+}
+
+async function assertWikidataOutageStates(browser) {
+  const searchOutagePage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  searchOutagePage.setDefaultTimeout(30000);
+  await installFixtureRoutes(searchOutagePage, { wikidataOutageActions: ["wbsearchentities"] });
+  await searchOutagePage.goto(new URL("/search?q=Douglas", baseUrl).toString(), {
+    waitUntil: "commit",
+  });
+  await searchOutagePage.getByText("Search failed: Service Unavailable").waitFor({ state: "visible" });
+  await searchOutagePage.close();
+
+  const entityOutagePage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  entityOutagePage.setDefaultTimeout(30000);
+  await installFixtureRoutes(entityOutagePage, { wikidataOutageActions: ["wbgetentities"] });
+  await entityOutagePage.goto(new URL("/search?q=Q42", baseUrl).toString(), {
+    waitUntil: "commit",
+  });
+  await entityOutagePage.getByText("Failed to fetch entity Q42: Service Unavailable").waitFor({ state: "visible" });
+  await entityOutagePage.close();
 }
 
 async function runFixtureFlow() {
@@ -294,6 +327,8 @@ async function runFixtureFlow() {
     });
     await page.getByText("No Wikidata entity found for Q999999999").waitFor({ state: "visible" });
 
+    await assertWikidataOutageStates(browser);
+
     console.log("PASS fixture-backed search selects Q42 without live Wikidata");
     console.log("PASS fixture-backed graph renders Q42 instance-of context");
     console.log("PASS fixture-backed Commons media renders image metadata");
@@ -302,6 +337,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed direct PID lookup selects P31");
     console.log("PASS fixture-backed empty search shows no-result error");
     console.log("PASS fixture-backed missing entity shows not-found error");
+    console.log("PASS fixture-backed Wikidata outage states show search and entity errors");
   } finally {
     await browser.close().catch(() => {});
   }

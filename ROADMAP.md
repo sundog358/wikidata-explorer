@@ -24,7 +24,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, and selected-path Markdown/JSON exports.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, shareable comparison URLs, and Markdown/JSON comparison exports.
-- `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, and missing-entity responses.
+- `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, and Wikidata API outage responses.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -55,7 +55,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Performance budgets are on `main` for Q42 route readiness, graph readiness, graph node count, and DOM size.
 - Comparison-tab visual QA is on `main` and can refresh the tracked portfolio screenshot.
 - Deterministic Q42/Q80/P31 Wikidata fixtures are on `main` for search, entity, graph, evidence, and comparison regression coverage.
-- A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Commons media, language metadata, Q42/Q80 comparison JSON export, and direct P31 lookup without live Wikidata calls.
+- A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Commons media, language metadata, Q42/Q80 comparison JSON export, direct P31 lookup, empty/missing results, and Wikidata outage states without live Wikidata calls.
 
 ## Portfolio Readiness
 
@@ -105,7 +105,7 @@ Goal: make the graph the signature feature.
 - Implemented tab-order and reduced-motion coverage.
 - Implemented performance budgets for `/search?q=Q42` and graph rendering on `main`.
 - Implemented deterministic Wikidata fixtures and route-mocked browser coverage for graph/search/evidence/media/language regression on `main`.
-- Next: continue broader fixture coverage for additional entities and API outage states.
+- Next: continue broader fixture coverage for additional seeded entities and Commons/language outage states.
 - Keep graph URL state stable for filters, selected focus, and future export views.
 
 ### 3. Entity Comparison
@@ -159,7 +159,7 @@ Keep these green before shipping code changes:
 
 Next quality improvements:
 
-- Expand route-mocked fixtures to additional seeded entities plus API outage states.
+- Expand route-mocked fixtures to additional seeded entities plus Commons/language outage states.
 - Add visual QA for dark mode.
 - Add accessibility checks for keyboard graph navigation and tab order.
 - Keep `/search?q=Q42` performance budgets and shared comparison URL restore green as graph/comparison features expand.
