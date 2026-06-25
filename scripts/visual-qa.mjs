@@ -69,6 +69,39 @@ const checks = [
     fixtureRoutes: true,
     viewport: { width: 1440, height: 1000 },
   },
+  {
+    name: "10-home-desktop-dark.png",
+    path: "/",
+    waitText: "Wikidata Explorer",
+    colorScheme: "dark",
+    viewport: { width: 1440, height: 1000 },
+  },
+  {
+    name: "11-search-q42-graph-desktop-dark.png",
+    path: "/search?q=Q42",
+    waitText: "Douglas Adams",
+    colorScheme: "dark",
+    fixtureRoutes: true,
+    viewport: { width: 1440, height: 1000 },
+  },
+  {
+    name: "12-search-q42-compare-desktop-dark.png",
+    path: "/search?q=Q42&tab=compare&compare=Q80",
+    waitText: "Markdown comparison export",
+    colorScheme: "dark",
+    focusTestId: "comparison-panel",
+    screenshotTestId: "comparison-panel",
+    fixtureRoutes: true,
+    viewport: { width: 1440, height: 1000 },
+  },
+  {
+    name: "13-search-q42-mobile-dark.png",
+    path: "/search?q=Q42",
+    waitText: "Douglas Adams",
+    colorScheme: "dark",
+    fixtureRoutes: true,
+    viewport: { width: 390, height: 844 },
+  },
 ];
 
 async function findHorizontalOverflow(page) {
@@ -126,6 +159,9 @@ try {
     });
     page.setDefaultTimeout(20000);
     page.setDefaultNavigationTimeout(20000);
+    if (check.colorScheme) {
+      await page.emulateMedia({ colorScheme: check.colorScheme });
+    }
 
     const browserErrors = trackBrowserErrors(page);
 

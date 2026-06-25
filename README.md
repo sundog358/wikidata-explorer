@@ -162,7 +162,7 @@ npm run visual:qa
 
 ## 🖼️ Portfolio Screenshots
 
-These tracked screenshots are refreshed from the visual QA flow. Run `npm run visual:qa`, then `npm run screenshots:update` to copy the canonical portfolio views from `.tmp/visual-qa` into `docs/screenshots`. Visual QA fails on horizontal overflow or browser console/page errors.
+These tracked screenshots are refreshed from the visual QA flow. Run `npm run visual:qa`, then `npm run screenshots:update` to copy the canonical portfolio views from `.tmp/visual-qa` into `docs/screenshots`. Visual QA also captures dark-mode home, Q42 graph, Q42 comparison, and mobile search surfaces. It fails on horizontal overflow or browser console/page errors.
 
 | View | Screenshot | What it proves |
 | --- | --- | --- |
@@ -240,14 +240,14 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
 - `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including labelled controls/options, timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison with keyboard-reachable controls, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
-- `scripts/visual-qa.mjs`: portfolio screenshot, route-surface, layout overflow, and browser console/page-error checks
+- `scripts/visual-qa.mjs`: portfolio screenshot, light/dark route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA
 - `ROADMAP.md`: forward-looking product and engineering plan
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
 CI also runs install, verify, production trace checks, smoke, public metadata checks, public AI-off API contracts, mock AG2 enabled-mode API contracts, e2e, performance budgets, visual QA, and screenshot artifact upload on GitHub Actions.
 
