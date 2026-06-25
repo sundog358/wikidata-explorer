@@ -11,7 +11,7 @@ import {
 import { sourceHintsFromStatement } from "../lib/review-source-hints.mjs";
 import { fixtureDetailedEntity, fixtureEntityIds, fixtureSearchWikidata } from "./fixtures/wikidata-fixtures.mjs";
 
-assert.deepEqual(fixtureEntityIds().sort(), ["P31", "Q25169", "Q42", "Q46248", "Q80"]);
+assert.deepEqual(fixtureEntityIds().sort(), ["P31", "Q25169", "Q42", "Q46248", "Q80", "Q95"]);
 
 const douglasResults = fixtureSearchWikidata("Douglas Adams");
 assert.equal(douglasResults.length, 1);
@@ -33,15 +33,24 @@ assert.equal(authorResults.length, 1);
 assert.equal(authorResults[0].id, "Q46248");
 assert.match(authorResults[0].descriptions.en, /fantasy author/);
 
+const organizationResults = fixtureSearchWikidata("technology company");
+assert.equal(organizationResults.length, 1);
+assert.equal(organizationResults[0].id, "Q95");
+assert.match(organizationResults[0].descriptions.en, /technology company/);
+
 const source = fixtureDetailedEntity("Q42");
 const target = fixtureDetailedEntity("Q80");
 const relatedWork = fixtureDetailedEntity("Q25169");
 const authorTarget = fixtureDetailedEntity("Q46248");
+const organizationTarget = fixtureDetailedEntity("Q95");
 assert.equal(source.labels.en, "Douglas Adams");
 assert.equal(source.aliases.en.includes("DNA"), true);
 assert.equal(source.sitelinks.enwiki.url, "https://en.wikipedia.org/wiki/Douglas_Adams");
 assert.equal(relatedWork.statements.P50[0].value.content.id, "Q42");
 assert.equal(authorTarget.statements.P800[0].value.content.id, "Q1052459");
+assert.equal(organizationTarget.type, "item");
+assert.equal(organizationTarget.statements.P159[0].value.content.id, "Q486860");
+assert.equal(organizationTarget.statements.P856[0].value.content.value, "https://www.google.com/");
 assert.throws(() => fixtureDetailedEntity("Q999999999"), /No fixture Wikidata entity/);
 
 const q42GraphNodes = collectRelationshipGraphNodes(source);
@@ -62,14 +71,29 @@ const q25169GraphNodes = collectRelationshipGraphNodes(relatedWork);
 assert.ok(q25169GraphNodes.some((node) => node.id === "Q42" && node.propertyId === "P50"));
 assert.equal(filterRelationshipGraphNodes(q25169GraphNodes, { propertyId: "P50" })[0].label, "Douglas Adams");
 
+const q95GraphNodes = collectRelationshipGraphNodes(organizationTarget);
+assert.ok(q95GraphNodes.some((node) => node.id === "Q43229" && node.propertyId === "P31"));
+assert.ok(q95GraphNodes.some((node) => node.id === "Q486860" && node.propertyId === "P159"));
+assert.ok(q95GraphNodes.some((node) => node.id === "Q30" && node.depth === 2));
+assert.deepEqual(graphPropertyOptions(q95GraphNodes).map((property) => property.id).sort(), ["P112", "P159", "P31"]);
+assert.equal(filterRelationshipGraphNodes(q95GraphNodes, { propertyId: "P159" })[0].label, "Mountain View");
+
 const qualitySummary = summarizeEntityDataQuality(source);
 assert.ok(qualitySummary.referencedStatementCount >= 2);
 assert.ok(qualitySummary.strengths.some((strength) => strength.includes("references")));
 assert.ok(qualitySummary.sourceLinkCount >= 2);
 
+const organizationQualitySummary = summarizeEntityDataQuality(organizationTarget);
+assert.equal(organizationQualitySummary.statementCount, 6);
+assert.ok(organizationQualitySummary.sourceLinkCount >= 2);
+
 const sourceHints = sourceHintsFromStatement(source.statements.P800[0]);
 assert.equal(sourceHints[0].kind, "source-url");
 assert.equal(sourceHints[0].url, "https://www.wikidata.org/wiki/Q25169");
+
+const organizationSourceHints = sourceHintsFromStatement(organizationTarget.statements.P112[0]);
+assert.equal(organizationSourceHints[0].kind, "source-url");
+assert.equal(organizationSourceHints[0].url, "https://about.google/our-story/");
 
 const comparison = buildEntityComparison(source, target, { createdAt: "2026-06-25T12:00:00.000Z" });
 assert.deepEqual(comparison.sharedProperties.map((property) => property.id), ["P31", "P106"]);

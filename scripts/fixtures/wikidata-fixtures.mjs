@@ -329,6 +329,138 @@ const fixtureEntities = {
       ],
     },
   },
+  Q95: {
+    id: "Q95",
+    type: "item",
+    labels: { en: "Google", fr: "Google" },
+    descriptions: { en: "American multinational technology company" },
+    aliases: { en: ["Google LLC", "Google Inc."] },
+    sitelinks: {
+      enwiki: {
+        title: "Google",
+        badges: [],
+        url: "https://en.wikipedia.org/wiki/Google",
+      },
+    },
+    statements: {
+      P31: [
+        {
+          id: "Q95$fixture-P31-Q43229",
+          rank: "normal",
+          propertyId: "P31",
+          explorable: true,
+          property: { id: "P31", label: "instance of", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q43229", label: "organization" } },
+          qualifiers: [],
+          references: [
+            {
+              hash: "fixture-reference-q95-p31",
+              parts: [
+                {
+                  property: { id: "P248", label: "stated in", data_type: "wikibase-item" },
+                  value: { type: "wikibase-entityid", content: { id: "Q2013", label: "Google Knowledge Graph" } },
+                },
+                {
+                  property: { id: "P813", label: "retrieved", data_type: "time" },
+                  value: { type: "time", content: { time: "+2026-06-25T00:00:00Z", precision: 11 } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P112: [
+        {
+          id: "Q95$fixture-P112-Q4934",
+          rank: "normal",
+          propertyId: "P112",
+          explorable: true,
+          property: { id: "P112", label: "founded by", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q4934", label: "Larry Page" } },
+          qualifiers: [
+            {
+              property: { id: "P580", label: "start time", data_type: "time" },
+              value: { type: "time", content: { time: "+1998-09-04T00:00:00Z", precision: 11 } },
+            },
+          ],
+          references: [
+            {
+              hash: "fixture-reference-q95-p112",
+              parts: [
+                {
+                  property: { id: "P854", label: "reference URL", data_type: "url", formatter_url: null },
+                  value: { type: "url", content: { value: "https://about.google/our-story/" } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P159: [
+        {
+          id: "Q95$fixture-P159-Q486860",
+          rank: "normal",
+          propertyId: "P159",
+          explorable: true,
+          property: { id: "P159", label: "headquarters location", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q486860", label: "Mountain View" } },
+          qualifiers: [
+            {
+              property: { id: "P17", label: "country", data_type: "wikibase-item" },
+              value: { type: "wikibase-entityid", content: { id: "Q30", label: "United States of America" } },
+            },
+          ],
+          references: [
+            {
+              hash: "fixture-reference-q95-p159",
+              parts: [
+                {
+                  property: { id: "P854", label: "reference URL", data_type: "url", formatter_url: null },
+                  value: { type: "url", content: { value: "https://about.google/locations/" } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P571: [
+        {
+          id: "Q95$fixture-P571",
+          rank: "normal",
+          propertyId: "P571",
+          explorable: true,
+          property: { id: "P571", label: "inception", data_type: "time" },
+          value: { type: "time", content: { time: "+1998-09-04T00:00:00Z", precision: 11 } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+      P856: [
+        {
+          id: "Q95$fixture-P856",
+          rank: "normal",
+          propertyId: "P856",
+          explorable: true,
+          property: { id: "P856", label: "official website", data_type: "url" },
+          value: { type: "url", content: { value: "https://www.google.com/" } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+      P18: [
+        {
+          id: "Q95$fixture-P18",
+          rank: "normal",
+          propertyId: "P18",
+          explorable: true,
+          property: { id: "P18", label: "image", data_type: "commonsMedia" },
+          value: { type: "commonsMedia", content: { value: "Google 2015 logo.svg" } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+    },
+  },
   P31: {
     id: "P31",
     type: "property",
@@ -363,6 +495,9 @@ const fixtureSearchIndex = [
   { term: "fantasy author", ids: ["Q46248"] },
   { term: "hitchhiker", ids: ["Q25169"] },
   { term: "galaxy", ids: ["Q25169"] },
+  { term: "google", ids: ["Q95"] },
+  { term: "technology company", ids: ["Q95"] },
+  { term: "organization", ids: ["Q95"] },
   { term: "instance", ids: ["P31"] },
 ];
 

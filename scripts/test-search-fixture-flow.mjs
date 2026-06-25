@@ -55,6 +55,14 @@ const fixtureCommonsMedia = {
     width: 640,
     height: 420,
   },
+  "File:Google 2015 logo.svg": {
+    mediatype: "BITMAP",
+    mime: "image/svg+xml",
+    url: "https://upload.wikimedia.org/wikipedia/commons/fixture/Google_2015_logo.svg",
+    size: 9518,
+    width: 512,
+    height: 172,
+  },
 };
 
 function rawTerm(language, value) {
@@ -414,6 +422,22 @@ async function runFixtureFlow() {
       throw new Error(`Expected mocked Q25169 graph to expose Douglas Adams author context, got ${q42AuthorNodeName}`);
     }
 
+    await page.goto(new URL("/search?q=Q95&tab=graph&gdepth=property&gprop=P159", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.waitForFunction(() => document.querySelector('[data-testid="selected-entity-id"]')?.textContent?.trim() === "Q95");
+    await page.getByTestId("graph-node-Q486860").waitFor({ state: "visible" });
+    const q95HeadquartersNodeName = await page.getByTestId("graph-node-Q486860").getAttribute("aria-label");
+    if (!q95HeadquartersNodeName?.includes("Mountain View (Q486860)") || !q95HeadquartersNodeName.includes("headquarters location (P159)")) {
+      throw new Error(`Expected mocked Q95 graph to expose organization headquarters context, got ${q95HeadquartersNodeName}`);
+    }
+    await page.getByRole("tab", { name: /Media/ }).click();
+    await page.getByText("File:Google 2015 logo.svg").waitFor({ state: "visible" });
+    const organizationMediaPanel = await page.getByRole("tabpanel").filter({ hasText: "image/svg+xml" }).first().innerText();
+    if (!organizationMediaPanel.includes("image/svg+xml")) {
+      throw new Error(`Expected mocked organization Commons media to render logo metadata, got ${organizationMediaPanel}`);
+    }
+
     await page.goto(new URL("/search?q=NoSuchFixtureTerm", baseUrl).toString(), {
       waitUntil: "commit",
     });
@@ -437,6 +461,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed shareable export views restore comparison and graph handoffs");
     console.log("PASS fixture-backed direct PID lookup selects P31");
     console.log("PASS fixture-backed related work lookup selects Q25169 and graph author context");
+    console.log("PASS fixture-backed organization lookup selects Q95 and graph headquarters context");
     console.log("PASS fixture-backed empty search shows no-result error");
     console.log("PASS fixture-backed missing entity shows not-found error");
     console.log("PASS fixture-backed Wikidata outage states show search and entity errors");
