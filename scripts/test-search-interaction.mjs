@@ -41,6 +41,20 @@ try {
     throw new Error(`Expected review queue status to update to Ready to draft, got ${reviewPanel}`);
   }
 
+  await page.getByRole("tab", { name: /Statements/ }).click();
+  const statementBadges = await page.getByTestId("statement-evidence-badges").allInnerTexts();
+  const statementBadgeText = statementBadges.join(" ").toLowerCase();
+  if (!statementBadgeText.includes("referenced") || !statementBadgeText.includes("unreferenced")) {
+    throw new Error(`Expected Statements tab to show referenced and unreferenced badges, got ${statementBadgeText}`);
+  }
+  const firstStatementDetail = page.getByTestId("statement-detail-view").first();
+  await firstStatementDetail.locator("summary").click();
+  const statementsTabDetailText = await firstStatementDetail.innerText();
+  const statementsTabDetailLower = statementsTabDetailText.toLowerCase();
+  if (!statementsTabDetailLower.includes("statement id") || !statementsTabDetailLower.includes("evidence status") || !statementsTabDetailLower.includes("source hints") || !statementsTabDetailLower.includes("stated in")) {
+    throw new Error(`Expected statement detail view to include ID, evidence status, and source hints, got ${statementsTabDetailText}`);
+  }
+
   await page.getByRole("tab", { name: /Compare/ }).click();
   await page.getByTestId("comparison-panel").waitFor({ state: "visible" });
   await page.getByTestId("comparison-panel").getByRole("button", { name: "Compare" }).click();
@@ -229,6 +243,7 @@ try {
 
   console.log("PASS search data quality summary renders for Q42");
   console.log("PASS search review queue status persists in the workbench");
+  console.log("PASS statements tab exposes evidence badges and source hints");
   console.log("PASS AI-off comparison workflow summarizes Q42 against Q80");
   console.log("PASS comparison target URL state restores shared comparisons");
   console.log("PASS comparison Markdown export includes shared-property sections");

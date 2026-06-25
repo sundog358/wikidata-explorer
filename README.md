@@ -23,7 +23,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
 - 🤖 Enable AG2 specialist agents for research, graph analysis, next-entity suggestions, citation verification, comparison, and Markdown reports
 - 🐳 Run agents through local conda or a token-protected containerized FastAPI AG2 service
-- 🧾 Inspect statement ranks, qualifiers, and references in expandable evidence rows
+- 🧾 Inspect statement ranks, referenced/unreferenced badges, statement IDs, qualifiers, references, and source hints in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
 - 🧑‍⚖️ Review entity data-quality findings with persisted browser-local task status and source-link hints
 - 📤 Export evidence-grounded graph paths, review findings, task status, source hints, and safe QuickStatements draft comments
@@ -190,7 +190,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, graph focus, data-quality summary, and evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, graph focus, data-quality summary, evidence-aware statement details, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
@@ -232,7 +232,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA

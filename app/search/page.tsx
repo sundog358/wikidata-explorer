@@ -212,8 +212,28 @@ function formatStatementValue(statement: WikidataStatement, onEntityClick: (id: 
   return formatValue(statement.value, onEntityClick);
 }
 
-function statementHasEvidence(statement: WikidataStatement) {
-  return statement.qualifiers.length > 0 || statement.references.length > 0;
+function SourceHintList({ hints }: { hints: ReviewSourceHint[] }) {
+  if (!hints.length) return null;
+
+  return (
+    <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-900" data-testid="statement-source-hints">
+      <div className="font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Source hints</div>
+      <ul className="mt-2 space-y-1">
+        {hints.map((hint, index) => (
+          <li key={`${hint.propertyId}-${hint.value}-${index}`} className="break-words text-slate-600 dark:text-slate-300">
+            <span className="font-medium text-slate-800 dark:text-slate-100">{sourceHintKindLabel(hint.kind)}</span>
+            <span className="text-slate-500 dark:text-slate-400"> - {hint.propertyLabel || hint.propertyId}</span>: {hint.url ? (
+              <a className="text-sky-700 underline-offset-2 hover:underline dark:text-sky-300" href={hint.url} target="_blank" rel="noopener noreferrer">
+                {hint.value}
+              </a>
+            ) : (
+              <span>{hint.value}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function getSeverityClass(severity: ReviewQueueItem["severity"]) {
@@ -1602,25 +1622,39 @@ export default function SearchPage() {
                           <span className="text-xs text-muted-foreground">{group.propertyId}</span>
                         </button>
                         <ul className="space-y-2 text-sm">
-                          {group.statements.slice(0, 8).map((statement, index) => (
-                            <li key={`${statement.id}-${index}`} className="rounded-md border border-slate-100 p-3 text-slate-700 dark:border-slate-800 dark:text-slate-200">
-                              <div className="flex gap-2">
-                                <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>{formatStatementValue(statement, loadEntity)}</div>
-                                    <div className="flex shrink-0 flex-wrap gap-1">
-                                      <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${rankBadgeClass(statement.rank)}`}>{statement.rank}</span>
-                                      {!!statement.qualifiers.length && <Badge variant="outline">{statement.qualifiers.length} qualifier{statement.qualifiers.length === 1 ? "" : "s"}</Badge>}
-                                      {!!statement.references.length && <Badge variant="outline">{statement.references.length} reference{statement.references.length === 1 ? "" : "s"}</Badge>}
+                          {group.statements.slice(0, 8).map((statement, index) => {
+                            const statementSourceHints = sourceHintsFromStatement(statement);
+                            return (
+                              <li key={`${statement.id}-${index}`} className="rounded-md border border-slate-100 p-3 text-slate-700 dark:border-slate-800 dark:text-slate-200">
+                                <div className="flex gap-2">
+                                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                      <div>{formatStatementValue(statement, loadEntity)}</div>
+                                      <div className="flex shrink-0 flex-wrap gap-1" data-testid="statement-evidence-badges">
+                                        <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${rankBadgeClass(statement.rank)}`}>{statement.rank}</span>
+                                        {statement.references.length ? <Badge variant="secondary">referenced</Badge> : <Badge variant="outline">unreferenced</Badge>}
+                                        {!!statement.qualifiers.length && <Badge variant="outline">{statement.qualifiers.length} qualifier{statement.qualifiers.length === 1 ? "" : "s"}</Badge>}
+                                        {!!statement.references.length && <Badge variant="outline">{statement.references.length} reference{statement.references.length === 1 ? "" : "s"}</Badge>}
+                                        <Badge variant="outline">{statement.value.type}</Badge>
+                                      </div>
                                     </div>
-                                  </div>
 
-                                  {statementHasEvidence(statement) && (
-                                    <details className="mt-2 rounded-md bg-slate-50 p-2 dark:bg-slate-900">
+                                    <details className="mt-2 rounded-md bg-slate-50 p-2 dark:bg-slate-900" data-testid="statement-detail-view">
                                       <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                        Evidence details
+                                        Statement details
                                       </summary>
+                                      <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+                                        <div className="rounded border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                                          <div className="font-semibold text-slate-500 dark:text-slate-400">Statement ID</div>
+                                          <div className="mt-1 break-all text-slate-700 dark:text-slate-200">{statement.id || "Unavailable"}</div>
+                                        </div>
+                                        <div className="rounded border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950">
+                                          <div className="font-semibold text-slate-500 dark:text-slate-400">Evidence status</div>
+                                          <div className="mt-1 text-slate-700 dark:text-slate-200">{statement.references.length ? `${statement.references.length} reference${statement.references.length === 1 ? "" : "s"}` : "No visible references"}</div>
+                                        </div>
+                                      </div>
+
                                       {!!statement.qualifiers.length && (
                                         <div className="mt-3 space-y-2">
                                           <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Qualifiers</div>
@@ -1651,12 +1685,14 @@ export default function SearchPage() {
                                           ))}
                                         </div>
                                       )}
+
+                                      <SourceHintList hints={statementSourceHints} />
                                     </details>
-                                  )}
+                                  </div>
                                 </div>
-                              </div>
-                            </li>
-                          ))}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     ))}
