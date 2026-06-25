@@ -14,6 +14,7 @@ import { AI_DISABLED_MESSAGE } from "../lib/ai-feature-flags.mjs";
 assert.equal(classifyApiFailure({ status: 404, message: AI_DISABLED_MESSAGE }), API_FAILURE_CATEGORIES.AG2_DISABLED);
 assert.equal(classifyApiFailure({ status: 503, message: "OpenAI API key is not configured for the AG2 agent." }), API_FAILURE_CATEGORIES.OPENAI_KEY_MISSING);
 assert.equal(classifyApiFailure({ status: 429, message: "The OpenAI API is rate limited or out of quota." }), API_FAILURE_CATEGORIES.OPENAI_QUOTA_OR_RATE_LIMIT);
+assert.equal(classifyApiFailure({ status: 502, message: "The AG2 response did not include required Wikidata grounding references." }), API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
 assert.equal(classifyApiFailure({ status: 429, message: "AI agent request rate limited." }), API_FAILURE_CATEGORIES.REQUEST_RATE_LIMITED);
 assert.equal(classifyApiFailure({ status: 502, message: "Could not reach AG2 service: connection refused" }), API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE);
 assert.equal(classifyApiFailure({ status: 503, message: "Fixture Wikidata outage" }), API_FAILURE_CATEGORIES.WIKIDATA_UNAVAILABLE);
@@ -72,6 +73,7 @@ const alertResults = evaluateApiFailureAlerts([
   { event: "api_failure", category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE, createdAt: "2026-06-25T21:28:00.000Z" },
   { event: "api_failure", category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE, createdAt: "2026-06-25T21:27:00.000Z" },
   { event: "api_failure", category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE, createdAt: "2026-06-25T21:10:00.000Z" },
+  { event: "api_failure", category: API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID, createdAt: "2026-06-25T21:29:45.000Z" },
   { event: "api_failure", category: API_FAILURE_CATEGORIES.OPENAI_KEY_MISSING, createdAt: "2026-06-25T21:29:30.000Z" },
   { event: "other_event", category: API_FAILURE_CATEGORIES.UNKNOWN, createdAt: "2026-06-25T21:29:30.000Z" },
 ], { now });
@@ -81,6 +83,9 @@ assert.equal(ag2Alert.firing, true);
 const openAiKeyAlert = alertResults.find((alert) => alert.id === "openai-key-missing");
 assert.equal(openAiKeyAlert.count, 1);
 assert.equal(openAiKeyAlert.firing, true);
+const groundingAlert = alertResults.find((alert) => alert.id === "ag2-grounding-invalid");
+assert.equal(groundingAlert.count, 1);
+assert.equal(groundingAlert.firing, true);
 const unknownAlert = alertResults.find((alert) => alert.id === "unknown-api-failures");
 assert.equal(unknownAlert.count, 0);
 assert.equal(unknownAlert.firing, false);

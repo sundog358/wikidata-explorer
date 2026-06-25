@@ -93,21 +93,27 @@ function ag2ResponseFor(payload) {
   if (payload?.mode === "chat") {
     return {
       ok: true,
-      message: "Mock AG2 chat response grounded in Q42, P31, and Q5.",
+      message: "Mock AG2 chat response grounded in Q42, P31, and Q5.\n\nGrounding references\n- Wikidata IDs: Q42, P31, Q5\n- statement ID: Q42$P31-Q5\n- source URL: not supplied",
     };
   }
 
   if (payload?.mode === "entity_summary") {
     return {
       ok: true,
-      summary: "Mock AG2 entity summary for Douglas Adams with P31 evidence.",
+      summary: "Mock AG2 entity summary for Douglas Adams (Q42) with P31 evidence.\n\nGrounding references\n- Wikidata IDs: Q42, P31\n- statement ID: not supplied\n- source URL: not supplied",
     };
   }
 
   if (payload?.mode === "workflow") {
+    if (payload.action === "report") {
+      return {
+        ok: true,
+        result: "Ungrounded mock AG2 report without the required section.",
+      };
+    }
     return {
       ok: true,
-      result: `Mock AG2 ${payload.action} workflow for ${payload.entity?.id || payload.entityId}.`,
+      result: `Mock AG2 ${payload.action} workflow for ${payload.entity?.id || payload.entityId} through P31 and Q5.\n\nGrounding references\n- Wikidata IDs: Q42, P31, Q5\n- statement ID: Q42$P31-Q5\n- source URL: not supplied`,
     };
   }
 
@@ -188,12 +194,16 @@ try {
   });
   assert.equal(chat.response.status, 200);
   assert.match(chat.body.message || "", /Q42/);
+  assert.equal(chat.body.grounding?.ok, true);
+  assert.ok(chat.body.grounding?.matchedIds?.includes("Q42"));
 
   const summary = await postJson(nextBaseUrl, "/api/entity-summary", {
     entity: fixtureEntity,
   });
   assert.equal(summary.response.status, 200);
   assert.match(summary.body.summary || "", /Douglas Adams/);
+  assert.equal(summary.body.grounding?.ok, true);
+  assert.ok(summary.body.grounding?.matchedIds?.includes("Q42"));
 
   const workflow = await postJson(nextBaseUrl, "/api/ag2-workflow", {
     action: "graph",
@@ -204,10 +214,20 @@ try {
   assert.equal(workflow.response.status, 200);
   assert.match(workflow.body.result || "", /graph workflow/);
   assert.equal(workflow.body.safety?.allowed, true);
+  assert.equal(workflow.body.grounding?.ok, true);
+  assert.ok(workflow.body.grounding?.matchedIds?.includes("Q42"));
+
+  const ungroundedWorkflow = await postJson(nextBaseUrl, "/api/ag2-workflow", {
+    action: "report",
+    entityId: "Q42",
+    entity: fixtureEntity,
+  });
+  assert.equal(ungroundedWorkflow.response.status, 502);
+  assert.match(ungroundedWorkflow.body.error || "", /grounding references/i);
 
   assert.deepEqual(
     ag2Requests.map((request) => request.body.payload?.mode),
-    ["chat", "entity_summary", "workflow"],
+    ["chat", "entity_summary", "workflow", "workflow"],
   );
   assert.equal(ag2Requests.every((request) => request.authorization === `Bearer ${strongToken}`), true);
   assert.equal(ag2Requests[0].body.payload.messages[0].content, "Summarize Q42 with P31 evidence.");

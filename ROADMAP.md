@@ -26,7 +26,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, optional three-entity property matrices, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
 - `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, light/dark visual QA coverage, deterministic Q42/Q80/Q90/Q95/Q25169/Q46248/P31 Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, Wikidata API outage, Commons outage, and language metadata outage responses.
 - Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, portable workspace snapshots, and safe curation exports.
-- AG2 workflows support chat, selected workbench context handoff, citation-style grounding requirements, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
+- AG2 workflows support chat, selected workbench context handoff, citation-style grounding requirements, route-level grounding validation, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
 - Portfolio proof includes tracked screenshots, visual QA, metadata/social preview checks, favicon/site-icon coverage, production trace checks, route smoke tests, API contracts, e2e checks, GitHub Actions CI, and a standalone architecture/safety/testing/deployment case study.
 
@@ -54,6 +54,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Property-focused comparison exports now restore a selected property with `export=comparison-property&cprop=P...` and provide Markdown/JSON handoff text for reviewer workflows.
 - Portable workspace snapshots now export and restore review task statuses, dismissed review findings, and saved AG2 run history with tested artifact validation.
 - GitHub Actions CI now uses Node 24-compatible action lines for checkout, setup-node, Chrome setup, and artifact upload, with a regression test to keep the workflow current.
+- AI-enabled AG2 routes now reject ungrounded responses that lack `Grounding references` or supplied Wikidata IDs, and emit an `ag2-grounding-invalid` observability category.
 - API observability now includes a tested dashboard/alert contract with category panels, severity thresholds, time windows, and runbook text on top of sanitized failure events.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 - The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
@@ -83,7 +84,7 @@ Beyond 9.5:
 
 To reach 10:
 
-- Ship an optional hosted AG2 container demo with traceable, citation-style Wikidata ID references in responses.
+- Ship an optional hosted AG2 container demo now that AI-enabled routes enforce traceable, citation-style Wikidata ID references in responses.
 - Add account/project-backed persistence for workspace snapshots, curation tasks, and agent history beyond portable browser artifacts.
 - Connect the tested observability dashboard/alert contract to a hosted production monitor.
 
@@ -159,6 +160,7 @@ Goal: make AI assistance visibly grounded in selected Wikidata context.
 - Shipped selected graph nodes, selected statements, and selected path exports into the full AG2 chat surface.
 - Shipped visible workbench-to-chat handoff with bounded entity, statement, graph-focus, and selected-path export context.
 - Shipped citation-style grounding requirements for AG2 chat, summaries, graph analysis, suggestions, verification, comparison, and reports.
+- Shipped route-level AG2 response grounding validation for `Grounding references` and supplied Wikidata IDs, including an observability alert category for invalid grounding.
 - Shipped AI-enabled API route success contracts through a token-authenticated mock AG2 remote service for chat, entity summaries, and graph workflow responses.
 - Shipped portable workspace snapshots that can carry saved AG2 run history between browser sessions.
 - Persist agent result history beyond portable browser artifacts once a database layer is introduced.
@@ -209,6 +211,7 @@ Observability:
 - Shipped lightweight server logging for AI route failures without leaking prompts, keys, or sensitive context.
 - Shipped a client-side error boundary around the explorer workflow with reset/reload recovery and sanitized client failure telemetry.
 - Track API error categories: Wikidata unavailable, Commons unavailable, AG2 disabled, request validation, safety policy, request rate limit, OpenAI key missing, OpenAI quota/rate limit, and AG2 service unavailable.
+- Track AG2 grounding invalid responses as a critical alert category before any public AI-enabled demo traffic.
 - Shipped a tested dashboard/alert rule contract for category panels, severity thresholds, alert windows, and runbook text; next step is wiring it to the hosted production monitor.
 
 ## Maintenance
@@ -253,7 +256,8 @@ Status: in progress
 Status: partially shipped
 
 - Shipped: feature-flagged AG2 routes, local/container bridge, safety policy, remote service contract, disabled public mode, and mock-service success contracts for enabled API routes.
-- Next: hosted optional AG2 demo with live citation-style response validation.
+- Shipped: route-level citation-style response validation for enabled AG2 route outputs.
+- Next: hosted optional AG2 demo using the validated remote-service path.
 
 ### Milestone 5: Research Workspace
 

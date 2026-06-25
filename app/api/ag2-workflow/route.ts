@@ -2,6 +2,7 @@ import { z } from "zod";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
 import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
+import { AG2_GROUNDING_ERROR_MESSAGE, validateAg2Grounding } from "@/lib/ag2-grounding-validation.mjs";
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 import { API_FAILURE_CATEGORIES, logApiFailure } from "@/lib/api-observability.mjs";
 
@@ -183,7 +184,14 @@ export async function POST(req: Request) {
       compareEntityId,
       graphFocus,
     });
-    return Response.json({ result: result.result, safety });
+    const requiredIds = [entityId || entity?.id].filter((id): id is string => Boolean(id));
+    const grounding = validateAg2Grounding(result.result, { action, entity, entityId, compareEntityId, graphFocus }, {
+      requiredIds,
+    });
+    if (!grounding.ok) {
+      throw new Ag2BridgeError(AG2_GROUNDING_ERROR_MESSAGE, 502);
+    }
+    return Response.json({ result: result.result, safety, grounding });
   } catch (error) {
     logApiFailure({
       route: ROUTE_NAME,

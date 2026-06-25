@@ -2,6 +2,7 @@ import { z } from "zod";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
 import { aiRateLimitKey, AI_RATE_LIMIT_MESSAGE, checkAiRateLimit } from "@/lib/ai-rate-limit.mjs";
 import { Ag2BridgeError } from "@/lib/ag2-errors.mjs";
+import { AG2_GROUNDING_ERROR_MESSAGE, validateAg2Grounding } from "@/lib/ag2-grounding-validation.mjs";
 import { API_FAILURE_CATEGORIES, logApiFailure } from "@/lib/api-observability.mjs";
 
 export const runtime = "nodejs";
@@ -107,7 +108,13 @@ export async function POST(req: Request) {
   try {
     const { runAg2Agent } = await import("@/lib/ag2");
     const result = await runAg2Agent({ mode: "entity_summary", entity: parsed.data.entity });
-    return Response.json({ summary: result.summary });
+    const grounding = validateAg2Grounding(result.summary, parsed.data.entity, {
+      requiredIds: [parsed.data.entity.id],
+    });
+    if (!grounding.ok) {
+      throw new Ag2BridgeError(AG2_GROUNDING_ERROR_MESSAGE, 502);
+    }
+    return Response.json({ summary: result.summary, grounding });
   } catch (error) {
     logApiFailure({
       route: ROUTE_NAME,
