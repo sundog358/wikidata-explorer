@@ -23,8 +23,8 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Optional AG2 runtime supports local Python/conda or a token-protected FastAPI container through `AG2_SERVICE_URL`.
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, and selected-path Markdown/JSON exports.
-- Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, and Markdown comparison exports.
-- `main` includes the next production bundle: performance budgets for `/search?q=Q42`, graph rendering, shareable comparison target URLs, comparison-tab visual QA coverage, structured JSON comparison exports, deterministic Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, and Commons media responses.
+- Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, shareable comparison URLs, and Markdown/JSON comparison exports.
+- `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, and Commons media responses.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -45,14 +45,15 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Graph node accessibility labels and keyboard-focus coverage shipped in the search interaction test.
 - Graph filter tab-order checks and reduced-motion coverage shipped in the search interaction test.
 
+## Recently Confirmed In Production
+
+- `https://www.wikidataexplorer.com/search?q=Q42&tab=compare&compare=Q80` restores the public AI-off Q42/Q80 comparison workflow.
+- Production comparison exports now include structured JSON beside Markdown notes.
+
 ## Ready For Next Production Deploy
 
-Status: merged to `main`; pending confirmed production rollout on `www.wikidataexplorer.com`.
-
 - Performance budgets are on `main` for Q42 route readiness, graph readiness, graph node count, and DOM size.
-- Comparison target URL state is on `main`, so `/search?q=Q42&tab=compare&compare=Q80` restores the public AI-off comparison workflow after rollout.
 - Comparison-tab visual QA is on `main` and can refresh the tracked portfolio screenshot.
-- Structured comparison JSON exports are on `main` beside Markdown comparison notes.
 - Deterministic Q42/Q80/P31 Wikidata fixtures are on `main` for search, entity, graph, evidence, and comparison regression coverage.
 - A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Commons media, language metadata, Q42/Q80 comparison JSON export, and direct P31 lookup without live Wikidata calls.
 
@@ -89,7 +90,7 @@ Goal: make the first five minutes of the demo obvious and impressive.
 
 ### 2. Graph Exploration Depth
 
-Status: depth, preview, history, detail-drawer, pinned-comparison, grouped-by-property layout, timeline evidence layout, graph node accessibility, tab-order, and reduced-motion coverage shipped in production; performance budgets and deterministic fixture coverage merged to `main` for the next production rollout.
+Status: depth, preview, history, detail-drawer, pinned-comparison, grouped-by-property layout, timeline evidence layout, graph node accessibility, tab-order, and reduced-motion coverage shipped in production; performance budgets and deterministic fixture coverage are on `main`.
 
 Goal: make the graph the signature feature.
 
@@ -104,21 +105,21 @@ Goal: make the graph the signature feature.
 - Implemented tab-order and reduced-motion coverage.
 - Implemented performance budgets for `/search?q=Q42` and graph rendering on `main`.
 - Implemented deterministic Wikidata fixtures and route-mocked browser coverage for graph/search/evidence/media/language regression on `main`.
-- Next: confirm production rollout for performance budgets, then continue broader fixture coverage for additional entities.
+- Next: continue broader fixture coverage for additional entities.
 - Keep graph URL state stable for filters, selected focus, and future export views.
 
 ### 3. Entity Comparison
 
-Status: shipped in production as a public AI-off two-entity comparison slice; shareable comparison target URLs, comparison visual QA, and structured JSON exports are merged to `main` for the next production rollout.
+Status: shipped in production as a public AI-off two-entity comparison slice with shareable comparison target URLs and Markdown/JSON exports; comparison visual QA is on `main`.
 
 Goal: support research workflows beyond single-entity browsing.
 
 - Shipped two-entity comparison from the workbench in public AI-off mode.
 - Shipped shared properties, source-only properties, target-only properties, overlapping related entities, and Markdown comparison exports.
 - Covered comparison with deterministic utility tests and browser e2e coverage.
-- Implemented shareable comparison target URL state on `main` for links such as `/search?q=Q42&tab=compare&compare=Q80`.
+- Shipped shareable comparison target URL state for links such as `/search?q=Q42&tab=compare&compare=Q80`.
 - Implemented visual QA coverage and a tracked portfolio screenshot for the comparison tab on `main`.
-- Implemented structured JSON comparison exports on `main` for tool handoff and repeatable research notes.
+- Shipped structured JSON comparison exports for tool handoff and repeatable research notes.
 - Next: compare three entities side by side.
 - Next: add seeded examples such as `Q42` vs another author and property-focused examples such as `P31`.
 - Next: add shareable export views.
@@ -210,8 +211,8 @@ Status: shipped
 Status: in progress
 
 - Shipped: graph filters, depth controls, grouped-by-property layout, timeline evidence layout, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
-- Merged to `main`, pending production confirmation: performance budgets for `/search?q=Q42` and graph rendering.
-- Merged to `main`, pending production confirmation: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language regression.
+- On `main`: performance budgets for `/search?q=Q42` and graph rendering.
+- On `main`: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language regression.
 - Next: additional seeded entities and shareable export views.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
@@ -219,7 +220,8 @@ Status: in progress
 Status: in progress
 
 - Shipped: selected graph path Markdown/JSON exports, safe curation exports, public AI-off two-entity comparison UI, and Markdown comparison exports.
-- Merged to `main`, pending production confirmation: shareable comparison target URLs, comparison-tab visual QA, and structured JSON comparison exports for restored AI-off comparison links.
+- Shipped in production: shareable comparison target URLs and structured JSON comparison exports for restored AI-off comparison links.
+- On `main`: comparison-tab visual QA coverage.
 - Next: three-entity comparison and shareable export views.
 
 ### Milestone 4: Grounded AI Research Assistant
