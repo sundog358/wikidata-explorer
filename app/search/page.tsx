@@ -31,6 +31,7 @@ type AiSummaryState = {
 
 type AgentAction = "research" | "graph" | "suggest" | "verify" | "compare" | "report";
 type SearchWorkbenchTab = "graph" | "compare" | "statements" | "aliases" | "media" | "languages" | "links" | "agent-runs" | "review";
+type ShareableExportView = "graph-markdown" | "graph-json" | "comparison-markdown" | "comparison-json";
 
 type AgentSafetyState = {
   decisionLabel: string;
@@ -95,6 +96,10 @@ type ReviewQueueItemWithStatus = ReviewQueueItem & {
 type RunSearchOptions = {
   graphFocusId?: string | null;
 };
+
+function normalizeShareableExportView(value: unknown): ShareableExportView | null {
+  return value === "graph-markdown" || value === "graph-json" || value === "comparison-markdown" || value === "comparison-json" ? value : null;
+}
 
 const AGENT_RUNS_STORAGE_KEY = "wikidata-explorer.agentRuns.v1";
 const DISMISSED_REVIEW_STORAGE_KEY = "wikidata-explorer.dismissedReviewItems.v1";
@@ -356,7 +361,7 @@ function normalizeWorkbenchTab(tab: SearchWorkbenchTab): SearchWorkbenchTab {
   return tab;
 }
 
-function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null; comparisonTargetId?: string | null }) {
+function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null; comparisonTargetId?: string | null; exportView?: ShareableExportView | null }) {
   if (typeof window === "undefined") return;
   const params = new URLSearchParams(window.location.search);
   if (updates.q !== undefined) {
@@ -370,6 +375,7 @@ function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTa
     graphFilters: updates.graphFilters || currentState.graphFilters,
     graphFocusId: Object.prototype.hasOwnProperty.call(updates, "graphFocusId") ? updates.graphFocusId || null : currentState.graphFocusId,
     comparisonTargetId: Object.prototype.hasOwnProperty.call(updates, "comparisonTargetId") ? updates.comparisonTargetId || null : currentState.comparisonTargetId,
+    exportView: Object.prototype.hasOwnProperty.call(updates, "exportView") ? updates.exportView || null : currentState.exportView,
   });
   const query = nextParams.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
@@ -408,6 +414,7 @@ export default function SearchPage() {
   const [activeTab, setActiveTab] = useState<SearchWorkbenchTab>(() => normalizeWorkbenchTab(initialWorkbenchState.tab as SearchWorkbenchTab));
   const [graphFilters, setGraphFilters] = useState<RelationshipGraphFilters>(() => initialWorkbenchState.graphFilters as RelationshipGraphFilters);
   const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(() => initialWorkbenchState.graphFocusId);
+  const [shareableExportView, setShareableExportView] = useState<ShareableExportView | null>(() => normalizeShareableExportView(initialWorkbenchState.exportView));
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
   const [reviewTaskStatuses, setReviewTaskStatuses] = useState<Record<string, ReviewTaskStatus>>({});
@@ -566,6 +573,12 @@ export default function SearchPage() {
     }
   }
 
+  function updateShareableExportView(nextView: ShareableExportView | null, tab: SearchWorkbenchTab) {
+    setShareableExportView(nextView);
+    setActiveTab(tab);
+    replaceWorkbenchUrlState({ tab, exportView: nextView });
+  }
+
   const runSearch = useCallback(async (rawQuery: string, options: RunSearchOptions = {}) => {
     const query = rawQuery.trim();
     const graphFocusId = Object.prototype.hasOwnProperty.call(options, "graphFocusId") ? options.graphFocusId || null : null;
@@ -608,10 +621,11 @@ export default function SearchPage() {
     const initialState = getInitialWorkbenchState();
 
     const timeout = window.setTimeout(() => {
-      setActiveTab(normalizeWorkbenchTab(initialState.tab as SearchWorkbenchTab));
-      setGraphFilters(initialState.graphFilters as RelationshipGraphFilters);
-      setSelectedGraphNodeId(initialState.graphFocusId);
-      setCompareEntityId(initialState.comparisonTargetId || "Q80");
+        setActiveTab(normalizeWorkbenchTab(initialState.tab as SearchWorkbenchTab));
+        setGraphFilters(initialState.graphFilters as RelationshipGraphFilters);
+        setSelectedGraphNodeId(initialState.graphFocusId);
+        setShareableExportView(normalizeShareableExportView(initialState.exportView));
+        setCompareEntityId(initialState.comparisonTargetId || "Q80");
       queuedComparisonTargetRef.current = initialState.comparisonTargetId;
       if (initialQuery) {
         void runSearch(initialQuery, { graphFocusId: initialState.graphFocusId });
@@ -1259,24 +1273,47 @@ export default function SearchPage() {
                         <p className="mb-3 text-xs text-slate-600 dark:text-slate-300">
                           Export this edge as a draft research artifact for reports, handoff notes, or future graph-path sharing. Verify references and qualifiers before using it as evidence.
                         </p>
+                        {shareableExportView?.startsWith("graph-") && (
+                          <div className="mb-3 flex flex-col gap-2 rounded-md border border-sky-200 bg-sky-50 p-3 text-xs text-slate-700 dark:border-sky-900 dark:bg-sky-950 dark:text-slate-200" data-testid="shareable-export-view">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-semibold text-slate-950 dark:text-slate-50">Shareable graph export view</span>
+                              <Button type="button" variant="outline" size="sm" onClick={() => updateShareableExportView(null, "graph")}>
+                                Close
+                              </Button>
+                            </div>
+                            <p>
+                              This URL restores {getEntityLabel(selectedItem)} with the selected {selectedGraphFocus.propertyId} path export open for handoff.
+                            </p>
+                          </div>
+                        )}
                         <div className="grid gap-3 xl:grid-cols-2">
                           <div>
                             <div className="mb-2 flex items-center justify-between gap-2">
                               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Markdown path note</span>
-                              <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Graph path Markdown", graphPathMarkdownDraft)}>
-                                {copiedDraft === "Graph path Markdown" ? "Copied" : "Copy"}
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button type="button" variant="outline" size="sm" onClick={() => updateShareableExportView("graph-markdown", "graph")} data-testid="view-graph-markdown-export">
+                                  {shareableExportView === "graph-markdown" ? "Viewing" : "View"}
+                                </Button>
+                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Graph path Markdown", graphPathMarkdownDraft)}>
+                                  {copiedDraft === "Graph path Markdown" ? "Copied" : "Copy"}
+                                </Button>
+                              </div>
                             </div>
-                            <textarea readOnly value={graphPathMarkdownDraft} className="h-44 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Graph path Markdown export" />
+                            <textarea readOnly value={graphPathMarkdownDraft} className={`h-44 w-full resize-y rounded-md border bg-white p-3 font-mono text-xs text-slate-700 dark:bg-slate-950 dark:text-slate-200 ${shareableExportView === "graph-markdown" ? "border-sky-300 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"}`} aria-label="Graph path Markdown export" data-testid="graph-path-markdown-export" />
                           </div>
                           <div>
                             <div className="mb-2 flex items-center justify-between gap-2">
                               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">JSON path context</span>
-                              <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Graph path JSON", graphPathJsonDraft)}>
-                                {copiedDraft === "Graph path JSON" ? "Copied" : "Copy"}
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button type="button" variant="outline" size="sm" onClick={() => updateShareableExportView("graph-json", "graph")} data-testid="view-graph-json-export">
+                                  {shareableExportView === "graph-json" ? "Viewing" : "View"}
+                                </Button>
+                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Graph path JSON", graphPathJsonDraft)}>
+                                  {copiedDraft === "Graph path JSON" ? "Copied" : "Copy"}
+                                </Button>
+                              </div>
                             </div>
-                            <textarea readOnly value={graphPathJsonDraft} className="h-44 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Graph path JSON export" />
+                            <textarea readOnly value={graphPathJsonDraft} className={`h-44 w-full resize-y rounded-md border bg-white p-3 font-mono text-xs text-slate-700 dark:bg-slate-950 dark:text-slate-200 ${shareableExportView === "graph-json" ? "border-sky-300 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"}`} aria-label="Graph path JSON export" data-testid="graph-path-json-export" />
                           </div>
                         </div>
                       </div>
@@ -1410,25 +1447,49 @@ export default function SearchPage() {
                             </div>
                           </div>
 
+                          {shareableExportView?.startsWith("comparison-") && (
+                            <div className="flex flex-col gap-2 rounded-md border border-sky-200 bg-sky-50 p-3 text-xs text-slate-700 dark:border-sky-900 dark:bg-sky-950 dark:text-slate-200" data-testid="shareable-export-view">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-semibold text-slate-950 dark:text-slate-50">Shareable comparison export view</span>
+                                <Button type="button" variant="outline" size="sm" onClick={() => updateShareableExportView(null, "compare")}>
+                                  Close
+                                </Button>
+                              </div>
+                              <p>
+                                This URL restores {entityComparison.source.id} against {entityComparison.target.id} with the selected comparison export open for handoff.
+                              </p>
+                            </div>
+                          )}
+
                           <div className="grid gap-4 xl:grid-cols-2">
                             <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
                               <div className="mb-2 flex items-center justify-between gap-2">
                                 <span className="font-semibold text-slate-950 dark:text-slate-50">Markdown comparison export</span>
-                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison Markdown", comparisonMarkdownDraft)}>
-                                  {copiedDraft === "Comparison Markdown" ? "Copied" : "Copy"}
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button type="button" variant="outline" size="sm" onClick={() => updateShareableExportView("comparison-markdown", "compare")} data-testid="view-comparison-markdown-export">
+                                    {shareableExportView === "comparison-markdown" ? "Viewing" : "View"}
+                                  </Button>
+                                  <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison Markdown", comparisonMarkdownDraft)}>
+                                    {copiedDraft === "Comparison Markdown" ? "Copied" : "Copy"}
+                                  </Button>
+                                </div>
                               </div>
-                              <textarea readOnly value={comparisonMarkdownDraft} className="h-52 w-full resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200" aria-label="Comparison Markdown export" data-testid="comparison-markdown-export" />
+                              <textarea readOnly value={comparisonMarkdownDraft} className={`h-52 w-full resize-y rounded-md border bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-200 ${shareableExportView === "comparison-markdown" ? "border-sky-300 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"}`} aria-label="Comparison Markdown export" data-testid="comparison-markdown-export" />
                             </div>
 
                             <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
                               <div className="mb-2 flex items-center justify-between gap-2">
                                 <span className="font-semibold text-slate-950 dark:text-slate-50">JSON comparison export</span>
-                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison JSON", comparisonJsonDraft)}>
-                                  {copiedDraft === "Comparison JSON" ? "Copied" : "Copy"}
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button type="button" variant="outline" size="sm" onClick={() => updateShareableExportView("comparison-json", "compare")} data-testid="view-comparison-json-export">
+                                    {shareableExportView === "comparison-json" ? "Viewing" : "View"}
+                                  </Button>
+                                  <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison JSON", comparisonJsonDraft)}>
+                                    {copiedDraft === "Comparison JSON" ? "Copied" : "Copy"}
+                                  </Button>
+                                </div>
                               </div>
-                              <textarea readOnly value={comparisonJsonDraft} className="h-52 w-full resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200" aria-label="Comparison JSON export" data-testid="comparison-json-export" />
+                              <textarea readOnly value={comparisonJsonDraft} className={`h-52 w-full resize-y rounded-md border bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-200 ${shareableExportView === "comparison-json" ? "border-sky-300 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"}`} aria-label="Comparison JSON export" data-testid="comparison-json-export" />
                             </div>
                           </div>
                         </div>

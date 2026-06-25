@@ -347,6 +347,26 @@ async function runFixtureFlow() {
     if (comparisonJson.source.id !== "Q42" || comparisonJson.target.id !== "Q80" || comparisonJson.summary.sharedPropertyCount !== 2) {
       throw new Error(`Expected fixture comparison JSON for Q42/Q80 with two shared properties, got ${JSON.stringify(comparisonJson)}`);
     }
+    await page.getByTestId("view-comparison-json-export").click();
+    await page.reload({ waitUntil: "commit" });
+    await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
+    const restoredComparisonExportView = await page.getByTestId("shareable-export-view").innerText();
+    if (!restoredComparisonExportView.includes("Shareable comparison export view") || !restoredComparisonExportView.includes("Q42") || !restoredComparisonExportView.includes("Q80")) {
+      throw new Error(`Expected fixture comparison export view to restore after reload, got ${restoredComparisonExportView}`);
+    }
+
+    await page.goto(new URL("/search?q=Q42&tab=graph&gdepth=property&gprop=P31&gfocus=Q5&export=graph-json", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.getByTestId("graph-path-export").waitFor({ state: "visible" });
+    const restoredGraphExportView = await page.getByTestId("shareable-export-view").innerText();
+    if (!restoredGraphExportView.includes("Shareable graph export view") || !restoredGraphExportView.includes("P31")) {
+      throw new Error(`Expected fixture graph export view to restore from URL, got ${restoredGraphExportView}`);
+    }
+    const graphPathJson = JSON.parse(await page.getByTestId("graph-path-json-export").inputValue());
+    if (graphPathJson.target?.id !== "Q5" || graphPathJson.edge?.propertyId !== "P31") {
+      throw new Error(`Expected restored graph export JSON to describe Q42/P31/Q5, got ${JSON.stringify(graphPathJson)}`);
+    }
 
     await page.goto(new URL("/search?q=P31", baseUrl).toString(), {
       waitUntil: "commit",
@@ -387,6 +407,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed Commons media renders image metadata");
     console.log("PASS fixture-backed language metadata renders labels");
     console.log("PASS fixture-backed comparison exports Q42/Q80 JSON");
+    console.log("PASS fixture-backed shareable export views restore comparison and graph handoffs");
     console.log("PASS fixture-backed direct PID lookup selects P31");
     console.log("PASS fixture-backed related work lookup selects Q25169 and graph author context");
     console.log("PASS fixture-backed empty search shows no-result error");

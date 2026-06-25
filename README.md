@@ -16,8 +16,8 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 
 - 🔎 Search Wikidata by keyword or direct entity/property ID such as `Q42` or `P31`
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
-- 🕸️ Explore a clickable relationship graph with URL-backed filters, depth controls, grouped-by-property and timeline evidence layouts, richer node previews, pinned relationship comparison, selected-edge statement details, and selected-path Markdown/JSON exports
-- ⚖️ Compare two entities without AI by shared properties, unique statements, overlapping linked entities, Markdown/JSON research exports, and shareable comparison URLs
+- 🕸️ Explore a clickable relationship graph with URL-backed filters, depth controls, grouped-by-property and timeline evidence layouts, richer node previews, pinned relationship comparison, selected-edge statement details, and shareable selected-path Markdown/JSON export views
+- ⚖️ Compare two entities without AI by shared properties, unique statements, overlapping linked entities, shareable comparison URLs, and shareable Markdown/JSON research export views
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`, a seeded Q42 proof path, or a shared comparison such as `/search?q=Q42&tab=compare&compare=Q80`
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
@@ -190,7 +190,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow, shareable comparison targets, selected graph path exports, graph focus, data-quality summary, and evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow, shareable comparison targets, selected graph path exports, URL-backed export views, graph focus, data-quality summary, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
@@ -208,7 +208,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and formatter-aware external IDs
-- `lib/search-url-state.mjs`: tested shareable tab, comparison-target, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
+- `lib/search-url-state.mjs`: tested shareable tab, comparison-target, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
 - `lib/entity-comparison.mjs`: tested two-entity comparison helper for shared properties, unique properties, overlapping linked entities, and Markdown/JSON exports
 - `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, token-authenticated remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
@@ -232,7 +232,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison with shareable URL restore and Markdown/JSON exports, graph depth/layout/filtering including timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison, selected statement details, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA

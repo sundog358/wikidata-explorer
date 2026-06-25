@@ -71,7 +71,15 @@ try {
   if (comparisonJson.artifactType !== "entity-comparison" || comparisonJson.source.id !== "Q42" || comparisonJson.target.id !== "Q80" || comparisonJson.safety.mode !== "draft-only") {
     throw new Error(`Expected comparison JSON export to include source, target, and safety metadata, got ${JSON.stringify(comparisonJson)}`);
   }
-
+  await page.getByTestId("view-comparison-json-export").click();
+  const comparisonExportUrl = new URL(page.url());
+  if (comparisonExportUrl.searchParams.get("export") !== "comparison-json") {
+    throw new Error(`Expected comparison JSON export view in URL, got ${page.url()}`);
+  }
+  const comparisonExportView = await page.getByTestId("shareable-export-view").innerText();
+  if (!comparisonExportView.includes("Shareable comparison export view") || !comparisonExportView.includes("Q42") || !comparisonExportView.includes("Q80")) {
+    throw new Error(`Expected shareable comparison export panel, got ${comparisonExportView}`);
+  }
   await page.getByRole("tab", { name: /Graph/ }).click();
   await page.getByTestId("graph-filters").waitFor({ state: "visible" });
   await page.getByLabel("Layout").selectOption("property");
@@ -118,7 +126,9 @@ try {
     throw new Error(`Expected reduced-motion graph node to disable transitions, got ${q5TransitionProperty}`);
   }
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  await q5GraphNode.focus();
+  const restoredQ5GraphNode = page.getByTestId("graph-node-Q5").first();
+  await restoredQ5GraphNode.waitFor({ state: "visible" });
+  await restoredQ5GraphNode.focus();
   const focusedGraphNode = await page.evaluate(() => document.activeElement?.getAttribute("data-testid"));
   if (focusedGraphNode !== "graph-node-Q5") {
     throw new Error(`Expected keyboard focus to reach graph-node-Q5, got ${focusedGraphNode}`);
@@ -179,7 +189,15 @@ try {
   if (!graphMarkdownExport.includes("## Evidence Details") || !graphMarkdownExport.includes("stated in")) {
     throw new Error(`Expected graph path Markdown export to include evidence details, got ${graphMarkdownExport}`);
   }
-
+  await page.getByTestId("view-graph-json-export").click();
+  const graphExportUrl = new URL(page.url());
+  if (graphExportUrl.searchParams.get("export") !== "graph-json" || graphExportUrl.searchParams.get("gfocus") !== "Q5") {
+    throw new Error(`Expected graph JSON export view and selected focus in URL, got ${page.url()}`);
+  }
+  const graphExportView = await page.getByTestId("shareable-export-view").innerText();
+  if (!graphExportView.includes("Shareable graph export view") || !graphExportView.includes("P31")) {
+    throw new Error(`Expected shareable graph export panel, got ${graphExportView}`);
+  }
   await q5GraphNode.focus();
   await page.keyboard.press("Enter");
   await page.getByTestId("selected-entity-id").waitFor({ state: "visible" });
@@ -193,18 +211,21 @@ try {
     throw new Error(`Expected graph click to select Q5, got ${selectedEntity}`);
   }
 
-  await page.goto(new URL("/search?q=P31", baseUrl).toString(), {
+  const directPidPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  directPidPage.setDefaultTimeout(30000);
+  await directPidPage.goto(new URL("/search?q=P31", baseUrl).toString(), {
     waitUntil: "commit",
   });
-  await page.waitForFunction(() => {
+  await directPidPage.waitForFunction(() => {
     const node = document.querySelector('[data-testid="selected-entity-id"]');
     return node?.textContent?.trim() === "P31";
   });
 
-  const selectedProperty = await page.getByTestId("selected-entity-id").innerText();
+  const selectedProperty = await directPidPage.getByTestId("selected-entity-id").innerText();
   if (selectedProperty.trim() !== "P31") {
     throw new Error(`Expected direct PID lookup to select P31, got ${selectedProperty}`);
   }
+  await directPidPage.close();
 
   console.log("PASS search data quality summary renders for Q42");
   console.log("PASS search review queue status persists in the workbench");
@@ -212,6 +233,7 @@ try {
   console.log("PASS comparison target URL state restores shared comparisons");
   console.log("PASS comparison Markdown export includes shared-property sections");
   console.log("PASS comparison JSON export includes structured handoff metadata");
+  console.log("PASS comparison export view URL restores structured handoff");
   console.log("PASS search tab and graph filter state update the URL");
   console.log("PASS graph depth controls support selected-property expansion");
   console.log("PASS grouped-by-property graph layout updates URL state");
@@ -228,6 +250,7 @@ try {
   console.log("PASS selected graph edge evidence shows concrete references");
   console.log("PASS selected graph path export includes evidence details");
   console.log("PASS selected graph path export summarizes the chosen edge");
+  console.log("PASS graph export view URL restores selected path handoff");
   console.log("PASS search graph interaction selects Q5 from Q42");
   console.log("PASS direct PID lookup selects P31");
 } finally {

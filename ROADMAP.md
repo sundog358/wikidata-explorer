@@ -22,8 +22,8 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - AI agents are feature-flagged off in public mode, with API routes failing closed and tested.
 - Optional AG2 runtime supports local Python/conda or a token-protected FastAPI container through `AG2_SERVICE_URL`.
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
-- Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, and selected-path Markdown/JSON exports.
-- Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, shareable comparison URLs, and Markdown/JSON comparison exports.
+- Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, selected-path Markdown/JSON exports, and shareable selected-path export views.
+- Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
 - `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Q42/Q80/Q25169/P31 Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, Wikidata API outage, Commons outage, and language metadata outage responses.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
@@ -119,10 +119,10 @@ Goal: support research workflows beyond single-entity browsing.
 - Covered comparison with deterministic utility tests and browser e2e coverage.
 - Shipped shareable comparison target URL state for links such as `/search?q=Q42&tab=compare&compare=Q80`.
 - Implemented visual QA coverage and a tracked portfolio screenshot for the comparison tab on `main`.
-- Shipped structured JSON comparison exports for tool handoff and repeatable research notes.
+- Shipped structured JSON comparison exports and URL-backed export views for tool handoff and repeatable research notes.
 - Next: compare three entities side by side.
 - Next: add seeded examples such as `Q42` vs another author and property-focused examples such as `P31`.
-- Next: add shareable export views.
+- Next: carry the export-view pattern into three-entity comparison.
 
 ### 4. Evidence And Trust
 
@@ -213,16 +213,16 @@ Status: in progress
 - Shipped: graph filters, depth controls, grouped-by-property layout, timeline evidence layout, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
 - On `main`: performance budgets for `/search?q=Q42` and graph rendering.
 - On `main`: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language, a related-work graph path, and basic error-state regression.
-- Next: more varied seeded entities and shareable export views.
+- Next: more varied seeded entities and three-entity comparison.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 
 Status: in progress
 
-- Shipped: selected graph path Markdown/JSON exports, safe curation exports, public AI-off two-entity comparison UI, and Markdown comparison exports.
-- Shipped in production: shareable comparison target URLs and structured JSON comparison exports for restored AI-off comparison links.
+- Shipped: selected graph path Markdown/JSON exports, URL-backed selected-path export views, safe curation exports, public AI-off two-entity comparison UI, and Markdown comparison exports.
+- Shipped in production: shareable comparison target URLs, structured JSON comparison exports, and URL-backed comparison export views for restored AI-off comparison links.
 - On `main`: comparison-tab visual QA coverage.
-- Next: three-entity comparison and shareable export views.
+- Next: three-entity comparison.
 
 ### Milestone 4: Grounded AI Research Assistant
 
