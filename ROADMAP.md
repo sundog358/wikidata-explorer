@@ -28,7 +28,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, and safe curation exports.
 - AG2 workflows support chat, selected workbench context handoff, citation-style grounding requirements, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
-- Portfolio proof includes tracked screenshots, visual QA, metadata/social preview checks, favicon/site-icon coverage, production trace checks, route smoke tests, API contracts, e2e checks, and GitHub Actions CI.
+- Portfolio proof includes tracked screenshots, visual QA, metadata/social preview checks, favicon/site-icon coverage, production trace checks, route smoke tests, API contracts, e2e checks, GitHub Actions CI, and a standalone architecture/safety/testing/deployment case study.
 
 ## Recently Shipped
 
@@ -73,7 +73,7 @@ To reach 10:
 
 - Ship an optional hosted AG2 container demo with traceable, citation-style Wikidata ID references in responses.
 - Expand route-mocked fixture coverage to more varied seeded entity types and API outage states.
-- Add a concise case-study page or doc that explains the architecture, AI safety boundary, testing strategy, and deployment tradeoffs.
+- Shipped a concise case-study doc that explains the architecture, AI safety boundary, testing strategy, and deployment tradeoffs.
 
 ## Next Priorities
 

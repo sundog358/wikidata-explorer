@@ -1,4 +1,4 @@
-import { BookOpen, BrainCircuit, Database, Link2, Network, Search, ShieldCheck } from "lucide-react";
+import { BookOpen, BrainCircuit, Database, FileText, Link2, Network, Search, ShieldCheck } from "lucide-react";
 
 const sections = [
   {
@@ -59,6 +59,22 @@ export default function DocsPage() {
             A concise reference for the user workflow, data model, AI assistant, and verification commands.
           </p>
         </div>
+
+        <section className="mb-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900" data-testid="case-study-callout">
+          <div className="mb-3 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-sky-600 dark:text-sky-300" />
+            <h2 className="text-lg font-semibold">Portfolio Case Study</h2>
+          </div>
+          <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            A standalone write-up covers the architecture, AI safety boundary, testing strategy, deployment tradeoffs, and seeded proof paths behind Wikidata Explorer.
+          </p>
+          <a
+            href="https://github.com/sundog358/wikidata-explorer/blob/main/docs/case-study.md"
+            className="mt-3 inline-flex text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline dark:text-sky-300 dark:hover:text-sky-100"
+          >
+            Read the case study on GitHub
+          </a>
+        </section>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sections.map((section) => {

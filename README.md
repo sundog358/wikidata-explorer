@@ -34,6 +34,8 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 
 Wikidata Explorer is built to answer a focused research question: how quickly can someone start from one Wikidata entity and understand the trustworthy graph around it?
 
+Read the standalone case study: [docs/case-study.md](docs/case-study.md).
+
 - **Product decision:** lead with a fast public Next.js explorer, then route reviewers into a seeded Q42 proof path that shows graph context, evidence depth, safe exports, and the AI boundary in one short review.
 - **Data depth:** normalize Wikidata labels, statements, qualifiers, references, ranks, media, and language coverage into inspectable UI instead of flattening everything into generic search results.
 - **AI boundary:** keep AG2 agents feature-flagged and server-side so the public demo remains reliable while the Python/container runtime can be enabled for richer research workflows.
