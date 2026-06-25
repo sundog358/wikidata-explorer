@@ -1,8 +1,10 @@
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "../lib/ai-feature-flags.mjs";
+import { buildWorkspaceSnapshot } from "../lib/workspace-snapshot.mjs";
 
 const baseUrl = process.env.API_CONTRACT_BASE_URL || "http://localhost:3000";
 const aiApiEnabled = aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS });
 const observabilityReceiverToken = process.env.API_OBSERVABILITY_RECEIVER_TOKEN || "";
+const workspaceStoreToken = process.env.WORKSPACE_STORE_TOKEN || "";
 
 async function postJson(route, body) {
   return postJsonWithHeaders(route, body);
@@ -90,7 +92,86 @@ async function checkObservabilityReceiverContract() {
   }
 }
 
+async function checkWorkspaceStoreContract() {
+  const unauthenticated = await getJson("/api/workspaces?project=contract-team");
+  if (!workspaceStoreToken) {
+    const ok = [401, 503].includes(unauthenticated.response.status);
+    console.log(`${ok ? "PASS" : "FAIL"} workspace store fails closed ${unauthenticated.response.status}`);
+    if (!ok) {
+      throw new Error(`workspace store should fail closed without a local contract token, got ${unauthenticated.response.status}`);
+    }
+    return;
+  }
+
+  const unauthenticatedOk = unauthenticated.response.status === 401;
+  console.log(`${unauthenticatedOk ? "PASS" : "FAIL"} workspace store rejects unauthenticated read ${unauthenticated.response.status}`);
+  if (!unauthenticatedOk) {
+    throw new Error(`workspace store expected unauthenticated read to return 401, got ${unauthenticated.response.status}`);
+  }
+
+  const authorization = `Bearer ${workspaceStoreToken}`;
+  const snapshot = buildWorkspaceSnapshot({
+    entityId: "Q42",
+    entityLabel: "Douglas Adams",
+    createdAt: "2026-06-25T22:35:00.000Z",
+    reviewTaskStatuses: { "Q42:claim:P31:unreferenced": "ready_to_draft" },
+    savedAgentRuns: [{
+      id: "run-contract",
+      entityId: "Q42",
+      entityLabel: "Douglas Adams",
+      action: "verify",
+      title: "Verifier",
+      result: "Grounded result token=contract-secret-token",
+      createdAt: "2026-06-25T22:35:00.000Z",
+    }],
+  });
+
+  const saved = await postJsonWithHeaders("/api/workspaces", {
+    projectId: "contract-team",
+    slot: {
+      id: "workspace-q42",
+      label: "Q42 contract workspace",
+      snapshot,
+      createdAt: "2026-06-25T22:35:00.000Z",
+      updatedAt: "2026-06-25T22:36:00.000Z",
+    },
+  }, { authorization });
+  const savedText = JSON.stringify(saved.body);
+  const savedOk = saved.response.status === 202 &&
+    saved.body.projectId === "contract-team" &&
+    saved.body.slots?.[0]?.entityId === "Q42" &&
+    saved.body.slots?.[0]?.snapshot?.review?.taskStatuses?.["Q42:claim:P31:unreferenced"] === "ready_to_draft" &&
+    !savedText.includes("contract-secret-token");
+  console.log(`${savedOk ? "PASS" : "FAIL"} workspace store saves sanitized slot ${saved.response.status}`);
+  if (!savedOk) {
+    throw new Error(`workspace store expected 202 sanitized slot response, got ${saved.response.status} ${savedText}`);
+  }
+
+  const listed = await getJson("/api/workspaces?project=contract-team", { authorization });
+  const listedOk = listed.response.status === 200 &&
+    listed.body.slots?.some((slot) => slot.id === "workspace-q42" && slot.entityId === "Q42");
+  console.log(`${listedOk ? "PASS" : "FAIL"} workspace store lists project slots ${listed.response.status}`);
+  if (!listedOk) {
+    throw new Error(`workspace store expected saved slot in list response, got ${listed.response.status} ${JSON.stringify(listed.body)}`);
+  }
+
+  const removed = await fetch(new URL("/api/workspaces", baseUrl), {
+    method: "DELETE",
+    headers: { "content-type": "application/json", authorization },
+    body: JSON.stringify({ projectId: "contract-team", slotId: "workspace-q42" }),
+  });
+  const removedBody = await removed.json().catch(() => ({}));
+  const removedOk = removed.status === 200 &&
+    Array.isArray(removedBody.slots) &&
+    !removedBody.slots.some((slot) => slot.id === "workspace-q42");
+  console.log(`${removedOk ? "PASS" : "FAIL"} workspace store removes project slot ${removed.status}`);
+  if (!removedOk) {
+    throw new Error(`workspace store expected slot removal, got ${removed.status} ${JSON.stringify(removedBody)}`);
+  }
+}
+
 await checkObservabilityReceiverContract();
+await checkWorkspaceStoreContract();
 
 if (!aiApiEnabled) {
   await check("chat disabled in public mode", "/api/chat", "{", 404, AI_DISABLED_MESSAGE);

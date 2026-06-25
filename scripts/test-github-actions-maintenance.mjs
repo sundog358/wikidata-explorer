@@ -27,5 +27,6 @@ for (const actionRef of staleActionRefs) {
 
 assert.match(workflow, /node-version:\s*20/, "CI should continue testing the documented Node 20+ app runtime until the project runtime floor changes intentionally.");
 assert.match(workflow, /API_OBSERVABILITY_RECEIVER_TOKEN:\s*ci-observability-receiver-token/, "CI should keep a dummy receiver token so API contracts exercise the protected observability receiver route.");
+assert.match(workflow, /WORKSPACE_STORE_TOKEN:\s*ci-workspace-store-token/, "CI should keep a dummy workspace store token so API contracts exercise project-backed workspace persistence.");
 
 console.log("PASS GitHub Actions maintenance tests");

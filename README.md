@@ -116,6 +116,15 @@ API_OBSERVABILITY_RECEIVER_TOKEN=generate-a-random-shared-token
 
 When configured, AI API routes post sanitized failure events plus matching alert-rule metadata to the webhook. The built-in `/api/observability/events` receiver can be used as the target when protected with `API_OBSERVABILITY_RECEIVER_TOKEN` or the shared webhook token; it retains only a bounded in-memory event window and exposes the evaluated dashboard snapshot behind the same bearer token. HTTPS is required outside localhost, and prompts, raw payloads, provider keys, and bearer tokens are not sent.
 
+Optional project-backed workspace storage:
+
+```powershell
+WORKSPACE_STORE_DIR=C:\path\to\durable\workspace-store
+WORKSPACE_STORE_TOKEN=generate-a-random-shared-token
+```
+
+When configured, `/api/workspaces` provides bearer-token-protected project workspace slot persistence using the same sanitized portable snapshot format as browser-local slots. Use a durable mounted directory for hosted/self-hosted deployments; the public demo can leave it unset and fail closed.
+
 Local environment files, provider keys, Pywikibot credentials, runtime files, caches, and research artifacts are ignored by default.
 
 ## 🐳 AG2 Container
@@ -211,6 +220,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/api/entity-summary/route.ts`: feature-flagged grounded entity summary endpoint
 - `app/api/ag2-workflow/route.ts`: feature-flagged specialist workflow endpoint with autonomy safety gating
 - `app/api/observability/events/route.ts`: token-protected built-in monitor receiver for sanitized API failure events, bounded recent-event retention, and alert/dashboard snapshots
+- `app/api/workspaces/route.ts`: token-protected project workspace slot persistence for sanitized portable snapshots
 - `components/relationship-graph.tsx`: clickable, filterable entity relationship visualization with controlled depth/layout/filter state, grouped and timeline evidence layouts, secondary entity previews, pinned relationship comparison, selected-edge evidence summaries, and statement detail drawers
 - `components/ErrorBoundary.tsx`: reusable client-side recovery boundary with customizable fallback and sanitized error callbacks
 - `components/nav/main-nav.tsx`: primary nav with AI links hidden unless the AI feature flag is enabled
@@ -222,7 +232,8 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/ai-feature-flags.mjs`: shared public/server AI feature flag helper
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
-- `lib/workspace-snapshot.mjs`: tested portable workspace snapshot and browser-local slot sanitizer for review task state, dismissed findings, and saved AG2 run history
+- `lib/workspace-snapshot.mjs`: tested portable workspace snapshot and browser-local/project slot sanitizer for review task state, dismissed findings, and saved AG2 run history
+- `lib/workspace-store.mjs`: optional filesystem-backed project workspace slot store with bearer auth, project ID validation, bounded slot persistence, and secret redaction through snapshot sanitization
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and external IDs with `$1`, URI-template, encoded-placeholder, and formatter-root fallbacks
 - `lib/search-url-state.mjs`: tested shareable tab, comparison-target, third-comparison-target, comparison-property, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
@@ -241,6 +252,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `agents/Dockerfile`: Docker image for hosting the AG2 service outside Vercel
 - `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
 - `scripts/test-workspace-snapshot.mjs`: portable workspace snapshot and saved-slot tests for review statuses, dismissed findings, agent-run history, supported artifact versioning, bounds, and secret-shaped text redaction
+- `scripts/test-workspace-store.mjs`: project-backed workspace store tests for bearer auth, safe project IDs, filesystem persistence, bounded slots, removal, and sanitized stored snapshots
 - `scripts/test-github-actions-maintenance.mjs`: CI workflow maintenance test that keeps GitHub Actions on Node 24-compatible action lines while the app runtime remains tested on Node 20+
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-api-observability.mjs`: safe logging/category/dashboard-alert/webhook/receiver tests that ensure API failure events, monitor payloads, observability rules, and retained receiver events do not expose prompts, keys, bearer tokens, or raw payloads
@@ -259,7 +271,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
-- `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, observability receiver, and precondition contract checks
+- `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, observability receiver, project workspace store, and precondition contract checks
 - `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, workspace snapshot review-state export, browser-local workspace slots, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including labelled controls/options, timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison with keyboard-reachable controls, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, light/dark route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
@@ -268,7 +280,7 @@ Optional AI-enabled mode remains a separate deployment step:
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract, route-level AG2 grounding validation, sanitized API failure-category/dashboard-alert/webhook/receiver checks, portable workspace snapshot checks, GitHub Actions maintenance checks, and search workbench error-boundary checks so the container bridge, AI response grounding, production-safe route logging, alert contract, monitor payloads, workspace artifact format, CI action refs, and client recovery shell are checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, layout, and observability receiver regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service and sanitized monitor webhook. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract, route-level AG2 grounding validation, sanitized API failure-category/dashboard-alert/webhook/receiver checks, portable workspace snapshot and project store checks, GitHub Actions maintenance checks, and search workbench error-boundary checks so the container bridge, AI response grounding, production-safe route logging, alert contract, monitor payloads, workspace artifact format, CI action refs, and client recovery shell are checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, light/dark visual, interaction, performance-budget, console, hydration, layout, observability receiver, and project workspace store regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service and sanitized monitor webhook. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
 CI also runs install, verify, production trace checks, smoke, public metadata checks, public AI-off API contracts, mock AG2 enabled-mode API contracts, e2e, performance budgets, visual QA, and screenshot artifact upload on GitHub Actions.
 

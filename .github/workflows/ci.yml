@@ -50,6 +50,8 @@ jobs:
           exit 1
         env:
           API_OBSERVABILITY_RECEIVER_TOKEN: ci-observability-receiver-token
+          WORKSPACE_STORE_DIR: /tmp/wikidata-explorer-workspaces
+          WORKSPACE_STORE_TOKEN: ci-workspace-store-token
 
       - name: Smoke routes
         run: npm run smoke
@@ -66,6 +68,7 @@ jobs:
         env:
           API_CONTRACT_BASE_URL: http://localhost:3000
           API_OBSERVABILITY_RECEIVER_TOKEN: ci-observability-receiver-token
+          WORKSPACE_STORE_TOKEN: ci-workspace-store-token
 
       - name: AI-enabled AG2 API contract tests
         run: npm run api:contracts:ag2
