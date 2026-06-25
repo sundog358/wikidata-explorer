@@ -132,6 +132,13 @@ function fixtureOrTermEntity(id) {
 }
 
 function rawEntity(id, props = "") {
+  if (id === "Q999999999") {
+    return {
+      id,
+      missing: true,
+    };
+  }
+
   const entity = fixtureOrTermEntity(id);
   const raw = {
     id: entity.id,
@@ -274,12 +281,24 @@ try {
   });
   await page.waitForFunction(() => document.querySelector('[data-testid="selected-entity-id"]')?.textContent?.trim() === "P31");
 
+  await page.goto(new URL("/search?q=NoSuchFixtureTerm", baseUrl).toString(), {
+    waitUntil: "commit",
+  });
+  await page.getByText("No Wikidata entities matched that search.").waitFor({ state: "visible" });
+
+  await page.goto(new URL("/search?q=Q999999999", baseUrl).toString(), {
+    waitUntil: "commit",
+  });
+  await page.getByText("No Wikidata entity found for Q999999999").waitFor({ state: "visible" });
+
   console.log("PASS fixture-backed search selects Q42 without live Wikidata");
   console.log("PASS fixture-backed graph renders Q42 instance-of context");
   console.log("PASS fixture-backed Commons media renders image metadata");
   console.log("PASS fixture-backed language metadata renders labels");
   console.log("PASS fixture-backed comparison exports Q42/Q80 JSON");
   console.log("PASS fixture-backed direct PID lookup selects P31");
+  console.log("PASS fixture-backed empty search shows no-result error");
+  console.log("PASS fixture-backed missing entity shows not-found error");
 } finally {
   await browser.close().catch(() => {});
 }

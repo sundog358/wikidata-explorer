@@ -24,7 +24,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, and selected-path Markdown/JSON exports.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, shareable comparison URLs, and Markdown/JSON comparison exports.
-- `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, and Commons media responses.
+- `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, and missing-entity responses.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -72,7 +72,7 @@ To reach 9.5:
 To reach 10:
 
 - Ship an optional hosted AG2 container demo with traceable, citation-style Wikidata ID references in responses.
-- Expand route-mocked fixture coverage to additional seeded entities and negative/error states.
+- Expand route-mocked fixture coverage to additional seeded entities and API outage states.
 - Add a concise case-study page or doc that explains the architecture, AI safety boundary, testing strategy, and deployment tradeoffs.
 
 ## Next Priorities
@@ -105,7 +105,7 @@ Goal: make the graph the signature feature.
 - Implemented tab-order and reduced-motion coverage.
 - Implemented performance budgets for `/search?q=Q42` and graph rendering on `main`.
 - Implemented deterministic Wikidata fixtures and route-mocked browser coverage for graph/search/evidence/media/language regression on `main`.
-- Next: continue broader fixture coverage for additional entities.
+- Next: continue broader fixture coverage for additional entities and API outage states.
 - Keep graph URL state stable for filters, selected focus, and future export views.
 
 ### 3. Entity Comparison
@@ -159,7 +159,7 @@ Keep these green before shipping code changes:
 
 Next quality improvements:
 
-- Expand route-mocked fixtures to additional seeded entities plus negative/error states.
+- Expand route-mocked fixtures to additional seeded entities plus API outage states.
 - Add visual QA for dark mode.
 - Add accessibility checks for keyboard graph navigation and tab order.
 - Keep `/search?q=Q42` performance budgets and shared comparison URL restore green as graph/comparison features expand.
@@ -212,7 +212,7 @@ Status: in progress
 
 - Shipped: graph filters, depth controls, grouped-by-property layout, timeline evidence layout, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
 - On `main`: performance budgets for `/search?q=Q42` and graph rendering.
-- On `main`: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language regression.
+- On `main`: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language and basic error-state regression.
 - Next: additional seeded entities and shareable export views.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
