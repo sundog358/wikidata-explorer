@@ -21,6 +21,11 @@ from autogen import ConversableAgent, LLMConfig
 
 ROOT = Path(__file__).resolve().parents[1]
 API_BASE_URL = "https://www.wikidata.org/w/api.php"
+GROUNDING_SYSTEM_INSTRUCTION = (
+    "End every answer with a `Grounding references` section. "
+    "List the Wikidata Q/P IDs, statement IDs, and source URLs used from supplied context. "
+    "If a source URL or statement ID is not present in context, say it was not supplied instead of inventing one."
+)
 
 
 class AgentBridgeError(Exception):
@@ -283,13 +288,14 @@ def entity_context_lines(entity: dict[str, Any]) -> list[str]:
         rank = statement.get("rank") or "normal"
         qualifiers = statement.get("qualifierCount")
         references = statement.get("referenceCount")
+        statement_id = statement.get("statementId") or statement.get("id") or "not supplied"
         if qualifiers is None:
             qualifiers = len(statement.get("qualifiers") or [])
         if references is None:
             references = len(statement.get("references") or [])
         lines.append(
             f"{index}. {statement.get('propertyLabel')} ({statement.get('propertyId')}) "
-            f"[{rank}] = {value} | qualifiers={qualifiers} references={references}"
+            f"[{rank}] = {value} | qualifiers={qualifiers} references={references} statement={statement_id}"
         )
 
         for qualifier in (statement.get("qualifiers") or [])[:4]:
@@ -399,12 +405,24 @@ def chat_context_lines(context: Any) -> list[str]:
     return lines
 
 
+def grounding_requirements_lines() -> list[str]:
+    return [
+        "",
+        "Grounding requirements:",
+        "- Include inline citation-style markers when referencing supplied facts, such as (Q42), (P31), or statement Q42$... when available.",
+        "- End with a `Grounding references` section.",
+        "- In that section, list the Wikidata Q/P IDs, statement IDs, and source URLs you used from the supplied context.",
+        "- If no statement ID or source URL was supplied for a claim, write `statement ID: not supplied` or `source URL: not supplied`; do not invent missing evidence.",
+    ]
+
+
 def build_entity_summary_prompt(entity: dict[str, Any]) -> str:
     return "\n".join(
         [
             *entity_context_lines(entity),
             "",
             "Write a concise summary with three sections: Key facts, Evidence notes, Suggested next checks.",
+            *grounding_requirements_lines(),
         ]
     )
 
@@ -419,6 +437,7 @@ def build_chat_prompt(messages: list[dict[str, str]], context: Any = None) -> st
         role = message.get("role", "user")
         content = message.get("content", "")
         rendered.append(f"{role.upper()}: {content}")
+    rendered.append("\n".join(grounding_requirements_lines()))
     rendered.append("ASSISTANT:")
     return "\n\n".join(rendered)
 
@@ -438,6 +457,7 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
                 *entity_context_lines(fetched),
                 "",
                 "Write: Overview, strongest relationships, data-quality risks, and next entities/properties to inspect.",
+                *grounding_requirements_lines(),
             ]),
             850,
         )
@@ -454,6 +474,7 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
                 *graph_focus_lines(payload.get("graphFocus")),
                 "",
                 "Explain the most important graph neighborhoods, relationship clusters, weak edges, and 3 suggested next clicks. If a selected graph focus is supplied, start with why that edge matters and which adjacent IDs to inspect next.",
+                *grounding_requirements_lines(),
             ]),
             800,
         )
@@ -467,6 +488,7 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
                 *graph_focus_lines(payload.get("graphFocus")),
                 "",
                 "Suggest 5 next entities or properties to inspect. Prioritize the selected graph focus when supplied. For each recommendation, include the exact Q/P ID if present in context, the relationship/property that led to it, why it matters, and one evidence or data-quality caveat. Do not invent IDs that are not in the supplied context.",
+                *grounding_requirements_lines(),
             ]),
             850,
         )
@@ -479,6 +501,7 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
                 *entity_context_lines(entity),
                 "",
                 "Classify evidence quality as strong, mixed, or weak. Call out unreferenced important claims, qualifier nuance, deprecated claims, and exact Wikidata IDs to verify next.",
+                *grounding_requirements_lines(),
             ]),
             850,
         )
@@ -491,6 +514,7 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
                 *entity_context_lines(entity),
                 "",
                 "Create a Markdown report with sections: Summary, Key statements, Evidence notes, Graph leads, Open questions.",
+                *grounding_requirements_lines(),
             ]),
             1000,
         )
@@ -512,6 +536,7 @@ def build_workflow_prompt(action: str, payload: dict[str, Any]) -> tuple[str, st
                 *entity_context_lines(second),
                 "",
                 "Compare these entities. Include shared themes, unique statements, evidence differences, graph overlap hints, and next checks.",
+                *grounding_requirements_lines(),
             ]),
             1000,
         )
@@ -531,7 +556,8 @@ def handle(payload: dict[str, Any]) -> dict[str, Any]:
             system_message=(
                 "You are an AG2 Wikidata research agent inside Wikidata Explorer. "
                 "Use only the supplied entity context. Mention Wikidata IDs when useful. "
-                "Be concise and separate grounded facts from suggested next checks."
+                "Be concise and separate grounded facts from suggested next checks. "
+                f"{GROUNDING_SYSTEM_INSTRUCTION}"
             ),
             prompt=build_entity_summary_prompt(entity),
             max_tokens=650,
@@ -556,7 +582,8 @@ def handle(payload: dict[str, Any]) -> dict[str, Any]:
                 "You are an AG2 research assistant for Wikidata Explorer. Help users reason about "
                 "Wikidata entities, properties, statement quality, references, graph exploration, and linked data. "
                 "Do not claim to have browsed live Wikidata unless context was supplied by the user. "
-                "When visible context is supplied, ground answers in its Wikidata IDs, statement IDs, ranks, qualifiers, references, and source URLs."
+                "When visible context is supplied, ground answers in its Wikidata IDs, statement IDs, ranks, qualifiers, references, and source URLs. "
+                f"{GROUNDING_SYSTEM_INSTRUCTION}"
             ),
             prompt=build_chat_prompt(messages, payload.get("context")),
             max_tokens=700,

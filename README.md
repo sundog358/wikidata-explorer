@@ -21,7 +21,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`, a seeded Q42 proof path, or a shared comparison such as `/search?q=Q42&tab=compare&compare=Q80`
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
-- 🤖 Enable AG2 specialist agents for research, graph analysis, next-entity suggestions, citation verification, comparison, Markdown reports, and selected workbench context handoff into chat
+- 🤖 Enable AG2 specialist agents for research, graph analysis, next-entity suggestions, citation verification, comparison, Markdown reports, selected workbench context handoff into chat, and citation-style grounding references
 - 🐳 Run agents through local conda or a token-protected containerized FastAPI AG2 service
 - 🧾 Inspect statement ranks, referenced/unreferenced badges, statement IDs, qualifiers, references, and source hints in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
@@ -217,13 +217,14 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/ag2-errors.mjs`: shared AG2 bridge error type for local and remote runtime failures
 - `lib/ag2-service-auth.mjs`: shared AG2 service bearer-token validation helper
 - `lib/ai-rate-limit.mjs`: in-memory public AI route throttling helper
-- `agents/wikidata_ag2_agent.py`: bounded AG2 agent bridge for chat, research, graph analysis, suggestions, verification, comparison, and reports
+- `agents/wikidata_ag2_agent.py`: bounded AG2 agent bridge for chat, research, graph analysis, suggestions, verification, comparison, reports, and shared citation-style grounding requirements
 - `agents/ag2_service.py`: token-protected FastAPI wrapper for the containerized AG2 runtime
 - `agents/Dockerfile`: Docker image for hosting the AG2 service outside Vercel
 - `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
 - `scripts/test-ag2-chat-context.mjs`: bounded AG2 chat context sanitizer checks for entity, statement, graph focus, and path export handoff
+- `scripts/test-ag2-prompt-grounding.mjs`: prompt-grounding regression checks for `Grounding references`, Wikidata IDs, statement IDs, and source URL instructions across AG2 modes
 - `scripts/test-ag2-remote-service.mjs`: mocked AG2 container contract test for remote `/run` success, auth, and sanitized service failures
 - `scripts/fixtures/wikidata-fixtures.mjs`: deterministic Q42/Q80/Q25169/P31 Wikidata fixtures for search, entity, graph, evidence, and comparison tests
 - `scripts/test-wikidata-fixtures.mjs`: fixture-backed regression tests for search results, detailed entities, graph filters, source hints, data quality, and comparison exports
