@@ -43,8 +43,37 @@ export type EntityComparison = {
   }>;
 };
 
+export type EntitySetComparisonPropertyRow = {
+  id: string;
+  label: string;
+  cells: Array<{
+    entityId: string;
+    entityLabel: string;
+    count: number;
+    referencedCount: number;
+    qualifiedCount: number;
+  }>;
+  presentCount: number;
+  totalStatementCount: number;
+  totalReferencedCount: number;
+  sharedByAll: boolean;
+};
+
+export type EntitySetComparison = {
+  generatedAt: string;
+  entities: EntityComparisonEntity[];
+  propertyMatrix: EntitySetComparisonPropertyRow[];
+  sharedByAllProperties: EntitySetComparisonPropertyRow[];
+};
+
 export function buildEntityComparison(source: WikidataItem, target: WikidataItem, options?: { createdAt?: string }): EntityComparison;
 
 export function buildEntityComparisonMarkdownExport(comparison: EntityComparison, options?: { limit?: number }): string;
 
 export function buildEntityComparisonJsonExport(comparison: EntityComparison, options?: { limit?: number }): string;
+
+export function buildEntitySetComparison(items: WikidataItem[], options?: { createdAt?: string }): EntitySetComparison;
+
+export function buildEntitySetComparisonMarkdownExport(comparison: EntitySetComparison, options?: { limit?: number }): string;
+
+export function buildEntitySetComparisonJsonExport(comparison: EntitySetComparison, options?: { limit?: number }): string;

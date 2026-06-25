@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { buildEntityComparison, buildEntityComparisonJsonExport, buildEntityComparisonMarkdownExport } from "../lib/entity-comparison.mjs";
+import {
+  buildEntityComparison,
+  buildEntityComparisonJsonExport,
+  buildEntityComparisonMarkdownExport,
+  buildEntitySetComparison,
+  buildEntitySetComparisonJsonExport,
+  buildEntitySetComparisonMarkdownExport,
+} from "../lib/entity-comparison.mjs";
 
 const source = {
   id: "Q1",
@@ -61,6 +68,36 @@ const target = {
   },
 };
 
+const third = {
+  id: "Q3",
+  labels: { en: "Third item" },
+  descriptions: { en: "third item" },
+  aliases: {},
+  sitelinks: {},
+  statements: {
+    P31: [
+      {
+        id: "Q3$P31",
+        rank: "normal",
+        property: { id: "P31", label: "instance of", data_type: "wikibase-item" },
+        value: { type: "wikibase-entityid", content: { id: "Q5", label: "human" } },
+        qualifiers: [],
+        references: [],
+      },
+    ],
+    P50: [
+      {
+        id: "Q3$P50",
+        rank: "normal",
+        property: { id: "P50", label: "author", data_type: "wikibase-item" },
+        value: { type: "wikibase-entityid", content: { id: "Q1", label: "Source item" } },
+        qualifiers: [],
+        references: [{ hash: "ref", parts: [] }],
+      },
+    ],
+  },
+};
+
 const comparison = buildEntityComparison(source, target, { createdAt: "2026-06-25T12:00:00.000Z" });
 
 assert.equal(comparison.source.label, "Source item");
@@ -88,5 +125,18 @@ assert.equal(json.summary.sharedPropertyCount, 1);
 assert.equal(json.sharedProperties[0].id, "P31");
 assert.equal(json.overlappingEntities[0].url, "https://www.wikidata.org/wiki/Q5");
 assert.equal(json.safety.mode, "draft-only");
+
+const setComparison = buildEntitySetComparison([source, target, third], { createdAt: "2026-06-25T12:00:00.000Z" });
+assert.equal(setComparison.entities.length, 3);
+assert.equal(setComparison.sharedByAllProperties[0].id, "P31");
+assert.equal(setComparison.propertyMatrix.find((row) => row.id === "P50").cells.find((cell) => cell.entityId === "Q3").count, 1);
+const setMarkdown = buildEntitySetComparisonMarkdownExport(setComparison);
+assert.match(setMarkdown, /Entity set comparison: Source item \(Q1\) vs Target item \(Q2\) vs Third item \(Q3\)/);
+assert.match(setMarkdown, /Shared by all entities: 1/);
+const setJson = JSON.parse(buildEntitySetComparisonJsonExport(setComparison));
+assert.equal(setJson.artifactType, "entity-set-comparison");
+assert.equal(setJson.summary.entityCount, 3);
+assert.equal(setJson.summary.sharedByAllPropertyCount, 1);
+assert.equal(setJson.propertyMatrix[0].id, "P31");
 
 console.log("PASS entity comparison tests");

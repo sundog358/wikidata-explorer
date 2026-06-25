@@ -347,11 +347,23 @@ async function runFixtureFlow() {
     if (comparisonJson.source.id !== "Q42" || comparisonJson.target.id !== "Q80" || comparisonJson.summary.sharedPropertyCount !== 2) {
       throw new Error(`Expected fixture comparison JSON for Q42/Q80 with two shared properties, got ${JSON.stringify(comparisonJson)}`);
     }
+    await page.getByLabel("Third comparison entity ID").fill("Q25169");
+    await page.getByTestId("comparison-panel").getByRole("button", { name: "Add third" }).click();
+    await page.getByTestId("comparison-property-matrix").waitFor({ state: "visible" });
+    const propertyMatrix = await page.getByTestId("comparison-property-matrix").innerText();
+    if (!propertyMatrix.includes("Three-entity property matrix") || !propertyMatrix.includes("Q25169") || !propertyMatrix.includes("P31")) {
+      throw new Error(`Expected fixture three-entity property matrix for Q42/Q80/Q25169, got ${propertyMatrix}`);
+    }
+    const comparisonSetJson = JSON.parse(await page.getByTestId("comparison-json-export").inputValue());
+    if (comparisonSetJson.artifactType !== "entity-set-comparison" || comparisonSetJson.summary.entityCount !== 3 || comparisonSetJson.entities[2].id !== "Q25169") {
+      throw new Error(`Expected fixture comparison set JSON for Q42/Q80/Q25169, got ${JSON.stringify(comparisonSetJson)}`);
+    }
     await page.getByTestId("view-comparison-json-export").click();
     await page.reload({ waitUntil: "commit" });
     await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
+    await page.getByTestId("comparison-property-matrix").waitFor({ state: "visible" });
     const restoredComparisonExportView = await page.getByTestId("shareable-export-view").innerText();
-    if (!restoredComparisonExportView.includes("Shareable comparison export view") || !restoredComparisonExportView.includes("Q42") || !restoredComparisonExportView.includes("Q80")) {
+    if (!restoredComparisonExportView.includes("Shareable comparison export view") || !restoredComparisonExportView.includes("Q42") || !restoredComparisonExportView.includes("Q80") || !restoredComparisonExportView.includes("Q25169")) {
       throw new Error(`Expected fixture comparison export view to restore after reload, got ${restoredComparisonExportView}`);
     }
 
@@ -407,6 +419,7 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed Commons media renders image metadata");
     console.log("PASS fixture-backed language metadata renders labels");
     console.log("PASS fixture-backed comparison exports Q42/Q80 JSON");
+    console.log("PASS fixture-backed three-entity comparison matrix exports Q42/Q80/Q25169 JSON");
     console.log("PASS fixture-backed shareable export views restore comparison and graph handoffs");
     console.log("PASS fixture-backed direct PID lookup selects P31");
     console.log("PASS fixture-backed related work lookup selects Q25169 and graph author context");

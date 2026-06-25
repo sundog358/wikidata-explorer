@@ -17,7 +17,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🔎 Search Wikidata by keyword or direct entity/property ID such as `Q42` or `P31`
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
 - 🕸️ Explore a clickable relationship graph with URL-backed filters, depth controls, grouped-by-property and timeline evidence layouts, richer node previews, pinned relationship comparison, selected-edge statement details, and shareable selected-path Markdown/JSON export views
-- ⚖️ Compare two entities without AI by shared properties, unique statements, overlapping linked entities, shareable comparison URLs, and shareable Markdown/JSON research export views
+- ⚖️ Compare two or three entities without AI by shared properties, distinctive statements, property matrices, overlapping linked entities, shareable comparison URLs, and shareable Markdown/JSON research export views
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`, a seeded Q42 proof path, or a shared comparison such as `/search?q=Q42&tab=compare&compare=Q80`
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
@@ -190,7 +190,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow, shareable comparison targets, selected graph path exports, URL-backed export views, graph focus, data-quality summary, and evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, graph focus, data-quality summary, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
@@ -208,9 +208,9 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and formatter-aware external IDs
-- `lib/search-url-state.mjs`: tested shareable tab, comparison-target, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
+- `lib/search-url-state.mjs`: tested shareable tab, comparison-target, third-comparison-target, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
-- `lib/entity-comparison.mjs`: tested two-entity comparison helper for shared properties, unique properties, overlapping linked entities, and Markdown/JSON exports
+- `lib/entity-comparison.mjs`: tested two/three-entity comparison helpers for shared properties, unique properties, property matrices, overlapping linked entities, and Markdown/JSON exports
 - `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, token-authenticated remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
 - `lib/ag2-remote-service.mjs`: tested remote AG2 service client for `/run` payloads, bearer auth, success responses, and service error mapping
 - `lib/ag2-errors.mjs`: shared AG2 bridge error type for local and remote runtime failures
@@ -225,8 +225,8 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-ag2-remote-service.mjs`: mocked AG2 container contract test for remote `/run` success, auth, and sanitized service failures
 - `scripts/fixtures/wikidata-fixtures.mjs`: deterministic Q42/Q80/Q25169/P31 Wikidata fixtures for search, entity, graph, evidence, and comparison tests
 - `scripts/test-wikidata-fixtures.mjs`: fixture-backed regression tests for search results, detailed entities, graph filters, source hints, data quality, and comparison exports
-- `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, Commons media, related-work, no-result, missing-entity, Wikidata outage, Commons outage, and language fallback fixtures to the live search workbench without external Wikidata calls
-- `scripts/test-entity-comparison.mjs`: deterministic entity comparison and Markdown/JSON export tests
+- `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, Commons media, related-work, three-entity comparison, no-result, missing-entity, Wikidata outage, Commons outage, and language fallback fixtures to the live search workbench without external Wikidata calls
+- `scripts/test-entity-comparison.mjs`: deterministic two/three-entity comparison and Markdown/JSON export tests
 - `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks

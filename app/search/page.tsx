@@ -5,7 +5,7 @@ import Image from "next/image";
 import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
 import { buildGraphPathJsonExport, buildGraphPathMarkdownExport } from "@/lib/graph-path-export.mjs";
-import { buildEntityComparison, buildEntityComparisonJsonExport, buildEntityComparisonMarkdownExport } from "@/lib/entity-comparison.mjs";
+import { buildEntityComparison, buildEntityComparisonJsonExport, buildEntityComparisonMarkdownExport, buildEntitySetComparison, buildEntitySetComparisonJsonExport, buildEntitySetComparisonMarkdownExport } from "@/lib/entity-comparison.mjs";
 import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-source-hints.mjs";
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/search-url-state.mjs";
@@ -361,7 +361,7 @@ function normalizeWorkbenchTab(tab: SearchWorkbenchTab): SearchWorkbenchTab {
   return tab;
 }
 
-function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null; comparisonTargetId?: string | null; exportView?: ShareableExportView | null }) {
+function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null; comparisonTargetId?: string | null; comparisonThirdTargetId?: string | null; exportView?: ShareableExportView | null }) {
   if (typeof window === "undefined") return;
   const params = new URLSearchParams(window.location.search);
   if (updates.q !== undefined) {
@@ -375,6 +375,7 @@ function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTa
     graphFilters: updates.graphFilters || currentState.graphFilters,
     graphFocusId: Object.prototype.hasOwnProperty.call(updates, "graphFocusId") ? updates.graphFocusId || null : currentState.graphFocusId,
     comparisonTargetId: Object.prototype.hasOwnProperty.call(updates, "comparisonTargetId") ? updates.comparisonTargetId || null : currentState.comparisonTargetId,
+    comparisonThirdTargetId: Object.prototype.hasOwnProperty.call(updates, "comparisonThirdTargetId") ? updates.comparisonThirdTargetId || null : currentState.comparisonThirdTargetId,
     exportView: Object.prototype.hasOwnProperty.call(updates, "exportView") ? updates.exportView || null : currentState.exportView,
   });
   const query = nextParams.toString();
@@ -407,7 +408,9 @@ export default function SearchPage() {
   const [agentResult, setAgentResult] = useState<AgentResultState>(null);
   const [agentLoading, setAgentLoading] = useState<AgentAction | null>(null);
   const [compareEntityId, setCompareEntityId] = useState(initialWorkbenchState.comparisonTargetId || "Q80");
+  const [compareThirdEntityId, setCompareThirdEntityId] = useState(initialWorkbenchState.comparisonThirdTargetId || "Q25169");
   const [comparisonItem, setComparisonItem] = useState<WikidataItem | null>(null);
+  const [comparisonThirdItem, setComparisonThirdItem] = useState<WikidataItem | null>(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
   const [selectedGraphFocus, setSelectedGraphFocus] = useState<RelationshipGraphFocus | null>(null);
@@ -421,6 +424,7 @@ export default function SearchPage() {
   const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const queuedComparisonTargetRef = useRef<string | null>(initialWorkbenchState.comparisonTargetId);
+  const queuedComparisonThirdTargetRef = useRef<string | null>(initialWorkbenchState.comparisonThirdTargetId);
   const storageHydratedRef = useRef(false);
 
   useEffect(() => {
@@ -557,8 +561,18 @@ export default function SearchPage() {
     if (!selectedItem || !comparisonItem) return null;
     return buildEntityComparison(selectedItem, comparisonItem);
   }, [comparisonItem, selectedItem]);
-  const comparisonMarkdownDraft = useMemo(() => entityComparison ? buildEntityComparisonMarkdownExport(entityComparison) : "", [entityComparison]);
-  const comparisonJsonDraft = useMemo(() => entityComparison ? buildEntityComparisonJsonExport(entityComparison) : "", [entityComparison]);
+  const entitySetComparison = useMemo<ReturnType<typeof buildEntitySetComparison> | null>(() => {
+    if (!selectedItem || !comparisonItem || !comparisonThirdItem) return null;
+    return buildEntitySetComparison([selectedItem, comparisonItem, comparisonThirdItem]);
+  }, [comparisonItem, comparisonThirdItem, selectedItem]);
+  const comparisonMarkdownDraft = useMemo(() => {
+    if (entitySetComparison) return buildEntitySetComparisonMarkdownExport(entitySetComparison);
+    return entityComparison ? buildEntityComparisonMarkdownExport(entityComparison) : "";
+  }, [entityComparison, entitySetComparison]);
+  const comparisonJsonDraft = useMemo(() => {
+    if (entitySetComparison) return buildEntitySetComparisonJsonExport(entitySetComparison);
+    return entityComparison ? buildEntityComparisonJsonExport(entityComparison) : "";
+  }, [entityComparison, entitySetComparison]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
     setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
@@ -626,7 +640,9 @@ export default function SearchPage() {
         setSelectedGraphNodeId(initialState.graphFocusId);
         setShareableExportView(normalizeShareableExportView(initialState.exportView));
         setCompareEntityId(initialState.comparisonTargetId || "Q80");
+        setCompareThirdEntityId(initialState.comparisonThirdTargetId || "Q25169");
       queuedComparisonTargetRef.current = initialState.comparisonTargetId;
+      queuedComparisonThirdTargetRef.current = initialState.comparisonThirdTargetId;
       if (initialQuery) {
         void runSearch(initialQuery, { graphFocusId: initialState.graphFocusId });
       }
@@ -694,16 +710,16 @@ export default function SearchPage() {
     }
   }
 
-  const loadComparisonTarget = useCallback(async (targetId?: string) => {
+  const loadComparisonTarget = useCallback(async (targetId?: string, slot: "primary" | "third" = "primary") => {
     if (!selectedItem || comparisonLoading) return;
 
-    const entityId = (targetId || compareEntityId).trim().toUpperCase();
+    const entityId = (targetId || (slot === "third" ? compareThirdEntityId : compareEntityId)).trim().toUpperCase();
     if (!/^[QP]\d+$/.test(entityId)) {
       setComparisonError("Enter a valid Wikidata ID to compare, such as Q80.");
       return;
     }
 
-    if (entityId === selectedItem.id) {
+    if (entityId === selectedItem.id || (slot === "primary" && comparisonThirdItem?.id === entityId) || (slot === "third" && comparisonItem?.id === entityId)) {
       setComparisonError("Choose a different Wikidata ID for comparison.");
       return;
     }
@@ -714,16 +730,25 @@ export default function SearchPage() {
 
     try {
       const entity = await client.getDetailedEntity(entityId);
-      setComparisonItem(entity);
-      setCompareEntityId(entity.id);
+      if (slot === "third") {
+        setComparisonThirdItem(entity);
+        setCompareThirdEntityId(entity.id);
+      } else {
+        setComparisonItem(entity);
+        setCompareEntityId(entity.id);
+      }
       setActiveTab("compare");
-      replaceWorkbenchUrlState({ tab: "compare", comparisonTargetId: entity.id });
+      if (slot === "third") {
+        replaceWorkbenchUrlState({ tab: "compare", comparisonThirdTargetId: entity.id });
+      } else {
+        replaceWorkbenchUrlState({ tab: "compare", comparisonTargetId: entity.id });
+      }
     } catch (err) {
       setComparisonError(err instanceof Error ? err.message : `Could not load ${entityId} for comparison.`);
     } finally {
       setComparisonLoading(false);
     }
-  }, [compareEntityId, comparisonLoading, selectedItem]);
+  }, [compareEntityId, compareThirdEntityId, comparisonItem?.id, comparisonLoading, comparisonThirdItem?.id, selectedItem]);
 
   async function summarizeEntity() {
     if (!AI_AGENTS_ENABLED) {
@@ -854,6 +879,20 @@ export default function SearchPage() {
     queuedComparisonTargetRef.current = null;
     void loadComparisonTarget(normalizedTargetId);
   }, [activeTab, comparisonItem?.id, comparisonLoading, loadComparisonTarget, selectedItem]);
+
+  useEffect(() => {
+    const targetId = queuedComparisonThirdTargetRef.current;
+    if (activeTab !== "compare" || !selectedItem || !comparisonItem || !targetId || comparisonLoading) return;
+
+    const normalizedTargetId = targetId.toUpperCase();
+    if (normalizedTargetId === selectedItem.id || normalizedTargetId === comparisonItem.id || comparisonThirdItem?.id === normalizedTargetId) {
+      queuedComparisonThirdTargetRef.current = null;
+      return;
+    }
+
+    queuedComparisonThirdTargetRef.current = null;
+    void loadComparisonTarget(normalizedTargetId, "third");
+  }, [activeTab, comparisonItem, comparisonLoading, comparisonThirdItem?.id, loadComparisonTarget, selectedItem]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -1329,7 +1368,7 @@ export default function SearchPage() {
                             Entity comparison
                           </div>
                           <p className="mt-1 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                            Compare visible Wikidata statements for shared properties, source-only claims, target-only claims, and overlapping linked entities.
+                            Compare visible Wikidata statements for shared properties, distinctive claims, overlapping linked entities, and an optional three-entity property matrix.
                           </p>
                         </div>
                         <div className="flex flex-col gap-2 sm:flex-row">
@@ -1344,6 +1383,17 @@ export default function SearchPage() {
                             <GitCompareArrows className="h-4 w-4" />
                             {comparisonLoading ? "Loading" : "Compare"}
                           </Button>
+                          <Input
+                            value={compareThirdEntityId}
+                            onChange={(event) => setCompareThirdEntityId(event.currentTarget.value.toUpperCase())}
+                            placeholder="Q25169"
+                            className="h-10 min-w-40 bg-white dark:bg-slate-950"
+                            aria-label="Third comparison entity ID"
+                          />
+                          <Button type="button" variant="outline" className="gap-2" onClick={() => loadComparisonTarget(undefined, "third")} disabled={comparisonLoading || !comparisonItem}>
+                            <GitCompareArrows className="h-4 w-4" />
+                            Add third
+                          </Button>
                         </div>
                       </div>
 
@@ -1355,12 +1405,12 @@ export default function SearchPage() {
 
                       {!entityComparison ? (
                         <div className="rounded-md border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                          Start with the seeded target Q80 or enter another Q/P ID to compare against {selectedItem.id}.
+                          Start with the seeded target Q80, then add Q25169 for a three-entity property matrix against {selectedItem.id}.
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          <div className="grid gap-3 md:grid-cols-2" data-testid="comparison-summary">
-                            {[entityComparison.source, entityComparison.target].map((entity) => (
+                          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="comparison-summary">
+                            {(entitySetComparison?.entities || [entityComparison.source, entityComparison.target]).map((entity) => (
                               <div key={entity.id} className="rounded-md border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
                                 <div className="mb-2 flex flex-wrap items-center gap-2">
                                   <span className="font-semibold text-slate-950 dark:text-slate-50">{entity.label}</span>
@@ -1394,7 +1444,49 @@ export default function SearchPage() {
                               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Overlapping entities</div>
                               <div className="mt-1 text-xl font-semibold text-slate-950 dark:text-slate-50">{entityComparison.overlappingEntities.length}</div>
                             </div>
+                            {entitySetComparison && (
+                              <div className="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm dark:border-sky-900 dark:bg-sky-950">
+                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Shared by all</div>
+                                <div className="mt-1 text-xl font-semibold text-slate-950 dark:text-slate-50">{entitySetComparison.sharedByAllProperties.length}</div>
+                              </div>
+                            )}
                           </div>
+
+                          {entitySetComparison && (
+                            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950" data-testid="comparison-property-matrix">
+                              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                  <div className="font-semibold text-slate-950 dark:text-slate-50">Three-entity property matrix</div>
+                                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Statement counts by property across the source, comparison target, and third entity.</p>
+                                </div>
+                                <Badge variant="secondary">{entitySetComparison.entities.length} entities</Badge>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full min-w-[720px] text-left text-xs">
+                                  <thead className="text-slate-500 dark:text-slate-400">
+                                    <tr>
+                                      <th className="border-b border-slate-200 py-2 pr-3 dark:border-slate-800">Property</th>
+                                      {entitySetComparison.entities.map((entity) => (
+                                        <th key={entity.id} className="border-b border-slate-200 px-3 py-2 dark:border-slate-800">{entity.id}</th>
+                                      ))}
+                                      <th className="border-b border-slate-200 px-3 py-2 dark:border-slate-800">Coverage</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {entitySetComparison.propertyMatrix.slice(0, 10).map((row) => (
+                                      <tr key={row.id}>
+                                        <td className="border-b border-slate-100 py-2 pr-3 font-medium text-slate-950 dark:border-slate-800 dark:text-slate-50">{row.label} <span className="text-slate-500">{row.id}</span></td>
+                                        {row.cells.map((cell) => (
+                                          <td key={cell.entityId} className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">{cell.count ? `${cell.count} (${cell.referencedCount} ref)` : "-"}</td>
+                                        ))}
+                                        <td className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">{row.sharedByAll ? "All" : `${row.presentCount}/${entitySetComparison.entities.length}`}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
 
                           <div className="grid gap-4 xl:grid-cols-3">
                             <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950" data-testid="comparison-shared-properties">
@@ -1456,7 +1548,7 @@ export default function SearchPage() {
                                 </Button>
                               </div>
                               <p>
-                                This URL restores {entityComparison.source.id} against {entityComparison.target.id} with the selected comparison export open for handoff.
+                                This URL restores {entityComparison.source.id} against {entityComparison.target.id}{comparisonThirdItem ? ` and ${comparisonThirdItem.id}` : ""} with the selected comparison export open for handoff.
                               </p>
                             </div>
                           )}

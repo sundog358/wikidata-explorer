@@ -23,7 +23,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Optional AG2 runtime supports local Python/conda or a token-protected FastAPI container through `AG2_SERVICE_URL`.
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, selected-path Markdown/JSON exports, and shareable selected-path export views.
-- Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
+- Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, optional three-entity property matrices, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
 - `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Q42/Q80/Q25169/P31 Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, Wikidata API outage, Commons outage, and language metadata outage responses.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
@@ -39,7 +39,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - `.vercelignore` now preserves `public/images/**` for deployment.
 - `metadata:check` verifies canonical metadata, robots, sitemap, social preview image, favicon, and site icon.
 - Recruiter-ready Q42 proof path opens Douglas Adams with a selected P31 -> Q5 graph edge, evidence depth, safe exports, and visible AI boundary.
-- AI-off comparison workflow compares Q42 against a target entity such as Q80, with shared/unique properties, overlapping linked entities, and Markdown notes.
+- AI-off comparison workflow compares Q42 against a target entity such as Q80, can add a third entity such as Q25169, and exports shared/unique property notes plus property matrices.
 - README now includes live deployment, CI, and visual QA links above the portfolio story.
 - Timeline evidence graph layout shipped with `glayout=timeline` URL state.
 - Graph node accessibility labels and keyboard-focus coverage shipped in the search interaction test.
@@ -110,19 +110,19 @@ Goal: make the graph the signature feature.
 
 ### 3. Entity Comparison
 
-Status: shipped in production as a public AI-off two-entity comparison slice with shareable comparison target URLs and Markdown/JSON exports; comparison visual QA is on `main`.
+Status: shipped in production as a public AI-off two-entity comparison slice, with optional three-entity property matrices on `main`; shareable comparison URLs and Markdown/JSON exports are covered by visual/browser QA.
 
 Goal: support research workflows beyond single-entity browsing.
 
 - Shipped two-entity comparison from the workbench in public AI-off mode.
 - Shipped shared properties, source-only properties, target-only properties, overlapping related entities, and Markdown comparison exports.
+- Shipped optional three-entity comparison with a property matrix for source, target, and third entity statement counts.
 - Covered comparison with deterministic utility tests and browser e2e coverage.
 - Shipped shareable comparison target URL state for links such as `/search?q=Q42&tab=compare&compare=Q80`.
 - Implemented visual QA coverage and a tracked portfolio screenshot for the comparison tab on `main`.
 - Shipped structured JSON comparison exports and URL-backed export views for tool handoff and repeatable research notes.
-- Next: compare three entities side by side.
 - Next: add seeded examples such as `Q42` vs another author and property-focused examples such as `P31`.
-- Next: carry the export-view pattern into three-entity comparison.
+- Next: add richer three-entity examples and property-focused export views.
 
 ### 4. Evidence And Trust
 
@@ -213,16 +213,16 @@ Status: in progress
 - Shipped: graph filters, depth controls, grouped-by-property layout, timeline evidence layout, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
 - On `main`: performance budgets for `/search?q=Q42` and graph rendering.
 - On `main`: deterministic Wikidata fixtures plus route-mocked browser coverage for search/entity/graph/evidence/media/language, a related-work graph path, and basic error-state regression.
-- Next: more varied seeded entities and three-entity comparison.
+- Next: more varied seeded entities and richer comparison examples.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 
 Status: in progress
 
-- Shipped: selected graph path Markdown/JSON exports, URL-backed selected-path export views, safe curation exports, public AI-off two-entity comparison UI, and Markdown comparison exports.
+- Shipped: selected graph path Markdown/JSON exports, URL-backed selected-path export views, safe curation exports, public AI-off two-entity comparison UI, optional three-entity property matrices, and Markdown comparison exports.
 - Shipped in production: shareable comparison target URLs, structured JSON comparison exports, and URL-backed comparison export views for restored AI-off comparison links.
 - On `main`: comparison-tab visual QA coverage.
-- Next: three-entity comparison.
+- Next: richer comparison examples and property-focused export views.
 
 ### Milestone 4: Grounded AI Research Assistant
 
