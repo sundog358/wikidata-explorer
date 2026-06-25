@@ -74,6 +74,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Deterministic Q42/Q80/Q90/Q95/Q25169/Q46248/P31 Wikidata fixtures are on `main` for search, entity, graph, evidence, media, data-quality, and comparison regression coverage.
 - A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Q25169 related-work graph context, Q95 organization headquarters/media context, Q90 place country/media context, Commons media, language metadata, Q42/Q80 comparison JSON export, Q42/Q46248 author comparison JSON export, Q25169/Q95/Q42 cross-type comparison JSON export, Q25169/Q95/Q90 work/organization/place comparison JSON export, property-focused comparison export restore for P17, direct P31 lookup, empty/missing results, Wikidata outage states, Commons outage states, and language fallback states without live Wikidata calls.
 - AI-enabled AG2 API success contracts are on `main` for `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` through a token-authenticated mock remote service.
+- The built-in observability receiver route is on `main` with live API contract coverage for fail-closed auth, accepted monitor events, sanitized snapshots, and firing alert results.
 
 ## Portfolio Readiness
 
@@ -218,6 +219,7 @@ Observability:
 - Track AG2 grounding invalid responses as a critical alert category before any public AI-enabled demo traffic.
 - Shipped optional hosted monitor webhook delivery for sanitized API failure events and matching alert-rule metadata.
 - Shipped a token-protected built-in monitor receiver with bounded recent-event retention and alert/dashboard snapshots.
+- Shipped live API contract coverage for the built-in monitor receiver's bearer auth, event ingestion, sanitized snapshot, and alert firing behavior.
 - Shipped a tested dashboard/alert rule contract for category panels, severity thresholds, alert windows, and runbook text; next step is configuring durable hosted production storage/dashboarding.
 
 ## Maintenance

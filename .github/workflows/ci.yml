@@ -48,6 +48,8 @@ jobs:
           done
           cat /tmp/wikidata-explorer.log
           exit 1
+        env:
+          API_OBSERVABILITY_RECEIVER_TOKEN: ci-observability-receiver-token
 
       - name: Smoke routes
         run: npm run smoke
@@ -63,6 +65,7 @@ jobs:
         run: npm run api:contracts
         env:
           API_CONTRACT_BASE_URL: http://localhost:3000
+          API_OBSERVABILITY_RECEIVER_TOKEN: ci-observability-receiver-token
 
       - name: AI-enabled AG2 API contract tests
         run: npm run api:contracts:ag2

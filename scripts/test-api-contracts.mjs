@@ -2,13 +2,23 @@ import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "../lib/ai-feature-flags.mj
 
 const baseUrl = process.env.API_CONTRACT_BASE_URL || "http://localhost:3000";
 const aiApiEnabled = aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS });
+const observabilityReceiverToken = process.env.API_OBSERVABILITY_RECEIVER_TOKEN || "";
 
 async function postJson(route, body) {
+  return postJsonWithHeaders(route, body);
+}
+
+async function postJsonWithHeaders(route, body, headers = {}) {
   const response = await fetch(new URL(route, baseUrl), {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
+  return { response, body: await response.json().catch(() => ({})) };
+}
+
+async function getJson(route, headers = {}) {
+  const response = await fetch(new URL(route, baseUrl), { headers });
   return { response, body: await response.json().catch(() => ({})) };
 }
 
@@ -29,6 +39,58 @@ async function check(name, route, request, expectedStatus, expectedError) {
     throw new Error(`${name} expected ${expectedStatus} containing ${JSON.stringify(expectedError)}, got ${response.status} ${JSON.stringify(body)}`);
   }
 }
+
+async function checkObservabilityReceiverContract() {
+  const unauthenticated = await getJson("/api/observability/events");
+  if (!observabilityReceiverToken) {
+    const ok = [401, 503].includes(unauthenticated.response.status);
+    console.log(`${ok ? "PASS" : "FAIL"} observability receiver fails closed ${unauthenticated.response.status}`);
+    if (!ok) {
+      throw new Error(`observability receiver should fail closed without a local contract token, got ${unauthenticated.response.status}`);
+    }
+    return;
+  }
+
+  const unauthenticatedOk = unauthenticated.response.status === 401;
+  console.log(`${unauthenticatedOk ? "PASS" : "FAIL"} observability receiver rejects unauthenticated read ${unauthenticated.response.status}`);
+  if (!unauthenticatedOk) {
+    throw new Error(`observability receiver expected unauthenticated read to return 401, got ${unauthenticated.response.status}`);
+  }
+
+  const authorization = `Bearer ${observabilityReceiverToken}`;
+  const monitorEvent = {
+    event: {
+      route: "/api/chat",
+      status: 502,
+      category: "ag2-grounding-invalid",
+      message: "Grounding references missing Bearer contract-secret-token",
+      createdAt: "2026-06-25T22:30:00.000Z",
+    },
+  };
+  const posted = await postJsonWithHeaders("/api/observability/events", monitorEvent, { authorization });
+  const postOk = posted.response.status === 202 &&
+    posted.body.received === true &&
+    posted.body.category === "ag2-grounding-invalid" &&
+    posted.body.firingAlerts?.some((alert) => alert.id === "ag2-grounding-invalid");
+  console.log(`${postOk ? "PASS" : "FAIL"} observability receiver accepts grounded alert ${posted.response.status}`);
+  if (!postOk) {
+    throw new Error(`observability receiver expected 202 grounded alert response, got ${posted.response.status} ${JSON.stringify(posted.body)}`);
+  }
+
+  const snapshot = await getJson("/api/observability/events", { authorization });
+  const snapshotText = JSON.stringify(snapshot.body);
+  const snapshotOk = snapshot.response.status === 200 &&
+    snapshot.body.dashboard?.title === "Wikidata Explorer API Reliability" &&
+    snapshot.body.retainedEvents >= 1 &&
+    snapshot.body.alertResults?.some((alert) => alert.id === "ag2-grounding-invalid" && alert.firing === true) &&
+    !snapshotText.includes("contract-secret-token");
+  console.log(`${snapshotOk ? "PASS" : "FAIL"} observability receiver exposes sanitized snapshot ${snapshot.response.status}`);
+  if (!snapshotOk) {
+    throw new Error(`observability receiver expected sanitized dashboard snapshot, got ${snapshot.response.status} ${snapshotText}`);
+  }
+}
+
+await checkObservabilityReceiverContract();
 
 if (!aiApiEnabled) {
   await check("chat disabled in public mode", "/api/chat", "{", 404, AI_DISABLED_MESSAGE);
