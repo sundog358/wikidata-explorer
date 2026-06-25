@@ -26,7 +26,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🧾 Inspect statement ranks, referenced/unreferenced badges, statement IDs, qualifiers, references, and source hints in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
 - 🧑‍⚖️ Review entity data-quality findings with persisted browser-local task status and source-link hints
-- 💾 Save browser-local or token-protected project workspace slots with curation-task and agent-history summaries, or export/restore portable snapshots with curation task details, review state, dismissed findings, and saved AG2 run history
+- 💾 Save browser-local or token-protected project workspace slots with curation-task and agent-history summaries/previews, or export/restore portable snapshots with curation task details, review state, dismissed findings, and saved AG2 run history
 - 📤 Export evidence-grounded graph paths, review findings, task status, source hints, and safe QuickStatements draft comments
 - 🛡️ Classify specialist workflows through a tested autonomy safety layer before future bot/draft actions
 - ✅ Verify changes with lint, unit tests, production build, trace checks, route smoke tests, API contracts, e2e interaction tests, visual QA, and GitHub Actions
@@ -123,7 +123,7 @@ WORKSPACE_STORE_DIR=C:\path\to\durable\workspace-store
 WORKSPACE_STORE_TOKEN=generate-a-random-shared-token
 ```
 
-When configured, `/api/workspaces` provides bearer-token-protected project workspace slot persistence using the same sanitized portable snapshot format as browser-local slots. The Review Queue tab can load, save, and delete project slots with curation task details, review statuses, dismissed findings, saved AG2 run history, compact project task summaries, and saved-agent-run summaries when a private/self-hosted token is entered; the token is kept in browser session storage. Use `includeTasks=true` and `includeAgentRuns=true` on reads, or `includeTasks: true` and `includeAgentRuns: true` on writes/deletes, to include the sanitized project curation-task index, saved-agent-run index, and summaries in API responses. Use a durable mounted directory for hosted/self-hosted deployments; the public demo can leave it unset and fail closed.
+When configured, `/api/workspaces` provides bearer-token-protected project workspace slot persistence using the same sanitized portable snapshot format as browser-local slots. The Review Queue tab can load, save, and delete project slots with curation task details, review statuses, dismissed findings, saved AG2 run history, compact project task summaries, saved-agent-run summaries, and top backlog/history previews when a private/self-hosted token is entered; the token is kept in browser session storage. Use `includeTasks=true` and `includeAgentRuns=true` on reads, or `includeTasks: true` and `includeAgentRuns: true` on writes/deletes, to include the sanitized project curation-task index, saved-agent-run index, and summaries in API responses. Use a durable mounted directory for hosted/self-hosted deployments; the public demo can leave it unset and fail closed.
 
 Local environment files, provider keys, Pywikibot credentials, runtime files, caches, and research artifacts are ignored by default.
 

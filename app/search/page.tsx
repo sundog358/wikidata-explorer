@@ -127,6 +127,27 @@ type ProjectWorkspaceAgentSummary = {
   actionCounts: Record<AgentAction, number>;
 };
 
+type ProjectWorkspaceTaskPreview = {
+  id: string;
+  title: string;
+  entityId: string;
+  propertyLabel: string;
+  status: ReviewTaskStatus;
+  severity: "medium" | "high";
+  workspaceEntityLabel: string;
+  workspaceUpdatedAt: string;
+};
+
+type ProjectWorkspaceAgentRunPreview = {
+  id: string;
+  title: string;
+  entityId: string;
+  entityLabel: string;
+  action: AgentAction;
+  createdAt: string;
+  workspaceSlotLabel: string;
+};
+
 function normalizeShareableExportView(value: unknown): ShareableExportView | null {
   return value === "graph-markdown" || value === "graph-json" || value === "comparison-markdown" || value === "comparison-json" || value === "comparison-property" ? value : null;
 }
@@ -317,6 +338,15 @@ function reviewStatusLabel(status: ReviewTaskStatus): string {
   return REVIEW_TASK_STATUS_OPTIONS.find((option) => option.value === status)?.label || "Needs review";
 }
 
+function previewText(value: unknown, fallback = "", maxLength = 160): string {
+  const text = String(value ?? fallback)
+    .replace(/[\t\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+  return text || fallback;
+}
+
 function normalizeProjectWorkspaceTaskSummary(value: unknown): ProjectWorkspaceTaskSummary | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
@@ -346,6 +376,31 @@ function normalizeProjectWorkspaceTaskSummary(value: unknown): ProjectWorkspaceT
   };
 }
 
+function normalizeProjectWorkspaceTaskPreviews(value: unknown): ProjectWorkspaceTaskPreview[] {
+  if (!Array.isArray(value)) return [];
+  const allowedStatuses = new Set(REVIEW_TASK_STATUS_OPTIONS.map((option) => option.value));
+
+  return value.slice(0, 6).map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+    const record = item as Record<string, unknown>;
+    const id = previewText(record.id, "", 320);
+    const entityId = previewText(record.entityId, "", 32).toUpperCase();
+    if (!id || !/^[QP]\d+$/.test(entityId)) return null;
+    const status = allowedStatuses.has(record.status as ReviewTaskStatus) ? record.status as ReviewTaskStatus : "needs_review";
+
+    return {
+      id,
+      title: previewText(record.title, "Review statement evidence", 180),
+      entityId,
+      propertyLabel: previewText(record.propertyLabel || record.propertyId, "Property", 120),
+      status,
+      severity: record.severity === "high" ? "high" : "medium",
+      workspaceEntityLabel: previewText(record.workspaceEntityLabel || record.entityLabel || entityId, entityId, 140),
+      workspaceUpdatedAt: previewText(record.workspaceUpdatedAt, "", 80),
+    };
+  }).filter(Boolean) as ProjectWorkspaceTaskPreview[];
+}
+
 function normalizeProjectWorkspaceAgentSummary(value: unknown): ProjectWorkspaceAgentSummary | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
@@ -369,6 +424,30 @@ function normalizeProjectWorkspaceAgentSummary(value: unknown): ProjectWorkspace
       report: numberValue(actionCounts.report),
     },
   };
+}
+
+function normalizeProjectWorkspaceAgentRunPreviews(value: unknown): ProjectWorkspaceAgentRunPreview[] {
+  if (!Array.isArray(value)) return [];
+  const allowedActions = new Set<AgentAction>(["research", "graph", "suggest", "verify", "compare", "report"]);
+
+  return value.slice(0, 5).map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+    const record = item as Record<string, unknown>;
+    const id = previewText(record.id, "", 160);
+    const entityId = previewText(record.entityId, "", 32).toUpperCase();
+    const action = allowedActions.has(record.action as AgentAction) ? record.action as AgentAction : null;
+    if (!id || !/^[QP]\d+$/.test(entityId) || !action) return null;
+
+    return {
+      id,
+      title: previewText(record.title, `${action} agent run`, 160),
+      entityId,
+      entityLabel: previewText(record.entityLabel || entityId, entityId, 140),
+      action,
+      createdAt: previewText(record.createdAt, "", 80),
+      workspaceSlotLabel: previewText(record.workspaceSlotLabel, "Workspace", 140),
+    };
+  }).filter(Boolean) as ProjectWorkspaceAgentRunPreview[];
 }
 
 function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): ReviewQueueItem[] {
@@ -557,6 +636,8 @@ function SearchWorkbench() {
   const [projectWorkspaceLoading, setProjectWorkspaceLoading] = useState<"load" | "save" | "delete" | null>(null);
   const [projectWorkspaceTaskSummary, setProjectWorkspaceTaskSummary] = useState<ProjectWorkspaceTaskSummary | null>(null);
   const [projectWorkspaceAgentSummary, setProjectWorkspaceAgentSummary] = useState<ProjectWorkspaceAgentSummary | null>(null);
+  const [projectWorkspaceTaskPreviews, setProjectWorkspaceTaskPreviews] = useState<ProjectWorkspaceTaskPreview[]>([]);
+  const [projectWorkspaceAgentRunPreviews, setProjectWorkspaceAgentRunPreviews] = useState<ProjectWorkspaceAgentRunPreview[]>([]);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const queuedComparisonTargetRef = useRef<string | null>(initialWorkbenchState.comparisonTargetId);
   const queuedComparisonThirdTargetRef = useRef<string | null>(initialWorkbenchState.comparisonThirdTargetId);
@@ -835,6 +916,8 @@ function SearchWorkbench() {
       slots: readWorkspaceSlots(data.slots),
       taskSummary: normalizeProjectWorkspaceTaskSummary(data.taskSummary),
       agentSummary: normalizeProjectWorkspaceAgentSummary(data.agentSummary),
+      taskPreviews: normalizeProjectWorkspaceTaskPreviews(data.curationTasks),
+      agentRunPreviews: normalizeProjectWorkspaceAgentRunPreviews(data.agentRuns),
     };
   }
 
@@ -846,6 +929,8 @@ function SearchWorkbench() {
       setProjectWorkspaceId(result.projectId);
       setProjectWorkspaceTaskSummary(result.taskSummary);
       setProjectWorkspaceAgentSummary(result.agentSummary);
+      setProjectWorkspaceTaskPreviews(result.taskPreviews);
+      setProjectWorkspaceAgentRunPreviews(result.agentRunPreviews);
       setWorkspaceSnapshotMessage(`Loaded ${result.slots.length} project workspace slot${result.slots.length === 1 ? "" : "s"} from ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -879,6 +964,8 @@ function SearchWorkbench() {
       setProjectWorkspaceId(result.projectId);
       setProjectWorkspaceTaskSummary(result.taskSummary);
       setProjectWorkspaceAgentSummary(result.agentSummary);
+      setProjectWorkspaceTaskPreviews(result.taskPreviews);
+      setProjectWorkspaceAgentRunPreviews(result.agentRunPreviews);
       setWorkspaceSnapshotMessage(`Saved project workspace for ${getEntityLabel(selectedItem)} (${selectedItem.id}) to ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -900,6 +987,8 @@ function SearchWorkbench() {
       setProjectWorkspaceId(result.projectId);
       setProjectWorkspaceTaskSummary(result.taskSummary);
       setProjectWorkspaceAgentSummary(result.agentSummary);
+      setProjectWorkspaceTaskPreviews(result.taskPreviews);
+      setProjectWorkspaceAgentRunPreviews(result.agentRunPreviews);
       setWorkspaceSnapshotMessage(`Removed project workspace slot from ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -2299,6 +2388,41 @@ function SearchWorkbench() {
                                 <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceAgentSummary.entities} entities</div>
                                 <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceAgentSummary.workspaces} workspaces</div>
                               </div>
+                            </div>
+                          )}
+                          {(projectWorkspaceTaskPreviews.length > 0 || projectWorkspaceAgentRunPreviews.length > 0) && (
+                            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                              {projectWorkspaceTaskPreviews.length > 0 && (
+                                <div className="space-y-2" data-testid="project-workspace-task-preview">
+                                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Project review backlog</div>
+                                  {projectWorkspaceTaskPreviews.map((task) => (
+                                    <div key={task.id} className="rounded-md border border-slate-200 bg-white p-2 text-xs dark:border-slate-800 dark:bg-slate-950">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <Badge variant={task.severity === "high" ? "destructive" : "secondary"}>{task.severity}</Badge>
+                                        <Badge variant="outline">{reviewStatusLabel(task.status)}</Badge>
+                                        <span className="font-semibold text-slate-950 dark:text-slate-50">{task.propertyLabel}</span>
+                                      </div>
+                                      <div className="mt-1 text-slate-700 dark:text-slate-200">{task.title}</div>
+                                      <div className="mt-1 text-slate-500 dark:text-slate-400">{task.workspaceEntityLabel} ({task.entityId})</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {projectWorkspaceAgentRunPreviews.length > 0 && (
+                                <div className="space-y-2" data-testid="project-workspace-agent-preview">
+                                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Project agent history</div>
+                                  {projectWorkspaceAgentRunPreviews.map((run) => (
+                                    <div key={run.id} className="rounded-md border border-slate-200 bg-white p-2 text-xs dark:border-slate-800 dark:bg-slate-950">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <Badge variant="secondary">{run.action}</Badge>
+                                        <span className="font-semibold text-slate-950 dark:text-slate-50">{run.title}</span>
+                                      </div>
+                                      <div className="mt-1 text-slate-700 dark:text-slate-200">{run.entityLabel} ({run.entityId})</div>
+                                      <div className="mt-1 text-slate-500 dark:text-slate-400">{run.workspaceSlotLabel}{run.createdAt ? ` - ${new Date(run.createdAt).toLocaleString()}` : ""}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

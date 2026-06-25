@@ -189,6 +189,10 @@ try {
   if (!projectSummaryText.includes(`${expectedProjectSummary.open} open`) || !projectSummaryText.includes("1 ready") || !projectSummaryText.includes("1 workspaces")) {
     throw new Error(`Expected project workspace task summary after save, got ${projectSummaryText}`);
   }
+  const projectTaskPreviewText = await page.getByTestId("project-workspace-task-preview").innerText();
+  if (!projectTaskPreviewText.toLowerCase().includes("project review backlog") || !projectTaskPreviewText.includes("Ready to draft") || !projectTaskPreviewText.includes("Deprecated statement needs review")) {
+    throw new Error(`Expected project workspace task preview after save, got ${projectTaskPreviewText}`);
+  }
   const projectAgentSummaryText = await page.getByTestId("project-workspace-agent-summary").innerText();
   if (!projectAgentSummaryText.includes("0 agent runs") || !projectAgentSummaryText.includes("No saved runs")) {
     throw new Error(`Expected empty project workspace agent summary after save, got ${projectAgentSummaryText}`);
@@ -205,6 +209,9 @@ try {
   const emptyProjectAgentSummaryText = await page.getByTestId("project-workspace-agent-summary").innerText();
   if (!emptyProjectAgentSummaryText.includes("0 agent runs")) {
     throw new Error(`Expected empty project workspace agent summary after delete, got ${emptyProjectAgentSummaryText}`);
+  }
+  if (await page.getByTestId("project-workspace-task-preview").count() !== 0 || await page.getByTestId("project-workspace-agent-preview").count() !== 0) {
+    throw new Error("Expected project workspace previews to clear after project slot delete.");
   }
   projectWorkspaceSlots.push({
     ...savedWorkspaceSlots[0],
@@ -237,6 +244,10 @@ try {
   const loadedAgentSummaryText = await page.getByTestId("project-workspace-agent-summary").innerText();
   if (!loadedAgentSummaryText.includes("1 agent run") || !loadedAgentSummaryText.includes("1 verify") || !loadedAgentSummaryText.includes("1 entities")) {
     throw new Error(`Expected loaded project workspace agent summary, got ${loadedAgentSummaryText}`);
+  }
+  const loadedAgentPreviewText = await page.getByTestId("project-workspace-agent-preview").innerText();
+  if (!loadedAgentPreviewText.toLowerCase().includes("project agent history") || !loadedAgentPreviewText.includes("Verifier") || !loadedAgentPreviewText.includes("Douglas Adams")) {
+    throw new Error(`Expected loaded project workspace agent preview, got ${loadedAgentPreviewText}`);
   }
 
   await page.getByRole("tab", { name: /Statements/ }).click();
