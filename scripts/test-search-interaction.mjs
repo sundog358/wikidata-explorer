@@ -62,6 +62,16 @@ try {
   if (!Object.values(workspaceSnapshot.review.taskStatuses).includes("ready_to_draft")) {
     throw new Error(`Expected workspace snapshot to include persisted review task status, got ${JSON.stringify(workspaceSnapshot.review.taskStatuses)}`);
   }
+  await page.getByTestId("workspace-slot-name").fill("Q42 reviewer workspace");
+  await page.getByTestId("save-workspace-slot").click();
+  const savedWorkspaceSlotsText = await page.getByTestId("saved-workspace-slots").innerText();
+  if (!savedWorkspaceSlotsText.includes("Q42 reviewer workspace") || !savedWorkspaceSlotsText.includes("Douglas Adams (Q42)")) {
+    throw new Error(`Expected saved browser workspace slot for Q42, got ${savedWorkspaceSlotsText}`);
+  }
+  const savedWorkspaceSlots = await page.evaluate(() => JSON.parse(window.localStorage.getItem("wikidata-explorer.workspaceSlots.v1") || "[]"));
+  if (savedWorkspaceSlots[0]?.snapshot?.entity?.id !== "Q42" || !Object.values(savedWorkspaceSlots[0]?.snapshot?.review?.taskStatuses || {}).includes("ready_to_draft")) {
+    throw new Error(`Expected browser workspace slot to persist Q42 review state, got ${JSON.stringify(savedWorkspaceSlots)}`);
+  }
 
   await page.getByRole("tab", { name: /Statements/ }).click();
   const statementBadges = await page.getByTestId("statement-evidence-badges").allInnerTexts();

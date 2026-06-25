@@ -25,7 +25,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, selected-path Markdown/JSON exports, and shareable selected-path export views.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, optional three-entity property matrices, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
 - `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, light/dark visual QA coverage, deterministic Q42/Q80/Q90/Q95/Q25169/Q46248/P31 Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, Wikidata API outage, Commons outage, and language metadata outage responses.
-- Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, portable workspace snapshots, and safe curation exports.
+- Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, browser-local workspace slots, portable workspace snapshots, and safe curation exports.
 - AG2 workflows support chat, selected workbench context handoff, citation-style grounding requirements, route-level grounding validation, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
 - Portfolio proof includes tracked screenshots, visual QA, metadata/social preview checks, favicon/site-icon coverage, production trace checks, route smoke tests, API contracts, e2e checks, GitHub Actions CI, and a standalone architecture/safety/testing/deployment case study.
@@ -53,6 +53,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Place fixture coverage now adds Q90/Paris with country, administrative region, coordinate, image/media, source-link, graph-regression, and work/organization/place comparison checks.
 - Property-focused comparison exports now restore a selected property with `export=comparison-property&cprop=P...` and provide Markdown/JSON handoff text for reviewer workflows.
 - Portable workspace snapshots now export and restore review task statuses, dismissed review findings, and saved AG2 run history with tested artifact validation.
+- Browser-local workspace slots now save named entity workspaces using the portable snapshot format, with restore/delete controls and bounded slot validation.
 - GitHub Actions CI now uses Node 24-compatible action lines for checkout, setup-node, Chrome setup, and artifact upload, with a regression test to keep the workflow current.
 - AI-enabled AG2 routes now reject ungrounded responses that lack `Grounding references` or supplied Wikidata IDs, and emit an `ag2-grounding-invalid` observability category.
 - AI API routes can now deliver sanitized failure events and matching alert-rule metadata to an optional hosted monitor webhook.
@@ -86,7 +87,7 @@ Beyond 9.5:
 To reach 10:
 
 - Ship an optional hosted AG2 container demo now that AI-enabled routes enforce traceable, citation-style Wikidata ID references in responses.
-- Add account/project-backed persistence for workspace snapshots, curation tasks, and agent history beyond portable browser artifacts.
+- Add account/project-backed persistence for browser-local workspace slots, snapshots, curation tasks, and agent history.
 - Configure a hosted production monitor endpoint for the tested observability webhook and alert contract.
 
 ## Next Priorities
@@ -152,6 +153,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Extended source-link coverage into full statement detail views.
 - Added fallback support for uncommon external-ID formatter patterns beyond `$1`.
 - Shipped portable workspace snapshots for review task statuses, dismissed findings, and saved AG2 run history.
+- Shipped named browser-local workspace slots as a bounded, restorable project-slot step before account-backed storage.
 - Promote review queue findings into account/project-backed, source-backed curation tasks once a storage layer exists.
 
 ### 5. AG2 Assistant Context
@@ -265,7 +267,7 @@ Status: partially shipped
 
 Status: in progress
 
-- Shipped: portable workspace snapshots for review task statuses, dismissed findings, and saved AG2 run history.
+- Shipped: portable workspace snapshots and named browser-local workspace slots for review task statuses, dismissed findings, and saved AG2 run history.
 - Next: account/project-backed persisted curation tasks.
 - Next: account/project-backed persisted agent history.
 - Optional project/workspace storage.

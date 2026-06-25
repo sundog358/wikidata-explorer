@@ -26,7 +26,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🧾 Inspect statement ranks, referenced/unreferenced badges, statement IDs, qualifiers, references, and source hints in expandable evidence rows
 - 🗃️ Revisit saved AG2 agent runs per entity when AI mode is enabled
 - 🧑‍⚖️ Review entity data-quality findings with persisted browser-local task status and source-link hints
-- 💾 Export and restore portable workspace snapshots with review task state, dismissed findings, and saved AG2 run history
+- 💾 Save browser-local workspace slots or export/restore portable snapshots with review task state, dismissed findings, and saved AG2 run history
 - 📤 Export evidence-grounded graph paths, review findings, task status, source hints, and safe QuickStatements draft comments
 - 🛡️ Classify specialist workflows through a tested autonomy safety layer before future bot/draft actions
 - ✅ Verify changes with lint, unit tests, production build, trace checks, route smoke tests, API contracts, e2e interaction tests, visual QA, and GitHub Actions
@@ -203,7 +203,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow with a client-side error boundary, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, portable workspace snapshots, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow with a client-side error boundary, shareable two/three-entity comparison targets, selected graph path exports, URL-backed export views, browser-local workspace slots, portable workspace snapshots, graph focus, AG2 chat context handoff, data-quality summary, evidence-aware statement details, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant with bounded visible-context handoff from the workbench
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
@@ -220,7 +220,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/ai-feature-flags.mjs`: shared public/server AI feature flag helper
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
-- `lib/workspace-snapshot.mjs`: tested portable workspace snapshot sanitizer for review task state, dismissed findings, and saved AG2 run history
+- `lib/workspace-snapshot.mjs`: tested portable workspace snapshot and browser-local slot sanitizer for review task state, dismissed findings, and saved AG2 run history
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and external IDs with `$1`, URI-template, encoded-placeholder, and formatter-root fallbacks
 - `lib/search-url-state.mjs`: tested shareable tab, comparison-target, third-comparison-target, comparison-property, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
@@ -238,7 +238,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `agents/ag2_service.py`: token-protected FastAPI wrapper for the containerized AG2 runtime
 - `agents/Dockerfile`: Docker image for hosting the AG2 service outside Vercel
 - `scripts/check-deploy-env.mjs`: pre-deploy environment guard for public AI-off and AI container modes
-- `scripts/test-workspace-snapshot.mjs`: portable workspace snapshot tests for review statuses, dismissed findings, agent-run history, supported artifact versioning, and secret-shaped text redaction
+- `scripts/test-workspace-snapshot.mjs`: portable workspace snapshot and saved-slot tests for review statuses, dismissed findings, agent-run history, supported artifact versioning, bounds, and secret-shaped text redaction
 - `scripts/test-github-actions-maintenance.mjs`: CI workflow maintenance test that keeps GitHub Actions on Node 24-compatible action lines while the app runtime remains tested on Node 20+
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-api-observability.mjs`: safe logging/category/dashboard-alert/webhook tests that ensure API failure events, monitor payloads, and observability rules do not expose prompts, keys, bearer tokens, or raw payloads
@@ -258,7 +258,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, workspace snapshot review-state export, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including labelled controls/options, timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison with keyboard-reachable controls, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, workspace snapshot review-state export, browser-local workspace slots, evidence-aware statement badges/source hints, AI-off comparison with shareable URL restore and Markdown/JSON export views, graph depth/layout/filtering including labelled controls/options, timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison with keyboard-reachable controls, selected statement details, hidden/visible AI graph focus, selected-path export views, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, light/dark route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA

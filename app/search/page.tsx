@@ -12,7 +12,7 @@ import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/searc
 import { evaluateAutonomyAction } from "@/lib/autonomy-safety.mjs";
 import { AG2_CHAT_CONTEXT_STORAGE_KEY, sanitizeChatVisibleContext } from "@/lib/ag2-chat-context.mjs";
 import { aiAgentsEnabled, AI_DISABLED_MESSAGE } from "@/lib/ai-feature-flags.mjs";
-import { buildWorkspaceSnapshot, parseWorkspaceSnapshot } from "@/lib/workspace-snapshot.mjs";
+import { buildWorkspaceSnapshot, parseWorkspaceSnapshot, readWorkspaceSlotCollection, removeWorkspaceSlot, upsertWorkspaceSlot } from "@/lib/workspace-snapshot.mjs";
 import { searchWikidata, WikidataClient, type WikidataItem, type WikidataLanguage, type WikidataMediaInfo, type WikidataStatement } from "@/lib/wikidata";
 import { RelationshipGraph, type RelationshipGraphFilters, type RelationshipGraphFocus } from "@/components/relationship-graph";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -100,6 +100,16 @@ type RunSearchOptions = {
   graphFocusId?: string | null;
 };
 
+type WorkspaceSlotState = {
+  id: string;
+  label: string;
+  entityId: string;
+  entityLabel: string;
+  createdAt: string;
+  updatedAt: string;
+  snapshot: ReturnType<typeof buildWorkspaceSnapshot>;
+};
+
 function normalizeShareableExportView(value: unknown): ShareableExportView | null {
   return value === "graph-markdown" || value === "graph-json" || value === "comparison-markdown" || value === "comparison-json" || value === "comparison-property" ? value : null;
 }
@@ -107,6 +117,7 @@ function normalizeShareableExportView(value: unknown): ShareableExportView | nul
 const AGENT_RUNS_STORAGE_KEY = "wikidata-explorer.agentRuns.v1";
 const DISMISSED_REVIEW_STORAGE_KEY = "wikidata-explorer.dismissedReviewItems.v1";
 const REVIEW_TASK_STATUS_STORAGE_KEY = "wikidata-explorer.reviewTaskStatus.v1";
+const WORKSPACE_SLOTS_STORAGE_KEY = "wikidata-explorer.workspaceSlots.v1";
 
 const AI_AGENTS_ENABLED = aiAgentsEnabled({
   NEXT_PUBLIC_ENABLE_AI_AGENTS: process.env.NEXT_PUBLIC_ENABLE_AI_AGENTS,
@@ -277,6 +288,10 @@ function readJsonRecord<T extends string>(key: string, allowedValues: readonly T
   } catch {
     return {};
   }
+}
+
+function readWorkspaceSlots(value: unknown): WorkspaceSlotState[] {
+  return readWorkspaceSlotCollection(value).filter(Boolean) as WorkspaceSlotState[];
 }
 
 function reviewStatusLabel(status: ReviewTaskStatus): string {
@@ -462,6 +477,8 @@ function SearchWorkbench() {
   const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
   const [workspaceSnapshotInput, setWorkspaceSnapshotInput] = useState("");
   const [workspaceSnapshotMessage, setWorkspaceSnapshotMessage] = useState<string | null>(null);
+  const [workspaceSlotName, setWorkspaceSlotName] = useState("");
+  const [savedWorkspaceSlots, setSavedWorkspaceSlots] = useState<WorkspaceSlotState[]>([]);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const queuedComparisonTargetRef = useRef<string | null>(initialWorkbenchState.comparisonTargetId);
   const queuedComparisonThirdTargetRef = useRef<string | null>(initialWorkbenchState.comparisonThirdTargetId);
@@ -472,6 +489,7 @@ function SearchWorkbench() {
       setSavedAgentRuns(readJsonArray<SavedAgentRun>(AGENT_RUNS_STORAGE_KEY).slice(0, 40));
       setDismissedReviewIds(readJsonArray<string>(DISMISSED_REVIEW_STORAGE_KEY));
       setReviewTaskStatuses(readJsonRecord<ReviewTaskStatus>(REVIEW_TASK_STATUS_STORAGE_KEY, REVIEW_TASK_STATUS_OPTIONS.map((option) => option.value)));
+      setSavedWorkspaceSlots(readWorkspaceSlots(window.localStorage.getItem(WORKSPACE_SLOTS_STORAGE_KEY)));
       storageHydratedRef.current = true;
     }, 0);
 
@@ -493,6 +511,11 @@ function SearchWorkbench() {
     const entries = Object.entries(reviewTaskStatuses).slice(-300);
     window.localStorage.setItem(REVIEW_TASK_STATUS_STORAGE_KEY, JSON.stringify(Object.fromEntries(entries)));
   }, [reviewTaskStatuses]);
+
+  useEffect(() => {
+    if (!storageHydratedRef.current || typeof window === "undefined") return;
+    window.localStorage.setItem(WORKSPACE_SLOTS_STORAGE_KEY, JSON.stringify(savedWorkspaceSlots));
+  }, [savedWorkspaceSlots]);
 
   useEffect(() => {
     let cancelled = false;
@@ -621,13 +644,14 @@ function SearchWorkbench() {
   }, [defaultComparisonPropertyId, entityComparison, entitySetComparison, selectedComparisonPropertyId, shareableExportView]);
   const comparisonPropertyMarkdownDraft = useMemo(() => buildComparisonPropertyMarkdownExport(comparisonPropertyFocus), [comparisonPropertyFocus]);
   const comparisonPropertyJsonDraft = useMemo(() => buildComparisonPropertyJsonExport(comparisonPropertyFocus), [comparisonPropertyFocus]);
-  const workspaceSnapshotJson = useMemo(() => JSON.stringify(buildWorkspaceSnapshot({
+  const workspaceSnapshot = useMemo(() => buildWorkspaceSnapshot({
     entityId: selectedItem?.id,
     entityLabel: getEntityLabel(selectedItem),
     reviewTaskStatuses,
     dismissedReviewIds,
     savedAgentRuns,
-  }), null, 2), [dismissedReviewIds, reviewTaskStatuses, savedAgentRuns, selectedItem]);
+  }), [dismissedReviewIds, reviewTaskStatuses, savedAgentRuns, selectedItem]);
+  const workspaceSnapshotJson = useMemo(() => JSON.stringify(workspaceSnapshot, null, 2), [workspaceSnapshot]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
     setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
@@ -642,8 +666,8 @@ function SearchWorkbench() {
     }
   }
 
-  function restoreWorkspaceSnapshot() {
-    const parsed = parseWorkspaceSnapshot(workspaceSnapshotInput);
+  function restoreWorkspaceSnapshotValue(value: unknown) {
+    const parsed = parseWorkspaceSnapshot(value);
     if (!parsed.ok || !parsed.snapshot) {
       setWorkspaceSnapshotMessage(parsed.error || "Could not restore this workspace snapshot.");
       return;
@@ -665,6 +689,30 @@ function SearchWorkbench() {
     if (selectedItem?.id !== parsed.snapshot.entity.id) {
       void loadEntity(parsed.snapshot.entity.id);
     }
+  }
+
+  function restoreWorkspaceSnapshot() {
+    restoreWorkspaceSnapshotValue(workspaceSnapshotInput);
+  }
+
+  function saveWorkspaceSlot() {
+    if (!selectedItem) return;
+    const label = workspaceSlotName.trim() || `${getEntityLabel(selectedItem)} workspace`;
+    const now = new Date().toISOString();
+    setSavedWorkspaceSlots((slots) => readWorkspaceSlots(upsertWorkspaceSlot(slots, {
+      id: `workspace-${selectedItem.id}`,
+      label,
+      snapshot: workspaceSnapshot,
+      createdAt: slots.find((slot) => slot.id === `workspace-${selectedItem.id}`)?.createdAt || now,
+      updatedAt: now,
+    })));
+    setWorkspaceSlotName(label);
+    setWorkspaceSnapshotMessage(`Saved browser workspace for ${getEntityLabel(selectedItem)} (${selectedItem.id}).`);
+  }
+
+  function deleteWorkspaceSlot(slotId: string) {
+    setSavedWorkspaceSlots((slots) => readWorkspaceSlots(removeWorkspaceSlot(slots, slotId)));
+    setWorkspaceSnapshotMessage("Removed saved browser workspace.");
   }
 
   function updateShareableExportView(nextView: ShareableExportView | null, tab: SearchWorkbenchTab) {
@@ -1986,6 +2034,41 @@ function SearchWorkbench() {
                           </div>
                           <textarea value={workspaceSnapshotInput} onChange={(event) => setWorkspaceSnapshotInput(event.currentTarget.value)} className="h-40 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Workspace snapshot JSON import" placeholder="Paste a Wikidata Explorer workspace snapshot JSON artifact..." data-testid="workspace-snapshot-input" />
                         </div>
+                      </div>
+                      <div className="mt-4 rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950" data-testid="workspace-slot-manager">
+                        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+                          <label className="grid flex-1 gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                            <span>Browser workspace name</span>
+                            <Input value={workspaceSlotName} onChange={(event) => setWorkspaceSlotName(event.currentTarget.value)} placeholder={`${getEntityLabel(selectedItem)} workspace`} aria-label="Browser workspace name" data-testid="workspace-slot-name" />
+                          </label>
+                          <Button type="button" variant="outline" size="sm" onClick={saveWorkspaceSlot} data-testid="save-workspace-slot">
+                            Save Browser Slot
+                          </Button>
+                        </div>
+                        {savedWorkspaceSlots.length === 0 ? (
+                          <div className="rounded-md border border-dashed border-slate-300 p-3 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                            No saved browser workspaces yet.
+                          </div>
+                        ) : (
+                          <div className="space-y-2" data-testid="saved-workspace-slots">
+                            {savedWorkspaceSlots.map((slot) => (
+                              <div key={slot.id} className="flex flex-col gap-2 rounded-md border border-slate-200 p-3 text-xs dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                  <div className="font-semibold text-slate-950 dark:text-slate-50">{slot.label}</div>
+                                  <div className="mt-1 text-slate-500 dark:text-slate-400">{slot.entityLabel} ({slot.entityId}) saved {new Date(slot.updatedAt).toLocaleString()}</div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button type="button" variant="outline" size="sm" onClick={() => restoreWorkspaceSnapshotValue(slot.snapshot)}>
+                                    Restore
+                                  </Button>
+                                  <Button type="button" variant="outline" size="sm" onClick={() => deleteWorkspaceSlot(slot.id)}>
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 

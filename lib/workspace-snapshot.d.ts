@@ -17,6 +17,16 @@ export type WorkspaceSnapshot = {
   agentRuns: unknown[];
 };
 
+export type WorkspaceSlot = {
+  id: string;
+  label: string;
+  entityId: string;
+  entityLabel: string;
+  createdAt: string;
+  updatedAt: string;
+  snapshot: WorkspaceSnapshot;
+};
+
 export function sanitizeWorkspaceReviewTaskStatuses(statuses?: unknown): Record<string, WorkspaceReviewTaskStatus>;
 export function sanitizeWorkspaceDismissedReviewIds(ids?: unknown): string[];
 export function sanitizeWorkspaceAgentRuns(runs?: unknown): unknown[];
@@ -33,3 +43,7 @@ export function parseWorkspaceSnapshot(value: unknown): {
   error: string | null;
   snapshot: WorkspaceSnapshot | null;
 };
+export function sanitizeWorkspaceSlot(slot?: unknown): WorkspaceSlot | null;
+export function readWorkspaceSlotCollection(value: unknown): WorkspaceSlot[];
+export function upsertWorkspaceSlot(slots?: unknown, slotInput?: unknown): WorkspaceSlot[];
+export function removeWorkspaceSlot(slots?: unknown, slotId?: string): WorkspaceSlot[];
