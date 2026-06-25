@@ -450,6 +450,65 @@ function normalizeProjectWorkspaceAgentRunPreviews(value: unknown): ProjectWorks
   }).filter(Boolean) as ProjectWorkspaceAgentRunPreview[];
 }
 
+function buildProjectWorkspaceMarkdownBrief(input: {
+  projectId: string;
+  taskSummary: ProjectWorkspaceTaskSummary | null;
+  agentSummary: ProjectWorkspaceAgentSummary | null;
+  taskPreviews: ProjectWorkspaceTaskPreview[];
+  agentRunPreviews: ProjectWorkspaceAgentRunPreview[];
+}) {
+  const projectId = previewText(input.projectId, "default", 64);
+  const lines = [
+    "# Wikidata Explorer project brief",
+    "",
+    `Project: ${projectId}`,
+    `Generated: ${new Date().toISOString()}`,
+    "",
+  ];
+
+  if (input.taskSummary) {
+    lines.push(
+      "## Review backlog",
+      `- Open tasks: ${input.taskSummary.open} of ${input.taskSummary.total}`,
+      `- High severity: ${input.taskSummary.severityCounts.high}`,
+      `- Ready to draft: ${input.taskSummary.statusCounts.ready_to_draft}`,
+      `- Workspaces represented: ${input.taskSummary.workspaces}`,
+      "",
+    );
+
+    if (input.taskPreviews.length > 0) {
+      lines.push("### Top review tasks");
+      for (const task of input.taskPreviews) {
+        lines.push(`- ${reviewStatusLabel(task.status)} / ${task.severity}: ${task.workspaceEntityLabel} (${task.entityId}) - ${task.propertyLabel}: ${task.title}`);
+      }
+      lines.push("");
+    }
+  }
+
+  if (input.agentSummary) {
+    lines.push(
+      "## Saved AG2 history",
+      `- Saved runs: ${input.agentSummary.total}`,
+      `- Entities represented: ${input.agentSummary.entities}`,
+      `- Verify runs: ${input.agentSummary.actionCounts.verify}`,
+      `- Graph runs: ${input.agentSummary.actionCounts.graph}`,
+      `- Report runs: ${input.agentSummary.actionCounts.report}`,
+      input.agentSummary.lastRunAt ? `- Latest run: ${input.agentSummary.lastRunAt}` : "- Latest run: none",
+      "",
+    );
+
+    if (input.agentRunPreviews.length > 0) {
+      lines.push("### Recent agent runs");
+      for (const run of input.agentRunPreviews) {
+        lines.push(`- ${run.action}: ${run.title} for ${run.entityLabel} (${run.entityId}) from ${run.workspaceSlotLabel}`);
+      }
+      lines.push("");
+    }
+  }
+
+  return lines.join("\n").trim();
+}
+
 function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): ReviewQueueItem[] {
   if (!item) return [];
 
@@ -828,6 +887,13 @@ function SearchWorkbench() {
     savedAgentRuns,
   }), [dismissedReviewIds, reviewQueueWithStatus, reviewTaskStatuses, savedAgentRuns, selectedItem]);
   const workspaceSnapshotJson = useMemo(() => JSON.stringify(workspaceSnapshot, null, 2), [workspaceSnapshot]);
+  const projectWorkspaceBriefMarkdown = useMemo(() => buildProjectWorkspaceMarkdownBrief({
+    projectId: projectWorkspaceId,
+    taskSummary: projectWorkspaceTaskSummary,
+    agentSummary: projectWorkspaceAgentSummary,
+    taskPreviews: projectWorkspaceTaskPreviews,
+    agentRunPreviews: projectWorkspaceAgentRunPreviews,
+  }), [projectWorkspaceAgentRunPreviews, projectWorkspaceAgentSummary, projectWorkspaceId, projectWorkspaceTaskPreviews, projectWorkspaceTaskSummary]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
     setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
@@ -2423,6 +2489,17 @@ function SearchWorkbench() {
                                   ))}
                                 </div>
                               )}
+                            </div>
+                          )}
+                          {(projectWorkspaceTaskSummary || projectWorkspaceAgentSummary) && (
+                            <div className="mt-3" data-testid="project-workspace-brief">
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Project brief Markdown</span>
+                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Project workspace brief", projectWorkspaceBriefMarkdown)} data-testid="copy-project-workspace-brief">
+                                  {copiedDraft === "Project workspace brief" ? "Copied" : "Copy"}
+                                </Button>
+                              </div>
+                              <textarea readOnly value={projectWorkspaceBriefMarkdown} className="h-36 w-full resize-y rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200" aria-label="Project workspace Markdown brief export" data-testid="project-workspace-brief-markdown" />
                             </div>
                           )}
                         </div>

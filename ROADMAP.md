@@ -25,7 +25,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, selected-path Markdown/JSON exports, and shareable selected-path export views.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, optional three-entity property matrices, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
 - `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, light/dark visual QA coverage, deterministic Q42/Q80/Q90/Q95/Q25169/Q46248/P31 Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, Wikidata API outage, Commons outage, and language metadata outage responses.
-- Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, browser-local and optional project-backed workspace slots with task and agent-history summaries/previews, portable workspace snapshots with curation task details, and safe curation exports.
+- Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, browser-local and optional project-backed workspace slots with task and agent-history summaries/previews plus Markdown project briefs, portable workspace snapshots with curation task details, and safe curation exports.
 - AG2 workflows support chat, selected workbench context handoff, citation-style grounding requirements, route-level grounding validation, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
 - Portfolio proof includes tracked screenshots, visual QA, metadata/social preview checks, favicon/site-icon coverage, production trace checks, route smoke tests, API contracts, e2e checks, GitHub Actions CI, and a standalone architecture/safety/testing/deployment case study.
@@ -60,6 +60,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Project workspace sync now exposes a sanitized curation-task index and compact review-task summary across saved slots.
 - Project workspace sync now also exposes a sanitized saved-agent-run index and compact AG2 history summary across saved slots.
 - The Review Queue project sync panel now previews the top project review backlog and saved AG2 run history from those project-level indexes.
+- The Review Queue project sync panel now exports a Markdown project brief for reviewer handoff across the project backlog and saved AG2 run history.
 - GitHub Actions CI now uses Node 24-compatible action lines for checkout, setup-node, Chrome setup, and artifact upload, with a regression test to keep the workflow current.
 - AI-enabled AG2 routes now reject ungrounded responses that lack `Grounding references` or supplied Wikidata IDs, and emit an `ag2-grounding-invalid` observability category.
 - AI API routes can now deliver sanitized failure events and matching alert-rule metadata to an optional hosted monitor webhook.
@@ -82,7 +83,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - AI-enabled AG2 API success contracts are on `main` for `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` through a token-authenticated mock remote service.
 - The built-in observability receiver route is on `main` with live API contract coverage for fail-closed auth, accepted monitor events, sanitized snapshots, and firing alert results.
 - The optional project workspace store is on `main` with live API contract coverage for bearer auth, sanitized save/list/delete, persisted review/agent-history snapshots, project-level curation-task summaries, and project-level AG2 run summaries.
-- The search workbench is on `main` with mocked browser coverage for project workspace save/delete/load controls, task-summary display, agent-history summary display, and project backlog/history previews.
+- The search workbench is on `main` with mocked browser coverage for project workspace save/delete/load controls, task-summary display, agent-history summary display, project backlog/history previews, and Markdown project brief exports.
 - Workspace snapshot, project store, and browser coverage are on `main` for persisted curation task details in saved browser/project slots.
 
 ## Portfolio Readiness
@@ -171,6 +172,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Shipped project-level curation task indexing and open/high/ready/resolved summaries from saved workspace slots.
 - Shipped project-level saved AG2 run indexing and action/entity/workspace summaries from saved workspace slots.
 - Shipped compact project-level review backlog and saved AG2 run previews in the project sync panel.
+- Shipped Markdown project brief export for project review backlog and saved AG2 history handoff.
 - Promote project workspace curation tasks into account-backed source-backed tasks once a user/project identity layer exists.
 
 ### 5. AG2 Assistant Context
@@ -287,6 +289,6 @@ Status: partially shipped
 Status: in progress
 
 - Shipped: portable workspace snapshots and named browser-local workspace slots for review task statuses, dismissed findings, and saved AG2 run history.
-- Shipped: optional token-protected project workspace slot persistence, workbench sync controls, project curation-task summaries/previews, and project AG2 run summaries/previews for sanitized portable snapshots with curation task details and saved agent history.
+- Shipped: optional token-protected project workspace slot persistence, workbench sync controls, project curation-task summaries/previews, project AG2 run summaries/previews, and Markdown project briefs for sanitized portable snapshots with curation task details and saved agent history.
 - Next: account-backed persisted curation tasks and agent history.
 - Broader accessibility and performance budgets suitable for a production-facing research tool as stored workspace features arrive.

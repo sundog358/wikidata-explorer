@@ -193,6 +193,10 @@ try {
   if (!projectTaskPreviewText.toLowerCase().includes("project review backlog") || !projectTaskPreviewText.includes("Ready to draft") || !projectTaskPreviewText.includes("Deprecated statement needs review")) {
     throw new Error(`Expected project workspace task preview after save, got ${projectTaskPreviewText}`);
   }
+  const savedProjectBrief = await page.getByTestId("project-workspace-brief-markdown").inputValue();
+  if (!savedProjectBrief.includes("# Wikidata Explorer project brief") || !savedProjectBrief.includes("Project: review-team") || !savedProjectBrief.includes("## Review backlog") || !savedProjectBrief.includes("Ready to draft")) {
+    throw new Error(`Expected project workspace brief after save, got ${savedProjectBrief}`);
+  }
   const projectAgentSummaryText = await page.getByTestId("project-workspace-agent-summary").innerText();
   if (!projectAgentSummaryText.includes("0 agent runs") || !projectAgentSummaryText.includes("No saved runs")) {
     throw new Error(`Expected empty project workspace agent summary after save, got ${projectAgentSummaryText}`);
@@ -248,6 +252,10 @@ try {
   const loadedAgentPreviewText = await page.getByTestId("project-workspace-agent-preview").innerText();
   if (!loadedAgentPreviewText.toLowerCase().includes("project agent history") || !loadedAgentPreviewText.includes("Verifier") || !loadedAgentPreviewText.includes("Douglas Adams")) {
     throw new Error(`Expected loaded project workspace agent preview, got ${loadedAgentPreviewText}`);
+  }
+  const loadedProjectBrief = await page.getByTestId("project-workspace-brief-markdown").inputValue();
+  if (!loadedProjectBrief.includes("## Saved AG2 history") || !loadedProjectBrief.includes("verify: Verifier") || !loadedProjectBrief.includes("Saved runs: 1")) {
+    throw new Error(`Expected project workspace brief to include saved AG2 history, got ${loadedProjectBrief}`);
   }
 
   await page.getByRole("tab", { name: /Statements/ }).click();
