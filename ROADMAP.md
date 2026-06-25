@@ -25,7 +25,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, selected-path Markdown/JSON exports, and shareable selected-path export views.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, optional three-entity property matrices, shareable comparison URLs, and shareable Markdown/JSON comparison export views.
 - `main` includes CI/browser hardening: performance budgets for `/search?q=Q42`, graph rendering, comparison-tab visual QA coverage, deterministic Q42/Q80/Q25169/P31 Wikidata fixtures, and a route-mocked browser fixture flow covering Wikidata, language, Commons media, no-result, missing-entity, Wikidata API outage, Commons outage, and language metadata outage responses.
-- Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
+- Evidence surfaces include ranks, referenced/unreferenced badges, statement detail views, qualifiers, references, data-quality summaries, review queues, formatter-aware source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
 - Portfolio proof includes tracked screenshots, visual QA, metadata/social preview checks, favicon/site-icon coverage, production trace checks, route smoke tests, API contracts, e2e checks, and GitHub Actions CI.
@@ -131,7 +131,7 @@ Goal: help users evaluate data quality, not just browse facts.
 - Extended the graph statement detail drawer pattern into the full statements tab.
 - Added visible badges for referenced vs unreferenced claims.
 - Extended source-link coverage into full statement detail views.
-- Add fallback support for uncommon external-ID formatter patterns beyond `$1`.
+- Added fallback support for uncommon external-ID formatter patterns beyond `$1`.
 - Promote review queue findings into persisted, source-backed curation tasks once a storage layer exists.
 
 ### 5. AG2 Assistant Context

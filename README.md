@@ -207,7 +207,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/autonomy-safety.mjs`: tested autonomy policy for read-only, draft, and bot-risk actions
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
-- `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and formatter-aware external IDs
+- `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and external IDs with `$1`, URI-template, encoded-placeholder, and formatter-root fallbacks
 - `lib/search-url-state.mjs`: tested shareable tab, comparison-target, third-comparison-target, export-view, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
 - `lib/entity-comparison.mjs`: tested two/three-entity comparison helpers for shared properties, unique properties, property matrices, overlapping linked entities, and Markdown/JSON exports
