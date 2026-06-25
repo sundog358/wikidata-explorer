@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildEntityComparison, buildEntityComparisonMarkdownExport } from "../lib/entity-comparison.mjs";
+import { buildEntityComparison, buildEntityComparisonJsonExport, buildEntityComparisonMarkdownExport } from "../lib/entity-comparison.mjs";
 
 const source = {
   id: "Q1",
@@ -78,5 +78,15 @@ assert.match(markdown, /Entity comparison: Source item \(Q1\) vs Target item \(Q
 assert.match(markdown, /Shared properties: 1/);
 assert.match(markdown, /instance of \(P31\)/);
 assert.match(markdown, /human \(Q5\)/);
+
+const json = JSON.parse(buildEntityComparisonJsonExport(comparison));
+assert.equal(json.generatedBy, "Wikidata Explorer");
+assert.equal(json.artifactType, "entity-comparison");
+assert.equal(json.source.url, "https://www.wikidata.org/wiki/Q1");
+assert.equal(json.target.url, "https://www.wikidata.org/wiki/Q2");
+assert.equal(json.summary.sharedPropertyCount, 1);
+assert.equal(json.sharedProperties[0].id, "P31");
+assert.equal(json.overlappingEntities[0].url, "https://www.wikidata.org/wiki/Q5");
+assert.equal(json.safety.mode, "draft-only");
 
 console.log("PASS entity comparison tests");

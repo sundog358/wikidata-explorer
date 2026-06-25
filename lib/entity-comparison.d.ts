@@ -46,3 +46,5 @@ export type EntityComparison = {
 export function buildEntityComparison(source: WikidataItem, target: WikidataItem, options?: { createdAt?: string }): EntityComparison;
 
 export function buildEntityComparisonMarkdownExport(comparison: EntityComparison, options?: { limit?: number }): string;
+
+export function buildEntityComparisonJsonExport(comparison: EntityComparison, options?: { limit?: number }): string;

@@ -17,9 +17,9 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 - 🔎 Search Wikidata by keyword or direct entity/property ID such as `Q42` or `P31`
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
 - 🕸️ Explore a clickable relationship graph with URL-backed filters, depth controls, grouped-by-property and timeline evidence layouts, richer node previews, pinned relationship comparison, selected-edge statement details, and selected-path Markdown/JSON exports
-- ⚖️ Compare two entities without AI by shared properties, unique statements, overlapping linked entities, and Markdown research notes
+- ⚖️ Compare two entities without AI by shared properties, unique statements, overlapping linked entities, Markdown/JSON research exports, and shareable comparison URLs
 - 🧭 Follow related items and properties without restarting the search flow
-- 🔗 Launch directly into a query with `/search?q=Douglas%20Adams` or a seeded Q42 proof path with graph focus, review, exports, and AI-boundary context
+- 🔗 Launch directly into a query with `/search?q=Douglas%20Adams`, a seeded Q42 proof path, or a shared comparison such as `/search?q=Q42&tab=compare&compare=Q80`
 - 🧠 Keep AI behind explicit feature flags for a reliable public Vercel demo
 - 🤖 Enable AG2 specialist agents for research, graph analysis, next-entity suggestions, citation verification, comparison, and Markdown reports
 - 🐳 Run agents through local conda or a token-protected containerized FastAPI AG2 service
@@ -131,6 +131,7 @@ npm run build
 npm run verify
 npm run smoke
 npm run metadata:check
+npm run perf:check
 npm run deploy:check
 npm run api:contracts
 npm run e2e
@@ -149,8 +150,10 @@ $env:API_CONTRACT_BASE_URL = "http://localhost:3000"
 $env:E2E_BASE_URL = "http://localhost:3000"
 $env:VISUAL_QA_BASE_URL = "http://localhost:3000"
 $env:METADATA_BASE_URL = "http://localhost:3000"
+$env:PERF_BASE_URL = "http://localhost:3000"
 npm run smoke
 npm run e2e
+npm run perf:check
 npm run visual:qa
 ```
 
@@ -162,6 +165,7 @@ These tracked screenshots are refreshed from the visual QA flow. Run `npm run vi
 | --- | --- | --- |
 | 🏠 Home | ![Home desktop](docs/screenshots/home-desktop.png) | The first screen explains the product quickly and routes users into search, graph context, and evidence review. |
 | 🕸️ Q42 graph | ![Q42 relationship graph desktop](docs/screenshots/search-q42-graph-desktop.png) | The seeded proof path loads Douglas Adams, focuses the Q42 -> human graph edge, and renders evidence-grounded selected-edge exports. |
+| ⚖️ Q42 comparison | ![Q42 comparison desktop](docs/screenshots/search-q42-compare-desktop.png) | A shared comparison URL restores Douglas Adams against Q80 with AI-off shared/unique property analysis and Markdown/JSON exports. |
 | 🤖 Research assistant | ![Research assistant desktop](docs/screenshots/research-assistant-desktop.png) | The AG2 chat surface is available in AI-enabled mode and disabled intentionally in public mode. |
 | 📱 Mobile search | ![Q42 search mobile](docs/screenshots/search-q42-mobile.png) | The core explorer remains usable on a narrow viewport without horizontal overflow. |
 
@@ -186,7 +190,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/page.tsx`: first-screen search entry point
 - `app/opengraph-image/route.ts`: serves the shared JPEG social preview image for Open Graph, Facebook, and Twitter cards
 - `app/robots.ts` and `app/sitemap.ts`: public crawl metadata derived from the configured site URL
-- `app/search/page.tsx`: main Wikidata explorer workflow, selected graph path exports, graph focus, data-quality summary, and evidence review queue
+- `app/search/page.tsx`: main Wikidata explorer workflow, shareable comparison targets, selected graph path exports, graph focus, data-quality summary, and evidence review queue
 - `app/chat/page.tsx`: feature-flagged AG2 research assistant
 - `app/agents/page.tsx`: feature-flagged AG2 specialist agent workbench overview
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
@@ -204,9 +208,9 @@ Optional AI-enabled mode remains a separate deployment step:
 - `lib/curation-export.mjs`: safe QuickStatements draft and Markdown review export helpers
 - `lib/graph-path-export.mjs`: tested selected graph path Markdown/JSON export helpers with qualifier/reference evidence summaries
 - `lib/review-source-hints.mjs`: tested source-hint extraction for reference URLs, stated-in records, retrieved dates, and formatter-aware external IDs
-- `lib/search-url-state.mjs`: tested shareable tab, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
+- `lib/search-url-state.mjs`: tested shareable tab, comparison-target, graph-depth, graph-layout, graph-filter, and graph-focus URL state helpers
 - `lib/data-quality.mjs`: tested entity evidence scoring, source-link coverage, and trust-signal summary helper
-- `lib/entity-comparison.mjs`: tested two-entity comparison helper for shared properties, unique properties, overlapping linked entities, and Markdown exports
+- `lib/entity-comparison.mjs`: tested two-entity comparison helper for shared properties, unique properties, overlapping linked entities, and Markdown/JSON exports
 - `lib/ag2.ts`: Next.js-to-AG2 bridge with local Python fallback, token-authenticated remote `AG2_SERVICE_URL` support, missing-key guard, and retry/backoff
 - `lib/ag2-remote-service.mjs`: tested remote AG2 service client for `/run` payloads, bearer auth, success responses, and service error mapping
 - `lib/ag2-errors.mjs`: shared AG2 bridge error type for local and remote runtime failures
@@ -219,12 +223,16 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-ai-feature-flags.mjs`: feature-flag mode tests
 - `scripts/test-ag2-service-security.mjs`: service-token, bridge-auth, FastAPI, and Docker hardening checks
 - `scripts/test-ag2-remote-service.mjs`: mocked AG2 container contract test for remote `/run` success, auth, and sanitized service failures
-- `scripts/test-entity-comparison.mjs`: deterministic entity comparison and Markdown export tests
+- `scripts/fixtures/wikidata-fixtures.mjs`: deterministic Q42/Q80/P31 Wikidata fixtures for search, entity, graph, evidence, and comparison tests
+- `scripts/test-wikidata-fixtures.mjs`: fixture-backed regression tests for search results, detailed entities, graph filters, source hints, data quality, and comparison exports
+- `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, and Commons media fixtures to the live search workbench without external Wikidata calls
+- `scripts/test-entity-comparison.mjs`: deterministic entity comparison and Markdown/JSON export tests
 - `scripts/test-ai-rate-limit.mjs`: AI route throttling helper tests
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
+- `scripts/test-performance-budgets.mjs`: browser performance budget check for `/search?q=Q42`, graph readiness, graph node count, and DOM size
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison, graph depth/layout/filtering including timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison, selected statement details, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison with shareable URL restore and Markdown/JSON exports, graph depth/layout/filtering including timeline URL state, graph node accessibility semantics, filter tab order, reduced-motion graph behavior, richer node previews, pinned relationship comparison, selected statement details, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA
@@ -232,9 +240,9 @@ Optional AI-enabled mode remains a separate deployment step:
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` with the local dev server running to catch route, interaction, console, hydration, and layout regressions. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, interaction, performance-budget, console, hydration, and layout regressions. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
-CI also runs install, verify, production trace checks, smoke, public metadata checks, API contracts, e2e, visual QA, and screenshot artifact upload on GitHub Actions.
+CI also runs install, verify, production trace checks, smoke, public metadata checks, API contracts, e2e, performance budgets, visual QA, and screenshot artifact upload on GitHub Actions.
 
 ## 🗺️ Roadmap
 

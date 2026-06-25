@@ -7,6 +7,7 @@ const targetDir = path.resolve("docs/screenshots");
 const screenshots = [
   ["01-home-desktop.png", "home-desktop.png"],
   ["02-search-q42-graph-desktop.png", "search-q42-graph-desktop.png"],
+  ["09-search-q42-compare-desktop.png", "search-q42-compare-desktop.png"],
   ["03-chat-desktop.png", "research-assistant-desktop.png"],
   ["06-search-q42-mobile.png", "search-q42-mobile.png"],
 ];

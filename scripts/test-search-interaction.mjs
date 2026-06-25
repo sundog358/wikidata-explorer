@@ -49,6 +49,16 @@ try {
   if (!comparisonSummary.includes("Douglas Adams") || !comparisonSummary.includes("Q42") || !comparisonSummary.includes("Q80")) {
     throw new Error(`Expected comparison summary to include Q42 and Q80, got ${comparisonSummary}`);
   }
+  const comparisonUrl = new URL(page.url());
+  if (comparisonUrl.searchParams.get("tab") !== "compare" || comparisonUrl.searchParams.get("compare") !== "Q80") {
+    throw new Error(`Expected comparison tab and target in URL, got ${page.url()}`);
+  }
+  await page.reload({ waitUntil: "commit" });
+  await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
+  const restoredComparisonSummary = await page.getByTestId("comparison-summary").innerText();
+  if (!restoredComparisonSummary.includes("Douglas Adams") || !restoredComparisonSummary.includes("Q80")) {
+    throw new Error(`Expected shared comparison URL to restore Q42 against Q80, got ${restoredComparisonSummary}`);
+  }
   const sharedProperties = await page.getByTestId("comparison-shared-properties").innerText();
   if (!sharedProperties.includes("instance of") && !sharedProperties.includes("occupation")) {
     throw new Error(`Expected comparison to show recognizable shared properties, got ${sharedProperties}`);
@@ -56,6 +66,10 @@ try {
   const comparisonMarkdown = await page.getByTestId("comparison-markdown-export").inputValue();
   if (!comparisonMarkdown.includes("Entity comparison") || !comparisonMarkdown.includes("Shared Properties")) {
     throw new Error(`Expected comparison Markdown export to include summary sections, got ${comparisonMarkdown}`);
+  }
+  const comparisonJson = JSON.parse(await page.getByTestId("comparison-json-export").inputValue());
+  if (comparisonJson.artifactType !== "entity-comparison" || comparisonJson.source.id !== "Q42" || comparisonJson.target.id !== "Q80" || comparisonJson.safety.mode !== "draft-only") {
+    throw new Error(`Expected comparison JSON export to include source, target, and safety metadata, got ${JSON.stringify(comparisonJson)}`);
   }
 
   await page.getByRole("tab", { name: /Graph/ }).click();
@@ -195,7 +209,9 @@ try {
   console.log("PASS search data quality summary renders for Q42");
   console.log("PASS search review queue status persists in the workbench");
   console.log("PASS AI-off comparison workflow summarizes Q42 against Q80");
+  console.log("PASS comparison target URL state restores shared comparisons");
   console.log("PASS comparison Markdown export includes shared-property sections");
+  console.log("PASS comparison JSON export includes structured handoff metadata");
   console.log("PASS search tab and graph filter state update the URL");
   console.log("PASS graph depth controls support selected-property expansion");
   console.log("PASS grouped-by-property graph layout updates URL state");

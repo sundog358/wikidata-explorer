@@ -70,6 +70,12 @@ jobs:
           E2E_BASE_URL: http://localhost:3000
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
 
+      - name: Performance budgets
+        run: npm run perf:check
+        env:
+          PERF_BASE_URL: http://localhost:3000
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+
       - name: Visual QA
         run: npm run visual:qa
         env:

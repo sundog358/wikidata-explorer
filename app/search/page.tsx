@@ -5,7 +5,7 @@ import Image from "next/image";
 import { BrainCircuit, Database, FileAudio, FileText, FileVideo, GitCompareArrows, Globe, Image as ImageIcon, Info, Network, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { buildQuickStatementsReviewDraft, buildReviewMarkdownExport } from "@/lib/curation-export.mjs";
 import { buildGraphPathJsonExport, buildGraphPathMarkdownExport } from "@/lib/graph-path-export.mjs";
-import { buildEntityComparison, buildEntityComparisonMarkdownExport } from "@/lib/entity-comparison.mjs";
+import { buildEntityComparison, buildEntityComparisonJsonExport, buildEntityComparisonMarkdownExport } from "@/lib/entity-comparison.mjs";
 import { sourceHintKindLabel, sourceHintsFromStatement } from "@/lib/review-source-hints.mjs";
 import { summarizeEntityDataQuality } from "@/lib/data-quality.mjs";
 import { readSearchWorkbenchState, writeSearchWorkbenchState } from "@/lib/search-url-state.mjs";
@@ -356,7 +356,7 @@ function normalizeWorkbenchTab(tab: SearchWorkbenchTab): SearchWorkbenchTab {
   return tab;
 }
 
-function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null }) {
+function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTab; graphFilters?: RelationshipGraphFilters; graphFocusId?: string | null; comparisonTargetId?: string | null }) {
   if (typeof window === "undefined") return;
   const params = new URLSearchParams(window.location.search);
   if (updates.q !== undefined) {
@@ -368,7 +368,8 @@ function replaceWorkbenchUrlState(updates: { q?: string; tab?: SearchWorkbenchTa
   const nextParams = writeSearchWorkbenchState(params, {
     tab: updates.tab || currentState.tab,
     graphFilters: updates.graphFilters || currentState.graphFilters,
-      graphFocusId: Object.prototype.hasOwnProperty.call(updates, "graphFocusId") ? updates.graphFocusId || null : currentState.graphFocusId,
+    graphFocusId: Object.prototype.hasOwnProperty.call(updates, "graphFocusId") ? updates.graphFocusId || null : currentState.graphFocusId,
+    comparisonTargetId: Object.prototype.hasOwnProperty.call(updates, "comparisonTargetId") ? updates.comparisonTargetId || null : currentState.comparisonTargetId,
   });
   const query = nextParams.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
@@ -384,6 +385,7 @@ function collectCommonsFiles(item: WikidataItem | null): string[] {
 }
 
 export default function SearchPage() {
+  const initialWorkbenchState = getInitialWorkbenchState();
   const [searchTerm, setSearchTerm] = useState(getInitialSearchTerm);
   const [results, setResults] = useState<WikidataItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<WikidataItem | null>(null);
@@ -397,19 +399,20 @@ export default function SearchPage() {
   const [aiSummary, setAiSummary] = useState<AiSummaryState>(null);
   const [agentResult, setAgentResult] = useState<AgentResultState>(null);
   const [agentLoading, setAgentLoading] = useState<AgentAction | null>(null);
-  const [compareEntityId, setCompareEntityId] = useState("Q80");
+  const [compareEntityId, setCompareEntityId] = useState(initialWorkbenchState.comparisonTargetId || "Q80");
   const [comparisonItem, setComparisonItem] = useState<WikidataItem | null>(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
   const [selectedGraphFocus, setSelectedGraphFocus] = useState<RelationshipGraphFocus | null>(null);
-  const [activeTab, setActiveTab] = useState<SearchWorkbenchTab>(() => normalizeWorkbenchTab(getInitialWorkbenchState().tab as SearchWorkbenchTab));
-  const [graphFilters, setGraphFilters] = useState<RelationshipGraphFilters>(() => getInitialWorkbenchState().graphFilters as RelationshipGraphFilters);
-  const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(() => getInitialWorkbenchState().graphFocusId);
+  const [activeTab, setActiveTab] = useState<SearchWorkbenchTab>(() => normalizeWorkbenchTab(initialWorkbenchState.tab as SearchWorkbenchTab));
+  const [graphFilters, setGraphFilters] = useState<RelationshipGraphFilters>(() => initialWorkbenchState.graphFilters as RelationshipGraphFilters);
+  const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(() => initialWorkbenchState.graphFocusId);
   const [savedAgentRuns, setSavedAgentRuns] = useState<SavedAgentRun[]>([]);
   const [dismissedReviewIds, setDismissedReviewIds] = useState<string[]>([]);
   const [reviewTaskStatuses, setReviewTaskStatuses] = useState<Record<string, ReviewTaskStatus>>({});
   const [copiedDraft, setCopiedDraft] = useState<string | null>(null);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
+  const queuedComparisonTargetRef = useRef<string | null>(initialWorkbenchState.comparisonTargetId);
   const storageHydratedRef = useRef(false);
 
   useEffect(() => {
@@ -542,6 +545,7 @@ export default function SearchPage() {
     return buildEntityComparison(selectedItem, comparisonItem);
   }, [comparisonItem, selectedItem]);
   const comparisonMarkdownDraft = useMemo(() => entityComparison ? buildEntityComparisonMarkdownExport(entityComparison) : "", [entityComparison]);
+  const comparisonJsonDraft = useMemo(() => entityComparison ? buildEntityComparisonJsonExport(entityComparison) : "", [entityComparison]);
 
   function updateReviewTaskStatus(itemId: string, status: ReviewTaskStatus) {
     setReviewTaskStatuses((current) => ({ ...current, [itemId]: status }));
@@ -601,6 +605,8 @@ export default function SearchPage() {
       setActiveTab(normalizeWorkbenchTab(initialState.tab as SearchWorkbenchTab));
       setGraphFilters(initialState.graphFilters as RelationshipGraphFilters);
       setSelectedGraphNodeId(initialState.graphFocusId);
+      setCompareEntityId(initialState.comparisonTargetId || "Q80");
+      queuedComparisonTargetRef.current = initialState.comparisonTargetId;
       if (initialQuery) {
         void runSearch(initialQuery, { graphFocusId: initialState.graphFocusId });
       }
@@ -668,10 +674,10 @@ export default function SearchPage() {
     }
   }
 
-  async function loadComparisonTarget() {
+  const loadComparisonTarget = useCallback(async (targetId?: string) => {
     if (!selectedItem || comparisonLoading) return;
 
-    const entityId = compareEntityId.trim().toUpperCase();
+    const entityId = (targetId || compareEntityId).trim().toUpperCase();
     if (!/^[QP]\d+$/.test(entityId)) {
       setComparisonError("Enter a valid Wikidata ID to compare, such as Q80.");
       return;
@@ -691,13 +697,13 @@ export default function SearchPage() {
       setComparisonItem(entity);
       setCompareEntityId(entity.id);
       setActiveTab("compare");
-      replaceWorkbenchUrlState({ tab: "compare" });
+      replaceWorkbenchUrlState({ tab: "compare", comparisonTargetId: entity.id });
     } catch (err) {
       setComparisonError(err instanceof Error ? err.message : `Could not load ${entityId} for comparison.`);
     } finally {
       setComparisonLoading(false);
     }
-  }
+  }, [compareEntityId, comparisonLoading, selectedItem]);
 
   async function summarizeEntity() {
     if (!AI_AGENTS_ENABLED) {
@@ -814,6 +820,21 @@ export default function SearchPage() {
     queuedAgentActionRef.current = null;
     void runAgentWorkflow(action);
   }, [agentLoading, agentResult?.entityId, runAgentWorkflow, selectedItem]);
+
+  useEffect(() => {
+    const targetId = queuedComparisonTargetRef.current;
+    if (activeTab !== "compare" || !selectedItem || !targetId || comparisonLoading) return;
+
+    const normalizedTargetId = targetId.toUpperCase();
+    if (normalizedTargetId === selectedItem.id || comparisonItem?.id === normalizedTargetId) {
+      queuedComparisonTargetRef.current = null;
+      return;
+    }
+
+    queuedComparisonTargetRef.current = null;
+    void loadComparisonTarget(normalizedTargetId);
+  }, [activeTab, comparisonItem?.id, comparisonLoading, loadComparisonTarget, selectedItem]);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="container mx-auto px-4 py-8">
@@ -1276,7 +1297,7 @@ export default function SearchPage() {
                             className="h-10 min-w-40 bg-white dark:bg-slate-950"
                             aria-label="Comparison target entity ID"
                           />
-                          <Button type="button" variant="outline" className="gap-2" onClick={loadComparisonTarget} disabled={comparisonLoading}>
+                          <Button type="button" variant="outline" className="gap-2" onClick={() => loadComparisonTarget()} disabled={comparisonLoading}>
                             <GitCompareArrows className="h-4 w-4" />
                             {comparisonLoading ? "Loading" : "Compare"}
                           </Button>
@@ -1383,14 +1404,26 @@ export default function SearchPage() {
                             </div>
                           </div>
 
-                          <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                              <span className="font-semibold text-slate-950 dark:text-slate-50">Markdown comparison export</span>
-                              <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison Markdown", comparisonMarkdownDraft)}>
-                                {copiedDraft === "Comparison Markdown" ? "Copied" : "Copy"}
-                              </Button>
+                          <div className="grid gap-4 xl:grid-cols-2">
+                            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <span className="font-semibold text-slate-950 dark:text-slate-50">Markdown comparison export</span>
+                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison Markdown", comparisonMarkdownDraft)}>
+                                  {copiedDraft === "Comparison Markdown" ? "Copied" : "Copy"}
+                                </Button>
+                              </div>
+                              <textarea readOnly value={comparisonMarkdownDraft} className="h-52 w-full resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200" aria-label="Comparison Markdown export" data-testid="comparison-markdown-export" />
                             </div>
-                            <textarea readOnly value={comparisonMarkdownDraft} className="h-52 w-full resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200" aria-label="Comparison Markdown export" data-testid="comparison-markdown-export" />
+
+                            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm dark:border-slate-800 dark:bg-slate-950">
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <span className="font-semibold text-slate-950 dark:text-slate-50">JSON comparison export</span>
+                                <Button type="button" variant="outline" size="sm" onClick={() => copyDraftToClipboard("Comparison JSON", comparisonJsonDraft)}>
+                                  {copiedDraft === "Comparison JSON" ? "Copied" : "Copy"}
+                                </Button>
+                              </div>
+                              <textarea readOnly value={comparisonJsonDraft} className="h-52 w-full resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200" aria-label="Comparison JSON export" data-testid="comparison-json-export" />
+                            </div>
                           </div>
                         </div>
                       )}

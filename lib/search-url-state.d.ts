@@ -15,10 +15,12 @@ export function readSearchWorkbenchState(input?: string | URLSearchParams): {
   tab: SearchWorkbenchTab;
   graphFilters: SearchGraphFilters;
   graphFocusId: string | null;
+  comparisonTargetId: string | null;
 };
 
 export function writeSearchWorkbenchState(input?: string | URLSearchParams, state?: {
   tab?: SearchWorkbenchTab;
   graphFilters?: Partial<SearchGraphFilters>;
   graphFocusId?: string | null;
+  comparisonTargetId?: string | null;
 }): URLSearchParams;

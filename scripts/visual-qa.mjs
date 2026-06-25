@@ -57,6 +57,14 @@ const checks = [
     waitText: "Developer Commands",
     viewport: { width: 390, height: 844 },
   },
+  {
+    name: "09-search-q42-compare-desktop.png",
+    path: "/search?q=Q42&tab=compare&compare=Q80",
+    waitText: "Markdown comparison export",
+    focusTestId: "comparison-panel",
+    screenshotTestId: "comparison-panel",
+    viewport: { width: 1440, height: 1000 },
+  },
 ];
 
 async function findHorizontalOverflow(page) {
@@ -126,10 +134,18 @@ try {
         state: "visible",
         timeout: 20000,
       });
+      if (check.focusTestId) {
+        await page.getByTestId(check.focusTestId).scrollIntoViewIfNeeded({ timeout: 20000 });
+      }
       await page.waitForTimeout(800);
 
       const screenshotPath = path.join(outDir, check.name);
-      await page.screenshot({ path: screenshotPath, fullPage: false, timeout: 20000 });
+      if (check.screenshotTestId) {
+        await page.addStyleTag({ content: "header.sticky { display: none !important; }" });
+        await page.getByTestId(check.screenshotTestId).screenshot({ path: screenshotPath, timeout: 20000 });
+      } else {
+        await page.screenshot({ path: screenshotPath, fullPage: false, timeout: 20000 });
+      }
 
       const overflow = await findHorizontalOverflow(page);
       results.push({ ...check, file: screenshotPath, overflow, browserErrors });
