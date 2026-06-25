@@ -30,6 +30,34 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(30000);
   const projectWorkspaceSlots = [];
+  const projectTaskSummary = () => {
+    const tasks = projectWorkspaceSlots.flatMap((slot) => slot.snapshot?.review?.curationTasks || []);
+    return {
+      total: tasks.length,
+      open: tasks.filter((task) => task.status !== "resolved").length,
+      entities: new Set(tasks.map((task) => task.entityId).filter(Boolean)).size,
+      properties: new Set(tasks.map((task) => task.propertyId).filter(Boolean)).size,
+      workspaces: projectWorkspaceSlots.length,
+      statusCounts: {
+        needs_review: tasks.filter((task) => task.status === "needs_review").length,
+        checking_sources: tasks.filter((task) => task.status === "checking_sources").length,
+        ready_to_draft: tasks.filter((task) => task.status === "ready_to_draft").length,
+        resolved: tasks.filter((task) => task.status === "resolved").length,
+      },
+      severityCounts: {
+        high: tasks.filter((task) => task.severity === "high").length,
+        medium: tasks.filter((task) => task.severity === "medium").length,
+      },
+    };
+  };
+  const projectCurationTasks = () => projectWorkspaceSlots.flatMap((slot) => (slot.snapshot?.review?.curationTasks || []).map((task) => ({
+    ...task,
+    workspaceSlotId: slot.id,
+    workspaceSlotLabel: slot.label,
+    workspaceEntityId: slot.entityId,
+    workspaceEntityLabel: slot.entityLabel,
+    workspaceUpdatedAt: slot.updatedAt,
+  })));
 
   await page.route("**/api/workspaces**", async (route) => {
     const request = route.request();
@@ -47,7 +75,7 @@ try {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ projectId: "review-team", slots: projectWorkspaceSlots }),
+        body: JSON.stringify({ projectId: "review-team", slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary() }),
       });
       return;
     }
@@ -58,7 +86,7 @@ try {
       await route.fulfill({
         status: 202,
         contentType: "application/json",
-        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots }),
+        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary() }),
       });
       return;
     }
@@ -68,7 +96,7 @@ try {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots }),
+        body: JSON.stringify({ projectId: body.projectId, slots: projectWorkspaceSlots, curationTasks: projectCurationTasks(), taskSummary: projectTaskSummary() }),
       });
       return;
     }
@@ -131,10 +159,19 @@ try {
   if (!projectWorkspaceSlots[0]?.snapshot?.review?.curationTasks?.some((task) => task.entityId === "Q42" && task.status === "ready_to_draft")) {
     throw new Error(`Expected project workspace save to include curation task details, got ${JSON.stringify(projectWorkspaceSlots)}`);
   }
+  const projectSummaryText = await page.getByTestId("project-workspace-task-summary").innerText();
+  const expectedProjectSummary = projectTaskSummary();
+  if (!projectSummaryText.includes(`${expectedProjectSummary.open} open`) || !projectSummaryText.includes("1 ready") || !projectSummaryText.includes("1 workspaces")) {
+    throw new Error(`Expected project workspace task summary after save, got ${projectSummaryText}`);
+  }
   await page.getByRole("button", { name: "Delete Project" }).click();
   await page.waitForFunction(() => document.querySelector('[data-testid="workspace-snapshot-message"]')?.textContent?.includes("Removed project workspace slot"));
   if (projectWorkspaceSlots.length !== 0) {
     throw new Error(`Expected project workspace delete to remove slot, got ${JSON.stringify(projectWorkspaceSlots)}`);
+  }
+  const emptyProjectSummaryText = await page.getByTestId("project-workspace-task-summary").innerText();
+  if (!emptyProjectSummaryText.includes("0 open") || !emptyProjectSummaryText.includes("0 saved tasks")) {
+    throw new Error(`Expected project workspace task summary after delete, got ${emptyProjectSummaryText}`);
   }
   projectWorkspaceSlots.push({
     ...savedWorkspaceSlots[0],
@@ -146,6 +183,11 @@ try {
   const loadedProjectSlotsText = await page.getByTestId("saved-workspace-slots").innerText();
   if (!loadedProjectSlotsText.includes("Project loaded workspace")) {
     throw new Error(`Expected loaded project workspace slot to appear locally, got ${loadedProjectSlotsText}`);
+  }
+  const loadedProjectSummaryText = await page.getByTestId("project-workspace-task-summary").innerText();
+  const expectedLoadedSummary = projectTaskSummary();
+  if (!loadedProjectSummaryText.includes(`${expectedLoadedSummary.open} open`) || !loadedProjectSummaryText.includes("1 ready")) {
+    throw new Error(`Expected loaded project workspace task summary, got ${loadedProjectSummaryText}`);
   }
 
   await page.getByRole("tab", { name: /Statements/ }).click();

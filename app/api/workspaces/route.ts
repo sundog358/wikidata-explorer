@@ -1,7 +1,9 @@
 import {
   authorizeWorkspaceStore,
+  buildProjectWorkspaceCurationTaskIndex,
   readProjectWorkspaceSlots,
   removeProjectWorkspaceSlot,
+  summarizeProjectWorkspaceCurationTasks,
   upsertProjectWorkspaceSlot,
 } from "@/lib/workspace-store.mjs";
 
@@ -39,17 +41,33 @@ async function readJsonObject(req: Request) {
   return { ok: true, response: null, body };
 }
 
+function workspaceStoreResponse(result: { projectId: string; slots: unknown[] }, init?: ResponseInit, includeTasks = false) {
+  const body: Record<string, unknown> = {
+    projectId: result.projectId,
+    slots: result.slots,
+  };
+
+  if (includeTasks) {
+    body.curationTasks = buildProjectWorkspaceCurationTaskIndex(result.slots);
+    body.taskSummary = summarizeProjectWorkspaceCurationTasks(result.slots);
+  }
+
+  return Response.json(body, init);
+}
+
 export async function GET(req: Request) {
   const { response, config } = authResponse(req);
   if (response || !config) return response;
 
-  const projectId = new URL(req.url).searchParams.get("project") || "default";
+  const url = new URL(req.url);
+  const projectId = url.searchParams.get("project") || "default";
+  const includeTasks = url.searchParams.get("includeTasks") === "true" || url.searchParams.get("includeTasks") === "1";
   const result = await readProjectWorkspaceSlots({ config, projectId });
   if (!result.ok) {
     return Response.json({ error: "Workspace store could not be read.", reason: result.reason }, { status: result.status || 500 });
   }
 
-  return Response.json({ projectId: result.projectId, slots: result.slots });
+  return workspaceStoreResponse(result, undefined, includeTasks);
 }
 
 export async function POST(req: Request) {
@@ -68,7 +86,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Workspace slot could not be saved.", reason: result.reason }, { status: result.status || 500 });
   }
 
-  return Response.json({ projectId: result.projectId, slots: result.slots }, { status: 202 });
+  return workspaceStoreResponse(result, { status: 202 }, parsed.body.includeTasks === true);
 }
 
 export async function DELETE(req: Request) {
@@ -87,5 +105,5 @@ export async function DELETE(req: Request) {
     return Response.json({ error: "Workspace slot could not be removed.", reason: result.reason }, { status: result.status || 500 });
   }
 
-  return Response.json({ projectId: result.projectId, slots: result.slots });
+  return workspaceStoreResponse(result, undefined, parsed.body.includeTasks === true);
 }

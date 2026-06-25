@@ -5,9 +5,11 @@ import path from "node:path";
 import { buildWorkspaceSnapshot } from "../lib/workspace-snapshot.mjs";
 import {
   authorizeWorkspaceStore,
+  buildProjectWorkspaceCurationTaskIndex,
   normalizeWorkspaceProjectId,
   readProjectWorkspaceSlots,
   removeProjectWorkspaceSlot,
+  summarizeProjectWorkspaceCurationTasks,
   upsertProjectWorkspaceSlot,
   workspaceStoreConfig,
 } from "../lib/workspace-store.mjs";
@@ -86,6 +88,23 @@ try {
   assert.equal(saved.slots[0].snapshot.review.taskStatuses["Q42:claim:P31:unreferenced"], "ready_to_draft");
   assert.equal(saved.slots[0].snapshot.review.curationTasks[0].status, "ready_to_draft");
   assert.doesNotMatch(JSON.stringify(saved.slots), /FAKE_REDACTION_TEST_VALUE/);
+
+  const taskIndex = buildProjectWorkspaceCurationTaskIndex(saved.slots);
+  assert.equal(taskIndex.length, 1);
+  assert.equal(taskIndex[0].id, "Q42:claim:P31:unreferenced");
+  assert.equal(taskIndex[0].workspaceSlotId, "workspace-q42");
+  assert.equal(taskIndex[0].workspaceEntityLabel, "Douglas Adams");
+  assert.doesNotMatch(JSON.stringify(taskIndex), /FAKE_REDACTION_TEST_VALUE/);
+
+  const taskSummary = summarizeProjectWorkspaceCurationTasks(saved.slots);
+  assert.deepEqual(taskSummary.statusCounts, {
+    needs_review: 0,
+    checking_sources: 0,
+    ready_to_draft: 1,
+    resolved: 0,
+  });
+  assert.equal(taskSummary.open, 1);
+  assert.equal(taskSummary.severityCounts.high, 1);
 
   const persistedText = await readFile(path.join(storeDir, "review-team.json"), "utf8");
   assert.doesNotMatch(persistedText, /FAKE_REDACTION_TEST_VALUE/);

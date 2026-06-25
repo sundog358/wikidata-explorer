@@ -116,6 +116,19 @@ async function checkWorkspaceStoreContract() {
     entityLabel: "Douglas Adams",
     createdAt: "2026-06-25T22:35:00.000Z",
     reviewTaskStatuses: { "Q42:claim:P31:unreferenced": "ready_to_draft" },
+    curationTasks: [{
+      id: "Q42:claim:P31:unreferenced",
+      entityId: "Q42",
+      propertyId: "P31",
+      propertyLabel: "instance of",
+      statementId: "Q42$claim",
+      severity: "high",
+      status: "ready_to_draft",
+      title: "Add source",
+      detail: "Contract task token=contract-secret-token",
+      value: "human",
+      sourceHints: [{ kind: "stated-in", label: "stated in", value: "Some source", url: "https://www.wikidata.org/wiki/Q42" }],
+    }],
     savedAgentRuns: [{
       id: "run-contract",
       entityId: "Q42",
@@ -136,21 +149,27 @@ async function checkWorkspaceStoreContract() {
       createdAt: "2026-06-25T22:35:00.000Z",
       updatedAt: "2026-06-25T22:36:00.000Z",
     },
+    includeTasks: true,
   }, { authorization });
   const savedText = JSON.stringify(saved.body);
   const savedOk = saved.response.status === 202 &&
     saved.body.projectId === "contract-team" &&
     saved.body.slots?.[0]?.entityId === "Q42" &&
     saved.body.slots?.[0]?.snapshot?.review?.taskStatuses?.["Q42:claim:P31:unreferenced"] === "ready_to_draft" &&
+    saved.body.taskSummary?.total === 1 &&
+    saved.body.curationTasks?.[0]?.workspaceSlotId === "workspace-q42" &&
     !savedText.includes("contract-secret-token");
   console.log(`${savedOk ? "PASS" : "FAIL"} workspace store saves sanitized slot ${saved.response.status}`);
   if (!savedOk) {
     throw new Error(`workspace store expected 202 sanitized slot response, got ${saved.response.status} ${savedText}`);
   }
 
-  const listed = await getJson("/api/workspaces?project=contract-team", { authorization });
+  const listed = await getJson("/api/workspaces?project=contract-team&includeTasks=true", { authorization });
   const listedOk = listed.response.status === 200 &&
-    listed.body.slots?.some((slot) => slot.id === "workspace-q42" && slot.entityId === "Q42");
+    listed.body.slots?.some((slot) => slot.id === "workspace-q42" && slot.entityId === "Q42") &&
+    listed.body.taskSummary?.open === 1 &&
+    listed.body.taskSummary?.severityCounts?.high === 1 &&
+    listed.body.curationTasks?.some((task) => task.id === "Q42:claim:P31:unreferenced" && task.workspaceEntityId === "Q42");
   console.log(`${listedOk ? "PASS" : "FAIL"} workspace store lists project slots ${listed.response.status}`);
   if (!listedOk) {
     throw new Error(`workspace store expected saved slot in list response, got ${listed.response.status} ${JSON.stringify(listed.body)}`);
@@ -159,12 +178,13 @@ async function checkWorkspaceStoreContract() {
   const removed = await fetch(new URL("/api/workspaces", baseUrl), {
     method: "DELETE",
     headers: { "content-type": "application/json", authorization },
-    body: JSON.stringify({ projectId: "contract-team", slotId: "workspace-q42" }),
+    body: JSON.stringify({ projectId: "contract-team", slotId: "workspace-q42", includeTasks: true }),
   });
   const removedBody = await removed.json().catch(() => ({}));
   const removedOk = removed.status === 200 &&
     Array.isArray(removedBody.slots) &&
-    !removedBody.slots.some((slot) => slot.id === "workspace-q42");
+    !removedBody.slots.some((slot) => slot.id === "workspace-q42") &&
+    removedBody.taskSummary?.total === 0;
   console.log(`${removedOk ? "PASS" : "FAIL"} workspace store removes project slot ${removed.status}`);
   if (!removedOk) {
     throw new Error(`workspace store expected slot removal, got ${removed.status} ${JSON.stringify(removedBody)}`);

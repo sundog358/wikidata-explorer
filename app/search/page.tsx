@@ -110,6 +110,15 @@ type WorkspaceSlotState = {
   snapshot: ReturnType<typeof buildWorkspaceSnapshot>;
 };
 
+type ProjectWorkspaceTaskSummary = {
+  total: number;
+  open: number;
+  entities: number;
+  workspaces: number;
+  statusCounts: Record<ReviewTaskStatus, number>;
+  severityCounts: Record<"high" | "medium", number>;
+};
+
 function normalizeShareableExportView(value: unknown): ShareableExportView | null {
   return value === "graph-markdown" || value === "graph-json" || value === "comparison-markdown" || value === "comparison-json" || value === "comparison-property" ? value : null;
 }
@@ -300,6 +309,35 @@ function reviewStatusLabel(status: ReviewTaskStatus): string {
   return REVIEW_TASK_STATUS_OPTIONS.find((option) => option.value === status)?.label || "Needs review";
 }
 
+function normalizeProjectWorkspaceTaskSummary(value: unknown): ProjectWorkspaceTaskSummary | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const statusCounts = record.statusCounts && typeof record.statusCounts === "object" && !Array.isArray(record.statusCounts)
+    ? record.statusCounts as Record<string, unknown>
+    : {};
+  const severityCounts = record.severityCounts && typeof record.severityCounts === "object" && !Array.isArray(record.severityCounts)
+    ? record.severityCounts as Record<string, unknown>
+    : {};
+  const numberValue = (item: unknown) => Math.max(0, Number.parseInt(String(item ?? 0), 10) || 0);
+
+  return {
+    total: numberValue(record.total),
+    open: numberValue(record.open),
+    entities: numberValue(record.entities),
+    workspaces: numberValue(record.workspaces),
+    statusCounts: {
+      needs_review: numberValue(statusCounts.needs_review),
+      checking_sources: numberValue(statusCounts.checking_sources),
+      ready_to_draft: numberValue(statusCounts.ready_to_draft),
+      resolved: numberValue(statusCounts.resolved),
+    },
+    severityCounts: {
+      high: numberValue(severityCounts.high),
+      medium: numberValue(severityCounts.medium),
+    },
+  };
+}
+
 function buildReviewQueue(item: WikidataItem | null, dismissedIds: string[]): ReviewQueueItem[] {
   if (!item) return [];
 
@@ -484,6 +522,7 @@ function SearchWorkbench() {
   const [projectWorkspaceId, setProjectWorkspaceId] = useState("default");
   const [projectWorkspaceToken, setProjectWorkspaceToken] = useState("");
   const [projectWorkspaceLoading, setProjectWorkspaceLoading] = useState<"load" | "save" | "delete" | null>(null);
+  const [projectWorkspaceTaskSummary, setProjectWorkspaceTaskSummary] = useState<ProjectWorkspaceTaskSummary | null>(null);
   const queuedAgentActionRef = useRef<AgentAction | null>(getInitialAgentAction());
   const queuedComparisonTargetRef = useRef<string | null>(initialWorkbenchState.comparisonTargetId);
   const queuedComparisonThirdTargetRef = useRef<string | null>(initialWorkbenchState.comparisonThirdTargetId);
@@ -744,7 +783,7 @@ function SearchWorkbench() {
     }
 
     const projectId = projectWorkspaceId.trim() || "default";
-    const response = await fetch(method === "GET" ? `/api/workspaces?project=${encodeURIComponent(projectId)}` : "/api/workspaces", {
+    const response = await fetch(method === "GET" ? `/api/workspaces?project=${encodeURIComponent(projectId)}&includeTasks=true` : "/api/workspaces", {
       method,
       headers: {
         "content-type": "application/json",
@@ -760,6 +799,7 @@ function SearchWorkbench() {
     return {
       projectId: String(data.projectId || projectId),
       slots: readWorkspaceSlots(data.slots),
+      taskSummary: normalizeProjectWorkspaceTaskSummary(data.taskSummary),
     };
   }
 
@@ -769,6 +809,7 @@ function SearchWorkbench() {
       const result = await requestProjectWorkspaceSlots("GET");
       setSavedWorkspaceSlots(result.slots);
       setProjectWorkspaceId(result.projectId);
+      setProjectWorkspaceTaskSummary(result.taskSummary);
       setWorkspaceSnapshotMessage(`Loaded ${result.slots.length} project workspace slot${result.slots.length === 1 ? "" : "s"} from ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -794,10 +835,12 @@ function SearchWorkbench() {
       const result = await requestProjectWorkspaceSlots("POST", {
         projectId: projectWorkspaceId.trim() || "default",
         slot,
+        includeTasks: true,
       });
       setSavedWorkspaceSlots(result.slots);
       setWorkspaceSlotName(label);
       setProjectWorkspaceId(result.projectId);
+      setProjectWorkspaceTaskSummary(result.taskSummary);
       setWorkspaceSnapshotMessage(`Saved project workspace for ${getEntityLabel(selectedItem)} (${selectedItem.id}) to ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -812,9 +855,11 @@ function SearchWorkbench() {
       const result = await requestProjectWorkspaceSlots("DELETE", {
         projectId: projectWorkspaceId.trim() || "default",
         slotId,
+        includeTasks: true,
       });
       setSavedWorkspaceSlots(result.slots);
       setProjectWorkspaceId(result.projectId);
+      setProjectWorkspaceTaskSummary(result.taskSummary);
       setWorkspaceSnapshotMessage(`Removed project workspace slot from ${result.projectId}.`);
     } catch (syncError) {
       setWorkspaceSnapshotMessage(syncError instanceof Error ? syncError.message : "Project workspace sync failed.");
@@ -2174,6 +2219,26 @@ function SearchWorkbench() {
                               {projectWorkspaceLoading === "save" ? "Saving" : "Save Project Slot"}
                             </Button>
                           </div>
+                          {projectWorkspaceTaskSummary && (
+                            <div className="mt-3 grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 sm:grid-cols-4" data-testid="project-workspace-task-summary">
+                              <div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceTaskSummary.open} open</div>
+                                <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceTaskSummary.total} saved tasks</div>
+                              </div>
+                              <div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceTaskSummary.severityCounts.high} high</div>
+                                <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceTaskSummary.entities} entities</div>
+                              </div>
+                              <div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceTaskSummary.statusCounts.ready_to_draft} ready</div>
+                                <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceTaskSummary.statusCounts.checking_sources} checking</div>
+                              </div>
+                              <div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{projectWorkspaceTaskSummary.statusCounts.resolved} resolved</div>
+                                <div className="text-slate-500 dark:text-slate-400">{projectWorkspaceTaskSummary.workspaces} workspaces</div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         {savedWorkspaceSlots.length === 0 ? (
                           <div className="rounded-md border border-dashed border-slate-300 p-3 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300">
