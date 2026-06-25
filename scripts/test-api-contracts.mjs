@@ -60,13 +60,14 @@ async function checkObservabilityReceiverContract() {
   }
 
   const authorization = `Bearer ${observabilityReceiverToken}`;
+  const createdAt = new Date().toISOString();
   const monitorEvent = {
     event: {
       route: "/api/chat",
       status: 502,
       category: "ag2-grounding-invalid",
       message: "Grounding references missing Bearer contract-secret-token",
-      createdAt: "2026-06-25T22:30:00.000Z",
+      createdAt,
     },
   };
   const posted = await postJsonWithHeaders("/api/observability/events", monitorEvent, { authorization });
