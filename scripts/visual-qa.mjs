@@ -20,6 +20,8 @@ const checks = [
     name: "02-search-q42-graph-desktop.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    waitTestId: "selected-entity-id",
+    waitTestText: "Q42",
     fixtureRoutes: true,
     viewport: { width: 1440, height: 1000 },
   },
@@ -45,6 +47,8 @@ const checks = [
     name: "06-search-q42-mobile.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    waitTestId: "selected-entity-id",
+    waitTestText: "Q42",
     fixtureRoutes: true,
     viewport: { width: 390, height: 844 },
   },
@@ -80,6 +84,8 @@ const checks = [
     name: "11-search-q42-graph-desktop-dark.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    waitTestId: "selected-entity-id",
+    waitTestText: "Q42",
     colorScheme: "dark",
     fixtureRoutes: true,
     viewport: { width: 1440, height: 1000 },
@@ -98,6 +104,8 @@ const checks = [
     name: "13-search-q42-mobile-dark.png",
     path: "/search?q=Q42",
     waitText: "Douglas Adams",
+    waitTestId: "selected-entity-id",
+    waitTestText: "Q42",
     colorScheme: "dark",
     fixtureRoutes: true,
     viewport: { width: 390, height: 844 },
@@ -174,6 +182,20 @@ try {
         waitUntil: "commit",
         timeout: 20000,
       });
+      if (check.waitTestId) {
+        const readyElement = page.getByTestId(check.waitTestId);
+        await readyElement.waitFor({
+          state: "visible",
+          timeout: 20000,
+        });
+        if (check.waitTestText) {
+          await page.waitForFunction(
+            ({ testId, text }) => document.querySelector(`[data-testid="${testId}"]`)?.textContent?.trim() === text,
+            { testId: check.waitTestId, text: check.waitTestText },
+            { timeout: 20000 },
+          );
+        }
+      }
       await page.getByText(check.waitText, { exact: false }).first().waitFor({
         state: "visible",
         timeout: 20000,
