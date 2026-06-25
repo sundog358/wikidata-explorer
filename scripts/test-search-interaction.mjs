@@ -74,10 +74,20 @@ try {
   }
 
   await page.getByTestId("graph-focus-Q5").click();
+  await page.getByTestId("selected-graph-node-description").waitFor({ state: "visible" });
+  const selectedNodeDescription = await page.getByTestId("selected-graph-node-description").innerText();
+  if (!selectedNodeDescription.trim()) {
+    throw new Error("Expected selected graph node to show a secondary entity description.");
+  }
   const statementDetailDrawer = await page.getByTestId("graph-statement-detail-drawer").innerText();
   const statementDetailText = statementDetailDrawer.toLowerCase();
   if (!statementDetailText.includes("statement detail drawer") || !statementDetailText.includes("statement id") || !statementDetailText.includes("references")) {
     throw new Error(`Expected selected graph detail drawer to include statement and reference details, got ${statementDetailDrawer}`);
+  }
+  await page.getByTestId("pin-graph-relationship").click();
+  const pinnedHistory = await page.getByTestId("pinned-relationship-history").innerText();
+  if (!pinnedHistory.includes("Pinned relationship history") || !pinnedHistory.includes("Q5")) {
+    throw new Error(`Expected pinned relationship history to include Q5, got ${pinnedHistory}`);
   }
   const graphEdgeEvidence = await page.getByTestId("graph-edge-evidence-summary").innerText();
   const graphEdgeEvidenceText = graphEdgeEvidence.toLowerCase();
@@ -146,6 +156,8 @@ try {
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");
   console.log("PASS selected graph statement detail drawer shows references");
+  console.log("PASS richer graph node previews include secondary descriptions");
+  console.log("PASS pinned relationship history keeps selected graph edges");
   console.log("PASS selected graph edge evidence shows concrete references");
   console.log("PASS selected graph path export includes evidence details");
   console.log("PASS selected graph path export summarizes the chosen edge");

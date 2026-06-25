@@ -24,7 +24,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed filters, selected-edge evidence summaries, and selected-path Markdown/JSON exports.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, and Markdown comparison exports.
-- The current local branch adds URL-backed graph depth controls and a selected statement detail drawer for richer graph review.
+- The current local branch adds URL-backed graph depth controls, richer secondary-entity node previews, pinned relationship history, and a selected statement detail drawer for graph review.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -45,6 +45,8 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 ## Ready For Next Production Deploy
 
 - Graph depth controls are implemented and verified locally: 1-hop statements, 2-hop evidence-linked records, and selected-property expansion.
+- Richer node previews now load secondary entity descriptions for visible graph nodes.
+- Pinned relationship history keeps selected edges visible while users compare graph paths.
 - Selected graph relationships now open a clearer statement detail drawer with statement ID, value, data type, depth/source context, qualifiers, and references.
 - Search URL state now includes `gdepth`, so graph depth selections can be shared alongside target type, rank, property, evidence, and focus.
 
@@ -52,11 +54,11 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 
 Current local grade: 9.1 / 10
 
-The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
+The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, richer graph previews, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
 To reach 9.5:
 
-- Add richer node previews from secondary entity lookups and pinned relationship history.
+- Add accessibility checks for the new graph depth controls, pinned history, and statement drawer.
 - Add accessibility checks for keyboard graph navigation, focus order, and reduced-motion behavior.
 - Add performance budgets for `/search?q=Q42` and graph rendering.
 
@@ -86,9 +88,10 @@ Status: first slice implemented locally; pending production deployment.
 Goal: make the graph the signature feature.
 
 - Implemented graph depth controls: 1-hop statements, 2-hop evidence-linked records, and selected-property expansion.
+- Implemented richer node previews from secondary entity lookups.
+- Implemented pinned relationship history for selected graph relationships.
 - Implemented a selected statement detail drawer for statement ID, value, data type, depth/source context, qualifiers, and references.
-- Add richer node previews from secondary entity lookups.
-- Add multi-edge history and pinned comparison for selected graph relationships.
+- Next: add multi-edge comparison views for pinned relationships.
 - Add layout modes: radial, grouped by property, and timeline-like for date-heavy entities.
 - Keep graph URL state stable for filters, selected focus, and future export views.
 
@@ -191,8 +194,8 @@ Status: shipped
 Status: in progress
 
 - Shipped: graph filters, hover previews, selected-edge evidence, selected-path exports, graph focus URL state.
-- Ready for deploy: graph depth controls and selected statement detail drawer.
-- Next: richer node previews, pinned relationship history, layout modes.
+- Ready for deploy: graph depth controls, richer node previews, pinned relationship history, and selected statement detail drawer.
+- Next: pinned relationship comparison views and layout modes.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 

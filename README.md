@@ -16,7 +16,7 @@ The public demo ships safely on Vercel with AI disabled by default, while the AG
 
 - 🔎 Search Wikidata by keyword or direct entity/property ID such as `Q42` or `P31`
 - 🧾 Inspect normalized labels, descriptions, aliases, statements, sitelinks, languages, and Commons media
-- 🕸️ Explore a clickable relationship graph with URL-backed filters, depth controls, hover previews, selected-edge statement details, and selected-path Markdown/JSON exports
+- 🕸️ Explore a clickable relationship graph with URL-backed filters, depth controls, richer node previews, pinned relationship history, selected-edge statement details, and selected-path Markdown/JSON exports
 - ⚖️ Compare two entities without AI by shared properties, unique statements, overlapping linked entities, and Markdown research notes
 - 🧭 Follow related items and properties without restarting the search flow
 - 🔗 Launch directly into a query with `/search?q=Douglas%20Adams` or a seeded Q42 proof path with graph focus, review, exports, and AI-boundary context
@@ -192,7 +192,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `app/api/chat/route.ts`: feature-flagged AG2-backed chat endpoint
 - `app/api/entity-summary/route.ts`: feature-flagged grounded entity summary endpoint
 - `app/api/ag2-workflow/route.ts`: feature-flagged specialist workflow endpoint with autonomy safety gating
-- `components/relationship-graph.tsx`: clickable, filterable entity relationship visualization with controlled depth/filter state, selected-edge evidence summaries, and statement detail drawers
+- `components/relationship-graph.tsx`: clickable, filterable entity relationship visualization with controlled depth/filter state, secondary entity previews, pinned relationship history, selected-edge evidence summaries, and statement detail drawers
 - `components/nav/main-nav.tsx`: primary nav with AI links hidden unless the AI feature flag is enabled
 - `lib/wikidata.ts`: Wikidata API client and normalization helpers
 - `lib/site-config.mjs`: shared portfolio metadata, public URL, social-preview, favicon, and site-icon configuration
@@ -224,7 +224,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/smoke-routes.mjs`: local route and API smoke checks
 - `scripts/test-public-metadata.mjs`: live metadata, robots, sitemap, and Open Graph image checks
 - `scripts/test-api-contracts.mjs`: live API validation, safety, disabled-mode, and precondition contract checks
-- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison, graph depth/filtering, selected statement details, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
+- `scripts/test-search-interaction.mjs`: browser interaction test for data-quality summary, AI-off comparison, graph depth/filtering, richer node previews, pinned relationship history, selected statement details, hidden/visible AI graph focus, selected-path export, traversal, and direct PID lookup
 - `scripts/visual-qa.mjs`: portfolio screenshot, route-surface, layout overflow, and browser console/page-error checks
 - `scripts/refresh-portfolio-screenshots.mjs`: copies verified visual QA captures into tracked README screenshot assets
 - `.github/workflows/ci.yml`: GitHub Actions verification, smoke, e2e, and visual QA

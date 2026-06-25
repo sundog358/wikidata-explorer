@@ -44,6 +44,11 @@ type PositionedGraphNode = RelationshipGraphNode & {
   y: number;
 };
 
+type GraphNodeTerm = {
+  label: string;
+  description: string;
+};
+
 export type RelationshipGraphFocus = {
   id: string;
   label: string;
@@ -121,6 +126,36 @@ function sourceLabel(source: RelationshipGraphNode["source"]) {
   return "Statement edge";
 }
 
+async function fetchGraphNodeTerms(ids: string[]): Promise<Record<string, GraphNodeTerm>> {
+  const uniqueIds = Array.from(new Set(ids.filter((id) => /^[PQ]\d+$/.test(id)))).slice(0, 24);
+  if (!uniqueIds.length) return {};
+
+  const response = await fetch(
+    `https://www.wikidata.org/w/api.php?${new URLSearchParams({
+      action: "wbgetentities",
+      ids: uniqueIds.join("|"),
+      props: "labels|descriptions",
+      languages: "en",
+      languagefallback: "1",
+      format: "json",
+      origin: "*",
+    })}`,
+  );
+
+  if (!response.ok) return {};
+
+  const data = await response.json();
+  return Object.fromEntries(
+    Object.entries(data.entities || {}).map(([id, entity]: [string, any]) => [
+      id,
+      {
+        label: entity?.labels?.en?.value || id,
+        description: entity?.descriptions?.en?.value || "",
+      },
+    ]),
+  );
+}
+
 function positionNodes(graphNodes: RelationshipGraphNode[]): PositionedGraphNode[] {
   return graphNodes.map((node, index) => {
     const angle = (index / graphNodes.length) * Math.PI * 2 - Math.PI / 2;
@@ -164,6 +199,8 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [internalSelectedNodeId, setInternalSelectedNodeId] = useState<string | null>(null);
   const [internalFilters, setInternalFilters] = useState(DEFAULT_RELATIONSHIP_GRAPH_FILTERS);
+  const [nodeTerms, setNodeTerms] = useState<Record<string, GraphNodeTerm>>({});
+  const [pinnedNodes, setPinnedNodes] = useState<RelationshipGraphNode[]>([]);
   const selectedNodeId = controlledSelectedNodeId ?? internalSelectedNodeId;
   const filters = controlledFilters || internalFilters;
   const allNodes = useMemo(() => collectRelationshipGraphNodes(item), [item]);
@@ -189,9 +226,30 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
     setSelectedGraphNodeId(node?.id || null);
   }
 
+  function pinNode(node: RelationshipGraphNode) {
+    setPinnedNodes((current) => [node, ...current.filter((item) => item.id !== node.id)].slice(0, 6));
+  }
+
   useEffect(() => {
     onGraphFocus?.(selectedNode ? graphFocusFromNode(selectedNode) : null);
   }, [onGraphFocus, selectedNode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const ids = nodes.map((node) => node.id);
+
+    fetchGraphNodeTerms(ids)
+      .then((terms) => {
+        if (!cancelled) setNodeTerms(terms);
+      })
+      .catch(() => {
+        if (!cancelled) setNodeTerms({});
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [nodes]);
 
   function setGraphFilters(nextFilters: RelationshipGraphFilters) {
     if (onFiltersChange) {
@@ -206,6 +264,8 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
     setHoveredNodeId(null);
     selectNode(null);
   }
+
+  const selectedTerm = selectedNode ? nodeTerms[selectedNode.id] : null;
 
   if (!allNodes.length) {
     return (
@@ -362,6 +422,11 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                 </div>
                 <p className="mt-2 text-slate-600 dark:text-slate-300">{evidenceLabel(previewNode)}</p>
                 <p className="mt-1 text-slate-500 dark:text-slate-400">{sourceLabel(previewNode.source)}</p>
+                {nodeTerms[previewNode.id]?.description && (
+                  <p className="mt-2 line-clamp-2 text-slate-600 dark:text-slate-300" data-testid="graph-node-preview-description">
+                    {nodeTerms[previewNode.id].description}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -380,6 +445,9 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                     <Badge variant="outline">{selectedNode.propertyId}</Badge>
                     <Badge variant="secondary">{selectedNode.depth}-hop</Badge>
                     <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${rankClass(selectedNode.rank)}`}>{selectedNode.rank}</span>
+                    <Button type="button" variant="outline" size="sm" onClick={() => pinNode(selectedNode)} data-testid="pin-graph-relationship">
+                      Pin
+                    </Button>
                   </div>
                 </div>
                 <div className="grid gap-3 text-sm md:grid-cols-3">
@@ -395,6 +463,11 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                     <button type="button" className="mt-1 text-left font-medium text-sky-700 hover:text-sky-900 dark:text-sky-300 dark:hover:text-sky-100" onClick={() => onEntityClick(selectedNode.id)}>
                       {selectedNode.label} <span className="text-xs text-slate-500">{selectedNode.id}</span>
                     </button>
+                    {selectedTerm?.description && (
+                      <div className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400" data-testid="selected-graph-node-description">
+                        {selectedTerm.description}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Evidence</div>
@@ -526,10 +599,50 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   <Badge variant="outline">{node.id}</Badge>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{node.property}</p>
+                {nodeTerms[node.id]?.description && (
+                  <p className="mt-2 line-clamp-2 text-xs text-slate-600 dark:text-slate-300">{nodeTerms[node.id].description}</p>
+                )}
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{evidenceLabel(node)}</p>
               </button>
             ))}
           </div>
+
+          {pinnedNodes.length > 0 && (
+            <div className="rounded-md border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950" data-testid="pinned-relationship-history">
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-slate-950 dark:text-slate-50">Pinned relationship history</div>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    Keep important edges visible while comparing graph paths or moving between tabs.
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPinnedNodes([])}>
+                  Clear pins
+                </Button>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {pinnedNodes.map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    onClick={() => selectNode(node)}
+                    onDoubleClick={() => onEntityClick(node.id)}
+                    className="rounded-md border border-slate-200 p-3 text-left text-sm hover:bg-sky-50 dark:border-slate-800 dark:hover:bg-slate-800"
+                  >
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-slate-950 dark:text-slate-50">{entityLabel(item)} {"->"} {node.label}</span>
+                      <Badge variant="outline">{node.id}</Badge>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{node.property} ({node.propertyId})</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <Badge variant="secondary">{node.depth}-hop</Badge>
+                      <Badge variant="outline">{node.referenceCount} ref</Badge>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
