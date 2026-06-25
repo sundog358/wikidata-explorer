@@ -46,6 +46,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Graph filter tab-order checks and reduced-motion coverage shipped in the search interaction test.
 - Graph filter labels/options, selected statement detail drawer coverage, and pinned relationship keyboard controls are covered in the search interaction test.
 - A concise case-study doc now explains the architecture, AI safety boundary, testing strategy, and deployment tradeoffs.
+- AI-enabled AG2 API success contracts now run against a mock remote service for chat, entity summary, and graph workflow routes without provider credentials.
 
 ## Recently Confirmed In Production
 
@@ -58,10 +59,11 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Comparison-tab visual QA is on `main` and can refresh the tracked portfolio screenshot.
 - Deterministic Q42/Q80/Q25169/Q46248/P31 Wikidata fixtures are on `main` for search, entity, graph, evidence, and comparison regression coverage.
 - A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Q25169 related-work graph context, Commons media, language metadata, Q42/Q80 comparison JSON export, Q42/Q46248 author comparison JSON export, direct P31 lookup, empty/missing results, Wikidata outage states, Commons outage states, and language fallback states without live Wikidata calls.
+- AI-enabled AG2 API success contracts are on `main` for `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` through a token-authenticated mock remote service.
 
 ## Portfolio Readiness
 
-Current local grade: 9.35 / 10
+Current local grade: 9.4 / 10
 
 The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, timeline evidence layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
 
@@ -69,7 +71,6 @@ To reach 9.5:
 
 - Add visual QA for dark mode so the portfolio proof covers both public themes.
 - Expand route-mocked fixture coverage to more varied non-biographical entity types beyond author/person/work/property paths.
-- Add successful mocked AG2 route coverage for enabled-mode responses without requiring provider credentials.
 
 To reach 10:
 
@@ -144,6 +145,7 @@ Goal: make AI assistance visibly grounded in selected Wikidata context.
 - Shipped selected graph nodes, selected statements, and selected path exports into the full AG2 chat surface.
 - Shipped visible workbench-to-chat handoff with bounded entity, statement, graph-focus, and selected-path export context.
 - Shipped citation-style grounding requirements for AG2 chat, summaries, graph analysis, suggestions, verification, comparison, and reports.
+- Shipped AI-enabled API route success contracts through a token-authenticated mock AG2 remote service for chat, entity summaries, and graph workflow responses.
 - Persist agent result history beyond browser-local storage once a database layer is introduced.
 - Deploy the AG2 service container to a public/private host for an optional AI-enabled demo.
 - Expand safety copy and policy UI for future live bot-ready actions, source requirements, and human approval states.
@@ -157,6 +159,7 @@ Keep these green before shipping code changes:
 - `npm run metadata:check`
 - `npm run smoke`
 - `npm run api:contracts`
+- `npm run api:contracts:ag2`
 - `npm run e2e`
 - `npm run perf:check`
 - `npm run visual:qa`
@@ -167,7 +170,7 @@ Next quality improvements:
 - Add visual QA for dark mode.
 - Keep graph accessibility checks green for control labels, keyboard navigation, tab order, statement drawers, pinned history, and reduced-motion behavior.
 - Keep `/search?q=Q42` performance budgets and shared comparison URL restore green as graph/comparison features expand.
-- Expand API contract tests for successful mocked AG2 responses once a route-mocking harness exists.
+- Keep AI-enabled AG2 success contracts green as chat/workflow payloads evolve.
 
 ## Deployment And Operations
 
@@ -232,7 +235,7 @@ Status: in progress
 
 Status: partially shipped
 
-- Shipped: feature-flagged AG2 routes, local/container bridge, safety policy, remote service contract, disabled public mode.
+- Shipped: feature-flagged AG2 routes, local/container bridge, safety policy, remote service contract, disabled public mode, and mock-service success contracts for enabled API routes.
 - Next: hosted optional AG2 demo with live citation-style response validation.
 
 ### Milestone 5: Research Workspace

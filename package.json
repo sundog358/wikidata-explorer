@@ -16,6 +16,7 @@
     "screenshots:update": "node scripts/refresh-portfolio-screenshots.mjs",
     "trace:check": "node scripts/test-deployment-trace.mjs",
     "api:contracts": "node scripts/test-api-contracts.mjs",
+    "api:contracts:ag2": "node scripts/test-ag2-api-enabled-contracts.mjs",
     "e2e": "node scripts/test-homepage-proof-paths.mjs && node scripts/test-search-interaction.mjs && node scripts/test-search-fixture-flow.mjs",
     "deploy:check": "node scripts/check-deploy-env.mjs"
   },

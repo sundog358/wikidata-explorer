@@ -64,6 +64,9 @@ jobs:
         env:
           API_CONTRACT_BASE_URL: http://localhost:3000
 
+      - name: AI-enabled AG2 API contract tests
+        run: npm run api:contracts:ag2
+
       - name: Search interaction test
         run: npm run e2e
         env:

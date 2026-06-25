@@ -136,13 +136,14 @@ npm run metadata:check
 npm run perf:check
 npm run deploy:check
 npm run api:contracts
+npm run api:contracts:ag2
 npm run e2e
 npm run visual:qa
 npm run screenshots:update
 npm run trace:check
 ```
 
-`npm run deploy:check` validates the default public Vercel AI-off environment and warns when `NEXT_PUBLIC_SITE_URL` is missing for production metadata. Use `npm run deploy:check -- --mode=ai-container` before an AI-enabled container deployment. `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` expect the app to be running locally. In public AI-off mode, API contracts assert fail-closed disabled responses and visual QA captures the disabled chat/agents states. In AI-enabled mode, the same scripts check the AG2 route validation and visible agent workbench.
+`npm run deploy:check` validates the default public Vercel AI-off environment and warns when `NEXT_PUBLIC_SITE_URL` is missing for production metadata. Use `npm run deploy:check -- --mode=ai-container` before an AI-enabled container deployment. `npm run smoke`, `npm run api:contracts`, `npm run e2e`, and `npm run visual:qa` expect the app to be running locally. `npm run api:contracts:ag2` starts its own token-authenticated mock AG2 service and Next production server, so it requires a current build but no provider credentials. In public AI-off mode, API contracts assert fail-closed disabled responses and visual QA captures the disabled chat/agents states. In AI-enabled mode, the same scripts check the AG2 route validation and visible agent workbench.
 
 Override local targets when needed:
 
@@ -228,6 +229,7 @@ Optional AI-enabled mode remains a separate deployment step:
 - `scripts/test-ag2-chat-context.mjs`: bounded AG2 chat context sanitizer checks for entity, statement, graph focus, and path export handoff
 - `scripts/test-ag2-prompt-grounding.mjs`: prompt-grounding regression checks for `Grounding references`, Wikidata IDs, statement IDs, and source URL instructions across AG2 modes
 - `scripts/test-ag2-remote-service.mjs`: mocked AG2 container contract test for remote `/run` success, auth, and sanitized service failures
+- `scripts/test-ag2-api-enabled-contracts.mjs`: starts a mock AG2 service plus an AI-enabled Next production server to prove `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` can return successful route responses without provider credentials
 - `scripts/fixtures/wikidata-fixtures.mjs`: deterministic Q42/Q80/Q25169/Q46248/P31 Wikidata fixtures for search, entity, graph, evidence, and comparison tests
 - `scripts/test-wikidata-fixtures.mjs`: fixture-backed regression tests for search results, detailed entities, graph filters, source hints, data quality, author/work/property fixtures, and comparison exports
 - `scripts/test-search-fixture-flow.mjs`: route-mocked browser test that serves Wikidata, language, Commons media, related-work, author comparison, three-entity comparison, no-result, missing-entity, Wikidata outage, Commons outage, and language fallback fixtures to the live search workbench without external Wikidata calls
@@ -245,9 +247,9 @@ Optional AI-enabled mode remains a separate deployment step:
 
 ## 🛡️ Verification Status
 
-Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, interaction, performance-budget, console, hydration, and layout regressions. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
+Run `npm run verify` before shipping code changes. Run `npm run metadata:check` with the app running to validate title, description, canonical, Open Graph/Twitter tags, robots, sitemap, social preview image, favicon, and site icon. `npm run test` includes a mocked remote AG2 service contract so the container bridge is checked without provider credentials. Run `npm run smoke`, `npm run api:contracts`, `npm run e2e`, `npm run perf:check`, and `npm run visual:qa` with the local dev server running to catch route, interaction, performance-budget, console, hydration, and layout regressions. Run `npm run api:contracts:ag2` after a build to check successful AI-enabled AG2 route responses through a mock remote service. After intentional visual changes, run `npm run screenshots:update` so tracked portfolio screenshots match the verified UI.
 
-CI also runs install, verify, production trace checks, smoke, public metadata checks, API contracts, e2e, performance budgets, visual QA, and screenshot artifact upload on GitHub Actions.
+CI also runs install, verify, production trace checks, smoke, public metadata checks, public AI-off API contracts, mock AG2 enabled-mode API contracts, e2e, performance budgets, visual QA, and screenshot artifact upload on GitHub Actions.
 
 ## 🗺️ Roadmap
 
