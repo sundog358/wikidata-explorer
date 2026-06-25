@@ -512,7 +512,7 @@ export function RelationshipGraph({ item, onEntityClick, onGraphFocus, filters: 
                   onMouseLeave={() => setHoveredNodeId(null)}
                   aria-label={graphNodeAriaLabel(node)}
                   data-testid={`graph-node-${node.id}`}
-                  className={`absolute ${filters.layout === "timeline" ? "w-40" : "w-44"} -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white p-2 text-left text-xs shadow-sm transition hover:border-sky-300 hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800 ${
+                  className={`absolute ${filters.layout === "timeline" ? "w-40" : "w-44"} -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white p-2 text-left text-xs shadow-sm transition motion-reduce:transition-none hover:border-sky-300 hover:bg-sky-50 dark:bg-slate-900 dark:hover:bg-slate-800 ${
                     selected || node.id === hoveredNodeId ? "z-30" : "z-20"
                   } ${
                     selected ? "border-sky-400 ring-2 ring-sky-100 dark:border-sky-700 dark:ring-sky-950" : "border-slate-200 dark:border-slate-800"

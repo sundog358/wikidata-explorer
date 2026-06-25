@@ -24,7 +24,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Search supports keywords, QIDs, PIDs, linked navigation, Commons media, language/sitelink metadata, and normalized Wikidata statements.
 - Relationship graph supports clickable nodes, hover previews, URL-backed depth/relationship filters, grouped-by-property and timeline evidence layouts, richer secondary-entity node previews, pinned relationship history, selected-edge evidence summaries, selected statement detail drawers, and selected-path Markdown/JSON exports.
 - Production includes an AI-off entity comparison workflow for shared properties, unique properties, overlapping linked entities, and Markdown comparison exports.
-- The current local branch adds graph node accessibility labels and keyboard-focus coverage.
+- The current local branch expands graph accessibility coverage for filter tab order and reduced-motion behavior.
 - Evidence surfaces include ranks, qualifiers, references, data-quality summaries, review queues, source-link hints, and safe curation exports.
 - AG2 workflows support chat, entity summaries, graph analysis, next-entity suggestions, verification, comparison, and reports when AI mode is enabled.
 - Autonomy safety policy gates read-only, draft, supervised bot, sandbox bot, and critical write-risk actions.
@@ -42,10 +42,11 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - AI-off comparison workflow compares Q42 against a target entity such as Q80, with shared/unique properties, overlapping linked entities, and Markdown notes.
 - README now includes live deployment, CI, and visual QA links above the portfolio story.
 - Timeline evidence graph layout shipped with `glayout=timeline` URL state.
+- Graph node accessibility labels and keyboard-focus coverage shipped in the search interaction test.
 
 ## Ready For Next Production Deploy
 
-- Graph node accessibility labels and keyboard-focus coverage are implemented locally in the search interaction test.
+- Graph filter tab-order checks and reduced-motion coverage are implemented locally in the search interaction test.
 
 ## Portfolio Readiness
 
@@ -80,7 +81,7 @@ Goal: make the first five minutes of the demo obvious and impressive.
 
 ### 2. Graph Exploration Depth
 
-Status: depth, preview, history, detail-drawer, pinned-comparison, grouped-by-property layout, and timeline evidence layout slices shipped in production; graph accessibility coverage implemented locally.
+Status: depth, preview, history, detail-drawer, pinned-comparison, grouped-by-property layout, timeline evidence layout, and graph node accessibility coverage shipped in production; tab-order and reduced-motion coverage implemented locally.
 
 Goal: make the graph the signature feature.
 
@@ -91,8 +92,9 @@ Goal: make the graph the signature feature.
 - Implemented multi-edge comparison views for pinned relationships.
 - Implemented grouped-by-property layout mode.
 - Implemented timeline evidence layout mode for date-heavy relationship evidence.
-- Implemented accessible graph node labels and keyboard-focus coverage locally.
-- Next: deploy graph accessibility coverage and expand tab-order checks.
+- Implemented accessible graph node labels and keyboard-focus coverage.
+- Implemented tab-order and reduced-motion coverage locally.
+- Next: deploy tab-order/reduced-motion coverage and start performance budgets for `/search?q=Q42`.
 - Keep graph URL state stable for filters, selected focus, and future export views.
 
 ### 3. Entity Comparison
@@ -194,8 +196,8 @@ Status: shipped
 Status: in progress
 
 - Shipped: graph filters, depth controls, grouped-by-property layout, timeline evidence layout, richer node previews, pinned relationship history/comparison, selected-edge evidence, selected statement detail drawer, selected-path exports, graph focus URL state.
-- Ready for deploy: graph accessibility labels and keyboard-focus coverage.
-- Next: expand tab-order checks and add reduced-motion coverage.
+- Ready for deploy: graph tab-order and reduced-motion coverage.
+- Next: performance budgets for `/search?q=Q42` and graph rendering.
 
 ### Milestone 3: Comparison And Shareable Research Outputs
 

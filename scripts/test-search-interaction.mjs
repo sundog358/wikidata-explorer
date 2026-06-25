@@ -78,11 +78,32 @@ try {
   if (timelineUrl.searchParams.get("glayout") !== "timeline") {
     throw new Error(`Expected timeline graph layout in URL, got ${page.url()}`);
   }
+  await page.getByLabel("Depth").focus();
+  for (const expectedFocusedControl of [
+    "graph-depth-filter",
+    "graph-layout-filter",
+    "graph-kind-filter",
+    "graph-rank-filter",
+    "graph-property-filter",
+    "graph-evidence-filter",
+  ]) {
+    const focusedControl = await page.evaluate(() => document.activeElement?.id);
+    if (focusedControl !== expectedFocusedControl) {
+      throw new Error(`Expected graph filter tab order to focus ${expectedFocusedControl}, got ${focusedControl}`);
+    }
+    await page.keyboard.press("Tab");
+  }
   const q5GraphNode = page.getByTestId("graph-node-Q5").first();
   const q5AccessibleName = await q5GraphNode.getAttribute("aria-label");
   if (!q5AccessibleName?.includes("human (Q5)") || !q5AccessibleName.includes("relationship instance of (P31)") || !q5AccessibleName.includes("normal rank")) {
     throw new Error(`Expected Q5 graph node to expose relationship context in its accessible name, got ${q5AccessibleName}`);
   }
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const q5TransitionProperty = await q5GraphNode.evaluate((node) => getComputedStyle(node).transitionProperty);
+  if (q5TransitionProperty !== "none") {
+    throw new Error(`Expected reduced-motion graph node to disable transitions, got ${q5TransitionProperty}`);
+  }
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await q5GraphNode.focus();
   const focusedGraphNode = await page.evaluate(() => document.activeElement?.getAttribute("data-testid"));
   if (focusedGraphNode !== "graph-node-Q5") {
@@ -180,6 +201,7 @@ try {
   console.log("PASS grouped-by-property graph layout updates URL state");
   console.log("PASS timeline graph layout updates URL state");
   console.log("PASS graph nodes expose accessible relationship labels and keyboard focus");
+  console.log("PASS graph filters keep predictable tab order and reduced-motion nodes disable transitions");
   console.log("PASS search graph focus URL state restores AG2 context");
   console.log("PASS search graph filters keep Q5 reachable from Q42");
   console.log(aiEnabled ? "PASS search graph focus grounds AG2 agent panel" : "PASS public mode hides AG2 graph focus panel");
