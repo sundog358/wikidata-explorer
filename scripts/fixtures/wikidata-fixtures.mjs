@@ -461,6 +461,117 @@ const fixtureEntities = {
       ],
     },
   },
+  Q90: {
+    id: "Q90",
+    type: "item",
+    labels: { en: "Paris", fr: "Paris" },
+    descriptions: { en: "capital and largest city of France" },
+    aliases: { en: ["City of Paris"] },
+    sitelinks: {
+      enwiki: {
+        title: "Paris",
+        badges: [],
+        url: "https://en.wikipedia.org/wiki/Paris",
+      },
+    },
+    statements: {
+      P31: [
+        {
+          id: "Q90$fixture-P31-Q515",
+          rank: "normal",
+          propertyId: "P31",
+          explorable: true,
+          property: { id: "P31", label: "instance of", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q515", label: "city" } },
+          qualifiers: [],
+          references: [
+            {
+              hash: "fixture-reference-q90-p31",
+              parts: [
+                {
+                  property: { id: "P248", label: "stated in", data_type: "wikibase-item" },
+                  value: { type: "wikibase-entityid", content: { id: "Q2013", label: "Google Knowledge Graph" } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P17: [
+        {
+          id: "Q90$fixture-P17-Q142",
+          rank: "normal",
+          propertyId: "P17",
+          explorable: true,
+          property: { id: "P17", label: "country", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q142", label: "France" } },
+          qualifiers: [],
+          references: [
+            {
+              hash: "fixture-reference-q90-p17",
+              parts: [
+                {
+                  property: { id: "P854", label: "reference URL", data_type: "url", formatter_url: null },
+                  value: { type: "url", content: { value: "https://www.paris.fr/" } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P131: [
+        {
+          id: "Q90$fixture-P131-Q13917",
+          rank: "normal",
+          propertyId: "P131",
+          explorable: true,
+          property: { id: "P131", label: "located in the administrative territorial entity", data_type: "wikibase-item" },
+          value: { type: "wikibase-entityid", content: { id: "Q13917", label: "Ile-de-France" } },
+          qualifiers: [
+            {
+              property: { id: "P17", label: "country", data_type: "wikibase-item" },
+              value: { type: "wikibase-entityid", content: { id: "Q142", label: "France" } },
+            },
+          ],
+          references: [
+            {
+              hash: "fixture-reference-q90-p131",
+              parts: [
+                {
+                  property: { id: "P854", label: "reference URL", data_type: "url", formatter_url: null },
+                  value: { type: "url", content: { value: "https://www.insee.fr/en/metadonnees/geographie/commune/75056-paris" } },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      P625: [
+        {
+          id: "Q90$fixture-P625",
+          rank: "normal",
+          propertyId: "P625",
+          explorable: false,
+          property: { id: "P625", label: "coordinate location", data_type: "globecoordinate" },
+          value: { type: "globecoordinate", content: { latitude: 48.8567, longitude: 2.3522, precision: 0.0001 } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+      P18: [
+        {
+          id: "Q90$fixture-P18",
+          rank: "normal",
+          propertyId: "P18",
+          explorable: true,
+          property: { id: "P18", label: "image", data_type: "commonsMedia" },
+          value: { type: "commonsMedia", content: { value: "Paris skyline fixture.jpg" } },
+          qualifiers: [],
+          references: [],
+        },
+      ],
+    },
+  },
   P31: {
     id: "P31",
     type: "property",
@@ -498,6 +609,11 @@ const fixtureSearchIndex = [
   { term: "google", ids: ["Q95"] },
   { term: "technology company", ids: ["Q95"] },
   { term: "organization", ids: ["Q95"] },
+  { term: "paris", ids: ["Q90"] },
+  { term: "france", ids: ["Q90"] },
+  { term: "capital city", ids: ["Q90"] },
+  { term: "geographic", ids: ["Q90"] },
+  { term: "place", ids: ["Q90"] },
   { term: "instance", ids: ["P31"] },
 ];
 

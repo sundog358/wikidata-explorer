@@ -63,6 +63,14 @@ const fixtureCommonsMedia = {
     width: 512,
     height: 172,
   },
+  "File:Paris skyline fixture.jpg": {
+    mediatype: "BITMAP",
+    mime: "image/jpeg",
+    url: "https://upload.wikimedia.org/wikipedia/commons/fixture/Paris_skyline_fixture.jpg",
+    size: 245760,
+    width: 800,
+    height: 533,
+  },
 };
 
 function rawTerm(language, value) {
@@ -86,6 +94,16 @@ function datavalueFromNormalized(value = {}) {
   const content = value.content || {};
   if (content.id) return { type: "wikibase-entityid", value: { id: content.id } };
   if (content.time) return { type: "time", value: { time: content.time, precision: content.precision || 11 } };
+  if (value.type === "globecoordinate") {
+    return {
+      type: "globecoordinate",
+      value: {
+        latitude: content.latitude,
+        longitude: content.longitude,
+        precision: content.precision,
+      },
+    };
+  }
   return { type: value.type || "string", value: content.value ?? "" };
 }
 
@@ -409,6 +427,20 @@ async function runFixtureFlow() {
       throw new Error(`Expected fixture cross-type comparison export view to restore after reload, got ${restoredCrossTypeExportView}`);
     }
 
+    await page.goto(new URL("/search?q=Q25169&tab=compare&compare=Q95&compare2=Q90", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.getByTestId("comparison-summary").waitFor({ state: "visible" });
+    await page.getByTestId("comparison-property-matrix").waitFor({ state: "visible" });
+    const placeComparisonText = await page.getByTestId("comparison-panel").innerText();
+    if (!placeComparisonText.includes("The Hitchhiker's Guide to the Galaxy") || !placeComparisonText.includes("Google") || !placeComparisonText.includes("Paris")) {
+      throw new Error(`Expected place comparison to include work, organization, and place entities, got ${placeComparisonText}`);
+    }
+    const placeComparisonJson = JSON.parse(await page.getByTestId("comparison-json-export").inputValue());
+    if (placeComparisonJson.artifactType !== "entity-set-comparison" || placeComparisonJson.summary.entityCount !== 3 || !placeComparisonJson.entities.some((entity) => entity.id === "Q90") || !placeComparisonJson.propertyMatrix.some((property) => property.id === "P17")) {
+      throw new Error(`Expected fixture place comparison JSON for Q25169/Q95/Q90 with geographic properties, got ${JSON.stringify(placeComparisonJson)}`);
+    }
+
     await page.goto(new URL("/search?q=Q42&tab=graph&gdepth=property&gprop=P31&gfocus=Q5&export=graph-json", baseUrl).toString(), {
       waitUntil: "commit",
     });
@@ -459,6 +491,22 @@ async function runFixtureFlow() {
       throw new Error(`Expected mocked organization Commons media to render logo metadata, got ${organizationMediaPanel}`);
     }
 
+    await page.goto(new URL("/search?q=Q90&tab=graph&gdepth=property&gprop=P17", baseUrl).toString(), {
+      waitUntil: "commit",
+    });
+    await page.waitForFunction(() => document.querySelector('[data-testid="selected-entity-id"]')?.textContent?.trim() === "Q90");
+    await page.getByTestId("graph-node-Q142").waitFor({ state: "visible" });
+    const q90CountryNodeName = await page.getByTestId("graph-node-Q142").getAttribute("aria-label");
+    if (!q90CountryNodeName?.includes("France (Q142)") || !q90CountryNodeName.includes("country (P17)")) {
+      throw new Error(`Expected mocked Q90 graph to expose place country context, got ${q90CountryNodeName}`);
+    }
+    await page.getByRole("tab", { name: /Media/ }).click();
+    await page.getByText("File:Paris skyline fixture.jpg").waitFor({ state: "visible" });
+    const placeMediaPanel = await page.getByRole("tabpanel").filter({ hasText: "Paris skyline fixture" }).first().innerText();
+    if (!placeMediaPanel.includes("image/jpeg")) {
+      throw new Error(`Expected mocked place Commons media to render photo metadata, got ${placeMediaPanel}`);
+    }
+
     await page.goto(new URL("/search?q=NoSuchFixtureTerm", baseUrl).toString(), {
       waitUntil: "commit",
     });
@@ -480,10 +528,12 @@ async function runFixtureFlow() {
     console.log("PASS fixture-backed three-entity comparison matrix exports Q42/Q80/Q25169 JSON");
     console.log("PASS fixture-backed author comparison exports Q42/Q46248 JSON");
     console.log("PASS fixture-backed cross-type comparison exports Q25169/Q95/Q42 JSON");
+    console.log("PASS fixture-backed place comparison exports Q25169/Q95/Q90 JSON");
     console.log("PASS fixture-backed shareable export views restore comparison and graph handoffs");
     console.log("PASS fixture-backed direct PID lookup selects P31");
     console.log("PASS fixture-backed related work lookup selects Q25169 and graph author context");
     console.log("PASS fixture-backed organization lookup selects Q95 and graph headquarters context");
+    console.log("PASS fixture-backed place lookup selects Q90 and graph country context");
     console.log("PASS fixture-backed empty search shows no-result error");
     console.log("PASS fixture-backed missing entity shows not-found error");
     console.log("PASS fixture-backed Wikidata outage states show search and entity errors");

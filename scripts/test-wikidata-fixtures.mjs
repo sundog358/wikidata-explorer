@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { summarizeEntityDataQuality } from "../lib/data-quality.mjs";
-import { buildEntityComparison, buildEntityComparisonJsonExport } from "../lib/entity-comparison.mjs";
+import { buildEntityComparison, buildEntityComparisonJsonExport, buildEntitySetComparison, buildEntitySetComparisonJsonExport } from "../lib/entity-comparison.mjs";
 import {
   collectRelationshipGraphNodes,
   filterRelationshipGraphNodes,
@@ -11,7 +11,7 @@ import {
 import { sourceHintsFromStatement } from "../lib/review-source-hints.mjs";
 import { fixtureDetailedEntity, fixtureEntityIds, fixtureSearchWikidata } from "./fixtures/wikidata-fixtures.mjs";
 
-assert.deepEqual(fixtureEntityIds().sort(), ["P31", "Q25169", "Q42", "Q46248", "Q80", "Q95"]);
+assert.deepEqual(fixtureEntityIds().sort(), ["P31", "Q25169", "Q42", "Q46248", "Q80", "Q90", "Q95"]);
 
 const douglasResults = fixtureSearchWikidata("Douglas Adams");
 assert.equal(douglasResults.length, 1);
@@ -38,11 +38,17 @@ assert.equal(organizationResults.length, 1);
 assert.equal(organizationResults[0].id, "Q95");
 assert.match(organizationResults[0].descriptions.en, /technology company/);
 
+const placeResults = fixtureSearchWikidata("capital city france");
+assert.equal(placeResults.length, 1);
+assert.equal(placeResults[0].id, "Q90");
+assert.match(placeResults[0].descriptions.en, /France/);
+
 const source = fixtureDetailedEntity("Q42");
 const target = fixtureDetailedEntity("Q80");
 const relatedWork = fixtureDetailedEntity("Q25169");
 const authorTarget = fixtureDetailedEntity("Q46248");
 const organizationTarget = fixtureDetailedEntity("Q95");
+const placeTarget = fixtureDetailedEntity("Q90");
 assert.equal(source.labels.en, "Douglas Adams");
 assert.equal(source.aliases.en.includes("DNA"), true);
 assert.equal(source.sitelinks.enwiki.url, "https://en.wikipedia.org/wiki/Douglas_Adams");
@@ -51,6 +57,10 @@ assert.equal(authorTarget.statements.P800[0].value.content.id, "Q1052459");
 assert.equal(organizationTarget.type, "item");
 assert.equal(organizationTarget.statements.P159[0].value.content.id, "Q486860");
 assert.equal(organizationTarget.statements.P856[0].value.content.value, "https://www.google.com/");
+assert.equal(placeTarget.type, "item");
+assert.equal(placeTarget.statements.P17[0].value.content.id, "Q142");
+assert.equal(placeTarget.statements.P131[0].value.content.id, "Q13917");
+assert.equal(placeTarget.statements.P625[0].value.content.latitude, 48.8567);
 assert.throws(() => fixtureDetailedEntity("Q999999999"), /No fixture Wikidata entity/);
 
 const q42GraphNodes = collectRelationshipGraphNodes(source);
@@ -78,6 +88,13 @@ assert.ok(q95GraphNodes.some((node) => node.id === "Q30" && node.depth === 2));
 assert.deepEqual(graphPropertyOptions(q95GraphNodes).map((property) => property.id).sort(), ["P112", "P159", "P31"]);
 assert.equal(filterRelationshipGraphNodes(q95GraphNodes, { propertyId: "P159" })[0].label, "Mountain View");
 
+const q90GraphNodes = collectRelationshipGraphNodes(placeTarget);
+assert.ok(q90GraphNodes.some((node) => node.id === "Q515" && node.propertyId === "P31"));
+assert.ok(q90GraphNodes.some((node) => node.id === "Q142" && node.propertyId === "P17"));
+assert.ok(q90GraphNodes.some((node) => node.id === "Q13917" && node.propertyId === "P131"));
+assert.deepEqual(graphPropertyOptions(q90GraphNodes).map((property) => property.id).sort(), ["P131", "P17", "P31"]);
+assert.equal(filterRelationshipGraphNodes(q90GraphNodes, { propertyId: "P131" })[0].label, "Ile-de-France");
+
 const qualitySummary = summarizeEntityDataQuality(source);
 assert.ok(qualitySummary.referencedStatementCount >= 2);
 assert.ok(qualitySummary.strengths.some((strength) => strength.includes("references")));
@@ -94,6 +111,10 @@ assert.equal(sourceHints[0].url, "https://www.wikidata.org/wiki/Q25169");
 const organizationSourceHints = sourceHintsFromStatement(organizationTarget.statements.P112[0]);
 assert.equal(organizationSourceHints[0].kind, "source-url");
 assert.equal(organizationSourceHints[0].url, "https://about.google/our-story/");
+
+const placeSourceHints = sourceHintsFromStatement(placeTarget.statements.P17[0]);
+assert.equal(placeSourceHints[0].kind, "source-url");
+assert.equal(placeSourceHints[0].url, "https://www.paris.fr/");
 
 const comparison = buildEntityComparison(source, target, { createdAt: "2026-06-25T12:00:00.000Z" });
 assert.deepEqual(comparison.sharedProperties.map((property) => property.id), ["P31", "P106"]);
@@ -124,5 +145,18 @@ const organizationComparisonJson = JSON.parse(buildEntityComparisonJsonExport(or
 assert.equal(organizationComparisonJson.target.id, "Q95");
 assert.equal(organizationComparisonJson.summary.sharedPropertyCount, 1);
 assert.equal(organizationComparisonJson.summary.targetUniquePropertyCount, 5);
+
+const placeComparison = buildEntityComparison(organizationTarget, placeTarget, { createdAt: "2026-06-25T12:00:00.000Z" });
+assert.equal(placeComparison.source.id, "Q95");
+assert.equal(placeComparison.target.id, "Q90");
+assert.deepEqual(placeComparison.sharedProperties.map((property) => property.id), ["P18", "P31"]);
+assert.equal(placeComparison.targetUniqueProperties.some((property) => property.id === "P17"), true);
+const placeSetComparison = buildEntitySetComparison([relatedWork, organizationTarget, placeTarget], { createdAt: "2026-06-25T12:00:00.000Z" });
+assert.deepEqual(placeSetComparison.entities.map((entity) => entity.id), ["Q25169", "Q95", "Q90"]);
+assert.equal(placeSetComparison.propertyMatrix.some((property) => property.id === "P17"), true);
+assert.equal(placeSetComparison.propertyMatrix.some((property) => property.id === "P131"), true);
+const placeSetComparisonJson = JSON.parse(buildEntitySetComparisonJsonExport(placeSetComparison));
+assert.equal(placeSetComparisonJson.summary.entityCount, 3);
+assert.equal(placeSetComparisonJson.entities.some((entity) => entity.id === "Q90"), true);
 
 console.log("PASS deterministic Wikidata fixture tests");
