@@ -4,6 +4,7 @@ import { buildWorkspaceSnapshot } from "../lib/workspace-snapshot.mjs";
 const baseUrl = process.env.API_CONTRACT_BASE_URL || "http://localhost:3000";
 const aiApiEnabled = aiAgentsEnabled({ ENABLE_AI_AGENTS: process.env.ENABLE_AI_AGENTS });
 const observabilityReceiverToken = process.env.API_OBSERVABILITY_RECEIVER_TOKEN || "";
+const observabilityStoreConfigured = Boolean(process.env.API_OBSERVABILITY_STORE_DIR || "");
 const workspaceStoreToken = process.env.WORKSPACE_STORE_TOKEN || "";
 
 async function postJson(route, body) {
@@ -74,6 +75,7 @@ async function checkObservabilityReceiverContract() {
   const postOk = posted.response.status === 202 &&
     posted.body.received === true &&
     posted.body.category === "ag2-grounding-invalid" &&
+    (!observabilityStoreConfigured || posted.body.storage?.durable === true) &&
     posted.body.firingAlerts?.some((alert) => alert.id === "ag2-grounding-invalid");
   console.log(`${postOk ? "PASS" : "FAIL"} observability receiver accepts grounded alert ${posted.response.status}`);
   if (!postOk) {
@@ -85,6 +87,7 @@ async function checkObservabilityReceiverContract() {
   const snapshotOk = snapshot.response.status === 200 &&
     snapshot.body.dashboard?.title === "Wikidata Explorer API Reliability" &&
     snapshot.body.retainedEvents >= 1 &&
+    (!observabilityStoreConfigured || snapshot.body.storage?.durable === true) &&
     snapshot.body.alertResults?.some((alert) => alert.id === "ag2-grounding-invalid" && alert.firing === true) &&
     !snapshotText.includes("contract-secret-token");
   console.log(`${snapshotOk ? "PASS" : "FAIL"} observability receiver exposes sanitized snapshot ${snapshot.response.status}`);
@@ -178,6 +181,40 @@ async function checkWorkspaceStoreContract() {
   console.log(`${listedOk ? "PASS" : "FAIL"} workspace store lists project slots ${listed.response.status}`);
   if (!listedOk) {
     throw new Error(`workspace store expected saved slot in list response, got ${listed.response.status} ${JSON.stringify(listed.body)}`);
+  }
+
+  const accountSaved = await postJsonWithHeaders("/api/workspaces", {
+    accountId: "contract-account",
+    projectId: "contract-team",
+    slot: {
+      id: "account-workspace-q42",
+      label: "Q42 account contract workspace",
+      snapshot,
+      createdAt: "2026-06-25T22:35:00.000Z",
+      updatedAt: "2026-06-25T22:37:00.000Z",
+    },
+    includeTasks: true,
+    includeAgentRuns: true,
+  }, { authorization });
+  const accountSavedOk = accountSaved.response.status === 202 &&
+    accountSaved.body.accountId === "contract-account" &&
+    accountSaved.body.projectId === "contract-team" &&
+    accountSaved.body.slots?.some((slot) => slot.id === "account-workspace-q42") &&
+    accountSaved.body.taskSummary?.workspaces === 1;
+  console.log(`${accountSavedOk ? "PASS" : "FAIL"} workspace store saves account-scoped slot ${accountSaved.response.status}`);
+  if (!accountSavedOk) {
+    throw new Error(`workspace store expected account-scoped save response, got ${accountSaved.response.status} ${JSON.stringify(accountSaved.body)}`);
+  }
+
+  const accountListed = await getJson("/api/workspaces?accountId=contract-account&project=contract-team&includeTasks=true&includeAgentRuns=true", { authorization });
+  const flatListedAfterAccountSave = await getJson("/api/workspaces?project=contract-team", { authorization });
+  const accountListedOk = accountListed.response.status === 200 &&
+    accountListed.body.accountId === "contract-account" &&
+    accountListed.body.slots?.some((slot) => slot.id === "account-workspace-q42") &&
+    !flatListedAfterAccountSave.body.slots?.some((slot) => slot.id === "account-workspace-q42");
+  console.log(`${accountListedOk ? "PASS" : "FAIL"} workspace store isolates account-scoped project slots ${accountListed.response.status}`);
+  if (!accountListedOk) {
+    throw new Error(`workspace store expected isolated account-scoped project slots, got account ${JSON.stringify(accountListed.body)} flat ${JSON.stringify(flatListedAfterAccountSave.body)}`);
   }
 
   const removed = await fetch(new URL("/api/workspaces", baseUrl), {

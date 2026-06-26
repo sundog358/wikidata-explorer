@@ -45,6 +45,20 @@ const publicWithKey = validateDeployEnv({
 assert.equal(publicWithKey.ok, true);
 assert.match(publicWithKey.warnings.join(" "), /not needed/);
 
+const observabilityMemoryOnly = validateDeployEnv({
+  NEXT_PUBLIC_SITE_URL: "https://wikidata-explorer.example.com",
+  API_OBSERVABILITY_RECEIVER_TOKEN: "receiver-token-value",
+}, { mode: "public-vercel" });
+assert.equal(observabilityMemoryOnly.ok, true);
+assert.match(observabilityMemoryOnly.warnings.join(" "), /in-memory retention/);
+
+const observabilityStoreWithoutToken = validateDeployEnv({
+  NEXT_PUBLIC_SITE_URL: "https://wikidata-explorer.example.com",
+  API_OBSERVABILITY_STORE_DIR: "/mnt/wikidata-observability",
+}, { mode: "public-vercel" });
+assert.equal(observabilityStoreWithoutToken.ok, true);
+assert.match(observabilityStoreWithoutToken.warnings.join(" "), /ignored until/);
+
 const aiMissingService = validateDeployEnv({
   NEXT_PUBLIC_SITE_URL: "https://wikidata-explorer.example.com",
   NEXT_PUBLIC_ENABLE_AI_AGENTS: "true",

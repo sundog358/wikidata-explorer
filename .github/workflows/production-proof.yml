@@ -1,0 +1,71 @@
+name: Production Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Public URL to verify
+        required: true
+        default: https://www.wikidataexplorer.com
+      skip_browser:
+        description: Run only metadata and smoke checks
+        required: true
+        type: boolean
+        default: false
+      run_ops_proof:
+        description: Also verify hosted workspace and observability proofs using repository secrets
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  production-proof:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2.1.2
+
+      - name: Run production proof
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          PRODUCTION_BASE_URL: ${{ inputs.base_url }}
+          SKIP_BROWSER: ${{ inputs.skip_browser }}
+        run: |
+          set -o pipefail
+          if [ "$SKIP_BROWSER" = "true" ]; then
+            npm run production:proof -- --skip-browser 2>&1 | tee production-proof.log
+          else
+            npm run production:proof 2>&1 | tee production-proof.log
+          fi
+
+      - name: Run hosted ops proof
+        if: ${{ inputs.run_ops_proof }}
+        env:
+          HOSTED_OPS_BASE_URL: ${{ inputs.base_url }}
+          WORKSPACE_STORE_TOKEN: ${{ secrets.PRODUCTION_WORKSPACE_STORE_TOKEN }}
+          API_OBSERVABILITY_RECEIVER_TOKEN: ${{ secrets.PRODUCTION_OBSERVABILITY_RECEIVER_TOKEN }}
+        run: npm run ops:proof 2>&1 | tee hosted-ops-proof.log
+
+      - name: Upload production proof log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-proof-log
+          path: |
+            production-proof.log
+            hosted-ops-proof.log
+          if-no-files-found: ignore

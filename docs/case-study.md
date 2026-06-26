@@ -61,6 +61,10 @@ The verification loop is intentionally broader than a typical portfolio app beca
 
 - `npm run verify` runs lint, deterministic tests, and production build.
 - `npm run api:contracts` checks public AI-off failures and AI-enabled route validation.
+- `npm run ag2:demo:check -- --health` verifies intentional AI demo flags, AG2 service health, docs-off posture, rate limits, grounding-contract evidence, and hosted/durable monitoring before demo traffic.
+- `npm run production:proof` runs the live metadata, route smoke, homepage proof-path, and search/graph/comparison interaction checks against the public portfolio URL after deployment.
+- The manual GitHub Actions `Production Proof` workflow wraps the live proof command and can optionally run hosted ops proof with repository secrets, uploading proof log artifacts for release review.
+- `npm run ops:proof` verifies token-protected hosted workspace persistence and durable observability receiver behavior when private hosted credentials are configured.
 - `npm run e2e` covers proof paths, graph interactions, statements, comparison, exports, URL restore, and route-mocked fixture flows.
 - `npm run perf:check` budgets Q42 route readiness, graph readiness, graph node count, and DOM size.
 - `npm run visual:qa` captures portfolio surfaces and fails on console errors, hydration errors, and horizontal overflow.
@@ -82,13 +86,15 @@ The AG2 runtime is deliberately separate:
 
 This split keeps the public demo dependable while preserving a credible path to richer grounded AI workflows.
 
+Monitoring follows the same safety boundary: API failures are classified into sanitized categories, optional webhook payloads include alert-rule metadata, and the built-in receiver can retain a bounded event window either in memory or in a durable filesystem-backed store for hosted monitoring demos.
+
 ## Current State
 
 The project is portfolio-ready now. The remaining roadmap work is about making the workspace deeper:
 
 - optional hosted AG2 demo with live citation validation;
 - broader non-biographical fixture coverage;
-- persisted curation tasks and persisted agent history once storage is introduced;
+- identity-backed curation tasks and persisted agent history beyond the optional account-scoped project workspace store;
 - more accessibility and dark-mode visual QA coverage.
 
 The central product bet remains the same: evidence-first linked-data exploration should feel faster and safer than reading raw Wikidata pages or asking an ungrounded chatbot.

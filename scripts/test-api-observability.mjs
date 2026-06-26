@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import {
   API_FAILURE_CATEGORIES,
   API_OBSERVABILITY_ALERT_RULES,
   API_OBSERVABILITY_RECEIVER_EVENT_LIMIT,
   apiObservabilityReceiverConfig,
   apiObservabilityReceiverSnapshot,
+  apiObservabilityReceiverSnapshotWithStore,
+  apiObservabilityReceiverStoreConfig,
   apiObservabilityMonitorConfig,
   apiObservabilityMonitorPayload,
   apiObservabilityDashboardSpec,
@@ -13,10 +18,13 @@ import {
   classifyApiFailure,
   evaluateApiFailureAlerts,
   logApiFailure,
+  readApiObservabilityReceiverStore,
   receiveApiObservabilityMonitorPayload,
+  receiveApiObservabilityMonitorPayloadWithStore,
   reportApiFailure,
   sanitizeLogMessage,
   sendApiFailureToMonitor,
+  writeApiObservabilityReceiverStore,
 } from "../lib/api-observability.mjs";
 import { AI_DISABLED_MESSAGE } from "../lib/ai-feature-flags.mjs";
 
@@ -71,6 +79,8 @@ assert.deepEqual(apiObservabilityReceiverConfig({}), { enabled: false, reason: "
 assert.deepEqual(apiObservabilityReceiverConfig({ API_OBSERVABILITY_RECEIVER_TOKEN: "short" }), { enabled: false, reason: "token-too-short" });
 assert.equal(apiObservabilityReceiverConfig({ API_OBSERVABILITY_RECEIVER_TOKEN: "receiver-token-value" }).enabled, true);
 assert.equal(apiObservabilityReceiverConfig({ API_OBSERVABILITY_WEBHOOK_TOKEN: "monitor-token-value" }).enabled, true);
+assert.deepEqual(apiObservabilityReceiverStoreConfig({}), { enabled: false, mode: "memory", reason: "store-dir-not-configured" });
+assert.equal(apiObservabilityReceiverStoreConfig({ API_OBSERVABILITY_STORE_DIR: path.join(tmpdir(), "wikidata-observability-test") }).enabled, true);
 assert.deepEqual(
   authorizeApiObservabilityReceiver({ authorization: "Bearer wrong-token" }, { API_OBSERVABILITY_RECEIVER_TOKEN: "receiver-token-value" }),
   { authorized: false, status: 401, reason: "unauthorized" },
@@ -121,6 +131,47 @@ assert.equal(receiverSnapshot.dashboard.title, "Wikidata Explorer API Reliabilit
 assert.equal(receiverSnapshot.retainedEvents, API_OBSERVABILITY_RECEIVER_EVENT_LIMIT);
 assert.equal(receiverSnapshot.recentEvents.length, 25);
 assert.equal(receiverSnapshot.alertResults.find((alert) => alert.id === "ag2-service-unavailable-spike").firing, true);
+
+const durableRoot = await mkdtemp(path.join(tmpdir(), "wikidata-observability-"));
+try {
+  const durableConfig = apiObservabilityReceiverStoreConfig({ API_OBSERVABILITY_STORE_DIR: durableRoot });
+  assert.equal(durableConfig.enabled, true);
+  const durableReceived = await receiveApiObservabilityMonitorPayloadWithStore(monitorPayload, {
+    config: durableConfig,
+    now: "2026-06-25T21:29:45.000Z",
+  });
+  assert.equal(durableReceived.storage.mode, "filesystem");
+  assert.equal(durableReceived.storage.durable, true);
+  assert.equal(durableReceived.retainedEvents, 1);
+  const persisted = JSON.parse(await readFile(durableConfig.filePath, "utf8"));
+  assert.equal(persisted[0].category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
+  assert.doesNotMatch(JSON.stringify(persisted), /abcdefghijklmnop/);
+
+  const overflow = [];
+  for (let index = 0; index < API_OBSERVABILITY_RECEIVER_EVENT_LIMIT + 5; index += 1) {
+    overflow.push({
+      event: "api_failure",
+      route: "/api/chat",
+      status: 503,
+      category: API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE,
+      message: `AG2 service unavailable ${index}`,
+      createdAt: "2026-06-25T21:29:50.000Z",
+    });
+  }
+  await writeApiObservabilityReceiverStore(overflow, { config: durableConfig });
+  const durableEvents = await readApiObservabilityReceiverStore({ config: durableConfig });
+  assert.equal(durableEvents.length, API_OBSERVABILITY_RECEIVER_EVENT_LIMIT);
+  const durableSnapshot = await apiObservabilityReceiverSnapshotWithStore({
+    config: durableConfig,
+    now: "2026-06-25T21:30:00.000Z",
+  });
+  assert.equal(durableSnapshot.storage.mode, "filesystem");
+  assert.equal(durableSnapshot.storage.durable, true);
+  assert.equal(durableSnapshot.retainedEvents, API_OBSERVABILITY_RECEIVER_EVENT_LIMIT);
+  assert.equal(durableSnapshot.alertResults.find((alert) => alert.id === "ag2-service-unavailable-spike").firing, true);
+} finally {
+  await rm(durableRoot, { recursive: true, force: true });
+}
 
 const disabledMonitor = await sendApiFailureToMonitor(monitorPayload.event, { env: {} });
 assert.deepEqual(disabledMonitor, { sent: false, reason: "not-configured" });

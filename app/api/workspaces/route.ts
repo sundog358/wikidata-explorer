@@ -43,8 +43,9 @@ async function readJsonObject(req: Request) {
   return { ok: true, response: null, body };
 }
 
-function workspaceStoreResponse(result: { projectId: string; slots: unknown[] }, init?: ResponseInit, options: { includeTasks?: boolean; includeAgentRuns?: boolean } = {}) {
+function workspaceStoreResponse(result: { accountId?: string; projectId: string; slots: unknown[] }, init?: ResponseInit, options: { includeTasks?: boolean; includeAgentRuns?: boolean } = {}) {
   const body: Record<string, unknown> = {
+    accountId: result.accountId || null,
     projectId: result.projectId,
     slots: result.slots,
   };
@@ -66,10 +67,11 @@ export async function GET(req: Request) {
   if (response || !config) return response;
 
   const url = new URL(req.url);
+  const accountId = url.searchParams.get("accountId") || url.searchParams.get("account") || "";
   const projectId = url.searchParams.get("project") || "default";
   const includeTasks = url.searchParams.get("includeTasks") === "true" || url.searchParams.get("includeTasks") === "1";
   const includeAgentRuns = url.searchParams.get("includeAgentRuns") === "true" || url.searchParams.get("includeAgentRuns") === "1";
-  const result = await readProjectWorkspaceSlots({ config, projectId });
+  const result = await readProjectWorkspaceSlots({ config, accountId, projectId });
   if (!result.ok) {
     return Response.json({ error: "Workspace store could not be read.", reason: result.reason }, { status: result.status || 500 });
   }
@@ -86,6 +88,7 @@ export async function POST(req: Request) {
 
   const result = await upsertProjectWorkspaceSlot({
     config,
+    accountId: parsed.body.accountId || parsed.body.account,
     projectId: parsed.body.projectId,
     slot: parsed.body.slot,
   });
@@ -108,6 +111,7 @@ export async function DELETE(req: Request) {
 
   const result = await removeProjectWorkspaceSlot({
     config,
+    accountId: parsed.body.accountId || parsed.body.account,
     projectId: parsed.body.projectId,
     slotId: parsed.body.slotId,
   });

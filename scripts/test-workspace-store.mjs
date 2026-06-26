@@ -7,6 +7,7 @@ import {
   authorizeWorkspaceStore,
   buildProjectWorkspaceAgentRunIndex,
   buildProjectWorkspaceCurationTaskIndex,
+  normalizeWorkspaceAccountId,
   normalizeWorkspaceProjectId,
   readProjectWorkspaceSlots,
   removeProjectWorkspaceSlot,
@@ -19,6 +20,9 @@ import {
 assert.equal(normalizeWorkspaceProjectId("research_team-1"), "research_team-1");
 assert.equal(normalizeWorkspaceProjectId("../bad"), "");
 assert.equal(normalizeWorkspaceProjectId(""), "default");
+assert.equal(normalizeWorkspaceAccountId("account_team-1"), "account_team-1");
+assert.equal(normalizeWorkspaceAccountId("../bad"), "");
+assert.equal(normalizeWorkspaceAccountId(""), "");
 assert.deepEqual(workspaceStoreConfig({}), { enabled: false, reason: "store-dir-not-configured" });
 assert.deepEqual(workspaceStoreConfig({ WORKSPACE_STORE_DIR: "tmp" }), { enabled: false, reason: "token-not-configured" });
 assert.deepEqual(workspaceStoreConfig({ WORKSPACE_STORE_DIR: "tmp", WORKSPACE_STORE_TOKEN: "short" }), { enabled: false, reason: "token-too-short" });
@@ -128,6 +132,31 @@ try {
   const persisted = await readProjectWorkspaceSlots({ config, projectId: "review-team" });
   assert.equal(persisted.slots[0].label, "Q42 review workspace");
 
+  const accountSaved = await upsertProjectWorkspaceSlot({
+    config,
+    accountId: "account-team",
+    projectId: "review-team",
+    slot: {
+      id: "account-workspace-q42",
+      label: "Account Q42 workspace",
+      snapshot: firstSnapshot,
+      createdAt,
+      updatedAt: "2026-06-25T22:06:00.000Z",
+    },
+  });
+  assert.equal(accountSaved.ok, true);
+  assert.equal(accountSaved.accountId, "account-team");
+  assert.equal(accountSaved.projectId, "review-team");
+  assert.equal(accountSaved.slots[0].id, "account-workspace-q42");
+  const accountPersistedText = await readFile(path.join(storeDir, "accounts", "account-team", "review-team.json"), "utf8");
+  assert.doesNotMatch(accountPersistedText, /FAKE_REDACTION_TEST_VALUE/);
+  const flatProjectAfterAccountSave = await readProjectWorkspaceSlots({ config, projectId: "review-team" });
+  assert.equal(flatProjectAfterAccountSave.accountId, "");
+  assert.equal(flatProjectAfterAccountSave.slots.some((slot) => slot.id === "account-workspace-q42"), false);
+  const accountProject = await readProjectWorkspaceSlots({ config, accountId: "account-team", projectId: "review-team" });
+  assert.equal(accountProject.accountId, "account-team");
+  assert.equal(accountProject.slots.some((slot) => slot.id === "account-workspace-q42"), true);
+
   for (let index = 0; index < 16; index += 1) {
     await upsertProjectWorkspaceSlot({
       config,
@@ -151,6 +180,11 @@ try {
   const invalidProject = await readProjectWorkspaceSlots({ config, projectId: "../bad" });
   assert.equal(invalidProject.ok, false);
   assert.equal(invalidProject.status, 400);
+
+  const invalidAccount = await readProjectWorkspaceSlots({ config, accountId: "../bad", projectId: "review-team" });
+  assert.equal(invalidAccount.ok, false);
+  assert.equal(invalidAccount.status, 400);
+  assert.equal(invalidAccount.reason, "invalid-account-id");
 
   const invalidSlot = await upsertProjectWorkspaceSlot({ config, projectId: "review-team", slot: { id: "bad" } });
   assert.equal(invalidSlot.ok, false);

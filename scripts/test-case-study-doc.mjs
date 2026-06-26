@@ -26,7 +26,15 @@ for (const phrase of [
   "Grounding references",
   "npm run verify",
   "npm run e2e",
+  "npm run ag2:demo:check -- --health",
+  "npm run production:proof",
+  "npm run ops:proof",
+  "Production Proof",
+  "hosted ops proof",
   "AG2_SERVICE_URL",
+  "durable filesystem-backed store",
+  "account-scoped project workspace store",
+  "identity-backed curation tasks",
   "Vercel",
 ]) {
   assert.ok(caseStudy.includes(phrase), `case study missing ${phrase}`);

@@ -47,6 +47,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Graph filter labels/options, selected statement detail drawer coverage, and pinned relationship keyboard controls are covered in the search interaction test.
 - A concise case-study doc now explains the architecture, AI safety boundary, testing strategy, and deployment tradeoffs.
 - AI-enabled AG2 API success contracts now run against a mock remote service for chat, entity summary, and graph workflow routes without provider credentials.
+- A stricter `npm run ag2:demo:check -- --health` preflight now verifies intentional AI demo flags, AG2 service token/health, rate limits, docs-off service posture, grounding-contract evidence, and hosted/durable monitoring before demo traffic.
 - Dark-mode visual QA now captures home, Q42 graph, Q42 comparison, and mobile search surfaces.
 - Organization fixture coverage now adds Q95/Google with headquarters, founder, inception, website, logo/media, source-link, data-quality, and graph-regression checks.
 - Cross-type comparison coverage now exports a work/organization/person matrix for Q25169/Q95/Q42 and verifies shareable restore.
@@ -55,7 +56,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Portable workspace snapshots now export and restore sanitized curation task details, review task statuses, dismissed review findings, and saved AG2 run history with tested artifact validation.
 - Browser-local workspace slots now save named entity workspaces using the portable snapshot format, with restore/delete controls and bounded slot validation.
 - A token-protected `/api/workspaces` route now provides optional filesystem-backed project workspace slot persistence using the same sanitized portable snapshot format, with live API contracts for save/list/delete.
-- The Review Queue workspace panel can load, save, and delete project workspace slots through the token-protected store when a private/self-hosted sync token is entered.
+- The Review Queue workspace panel can load, save, and delete project workspace slots through the token-protected store when a private/self-hosted sync token is entered; the API also supports optional account-scoped project namespaces for hosted persistence experiments.
 - Workspace snapshots and project slots now carry sanitized review-queue curation task details, including status, statement/property context, values, severity, and source hints.
 - Project workspace sync now exposes a sanitized curation-task index and compact review-task summary across saved slots.
 - Project workspace sync now also exposes a sanitized saved-agent-run index and compact AG2 history summary across saved slots.
@@ -65,7 +66,7 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - AI-enabled AG2 routes now reject ungrounded responses that lack `Grounding references` or supplied Wikidata IDs, and emit an `ag2-grounding-invalid` observability category.
 - AI API routes can now deliver sanitized failure events and matching alert-rule metadata to an optional hosted monitor webhook.
 - API observability now includes a tested dashboard/alert contract with category panels, severity thresholds, time windows, and runbook text on top of sanitized failure events.
-- A token-protected `/api/observability/events` receiver can now accept sanitized monitor payloads, retain a bounded in-memory event window, and expose evaluated alert/dashboard snapshots for hosted smoke checks or lightweight demos.
+- A token-protected `/api/observability/events` receiver can now accept sanitized monitor payloads, retain a bounded event window in memory or an optional durable filesystem store, and expose evaluated alert/dashboard snapshots for hosted smoke checks or lightweight demos.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 - The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
 
@@ -81,8 +82,12 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - Deterministic Q42/Q80/Q90/Q95/Q25169/Q46248/P31 Wikidata fixtures are on `main` for search, entity, graph, evidence, media, data-quality, and comparison regression coverage.
 - A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Q25169 related-work graph context, Q95 organization headquarters/media context, Q90 place country/media context, Commons media, language metadata, Q42/Q80 comparison JSON export, Q42/Q46248 author comparison JSON export, Q25169/Q95/Q42 cross-type comparison JSON export, Q25169/Q95/Q90 work/organization/place comparison JSON export, property-focused comparison export restore for P17, direct P31 lookup, empty/missing results, Wikidata outage states, Commons outage states, and language fallback states without live Wikidata calls.
 - AI-enabled AG2 API success contracts are on `main` for `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` through a token-authenticated mock remote service.
-- The built-in observability receiver route is on `main` with live API contract coverage for fail-closed auth, accepted monitor events, sanitized snapshots, and firing alert results.
-- The optional project workspace store is on `main` with live API contract coverage for bearer auth, sanitized save/list/delete, persisted review/agent-history snapshots, project-level curation-task summaries, and project-level AG2 run summaries.
+- AG2 demo readiness checks are on `main` for enabled flags, token strength, service health, rate limits, docs-off posture, grounding-contract evidence, and hosted/durable monitoring.
+- `npm run production:proof` now composes live metadata, route smoke, homepage proof-path, and search/graph/comparison interaction checks against the production URL.
+- A manual GitHub Actions `Production Proof` workflow now runs the same live proof command, can optionally run hosted ops proof with repository secrets, and uploads `production-proof-log`/`hosted-ops-proof.log` artifacts for post-deploy release evidence.
+- `npm run ops:proof` now provides a token-required hosted proof for account-scoped workspace persistence and durable observability receiver checks.
+- The built-in observability receiver route is on `main` with live API contract coverage for fail-closed auth, accepted monitor events, sanitized snapshots, firing alert results, and optional filesystem-backed durable retention.
+- The optional project workspace store is on `main` with live API contract coverage for bearer auth, safe account/project namespace validation, sanitized save/list/delete, persisted review/agent-history snapshots, project-level curation-task summaries, and project-level AG2 run summaries.
 - The search workbench is on `main` with mocked browser coverage for project workspace save/delete/load controls, task-summary display, agent-history summary display, project backlog/history previews, and Markdown project brief exports.
 - Workspace snapshot, project store, and browser coverage are on `main` for persisted curation task details in saved browser/project slots.
 
@@ -98,15 +103,15 @@ Beyond 9.5:
 
 To reach 10:
 
-- Ship an optional hosted AG2 container demo now that AI-enabled routes enforce traceable, citation-style Wikidata ID references in responses.
-- Add durable hosted storage behind the project-backed workspace slot API, then extend it into account-backed curation tasks and agent history.
-- Configure durable production monitor storage/dashboarding for the tested observability webhook, built-in receiver, and alert contract.
+- Attach the AG2 demo readiness gate to a hosted container target and capture proof that `/health`, route grounding, and monitor delivery pass against the live demo environment.
+- Attach the account-scoped workspace store to hosted identity-backed storage, then promote curation tasks and agent history into first-class account-backed records.
+- Attach the durable monitor receiver to hosted infrastructure and capture portfolio proof of retained alert history across restarts.
 
 ## Next Priorities
 
 ### 1. Recruiter-Ready Proof Path
 
-Status: implemented in the app; ship to production after the verification pass.
+Status: shipped in production with live smoke and browser proof-path checks.
 
 Goal: make the first five minutes of the demo obvious and impressive.
 
@@ -166,14 +171,14 @@ Goal: help users evaluate data quality, not just browse facts.
 - Added fallback support for uncommon external-ID formatter patterns beyond `$1`.
 - Shipped portable workspace snapshots for review task statuses, dismissed findings, and saved AG2 run history.
 - Shipped named browser-local workspace slots as a bounded, restorable project-slot step before account-backed storage.
-- Shipped an optional token-protected project workspace store for sanitized saved slots on a durable filesystem mount.
+- Shipped an optional token-protected project workspace store for sanitized saved slots on a durable filesystem mount, with account-scoped project namespaces ready for a future identity layer.
 - Shipped Review Queue UI controls for project workspace load/save/delete when a private/self-hosted token is available.
 - Shipped sanitized review-queue curation task details inside portable snapshots and project workspace slots.
 - Shipped project-level curation task indexing and open/high/ready/resolved summaries from saved workspace slots.
 - Shipped project-level saved AG2 run indexing and action/entity/workspace summaries from saved workspace slots.
 - Shipped compact project-level review backlog and saved AG2 run previews in the project sync panel.
 - Shipped Markdown project brief export for project review backlog and saved AG2 history handoff.
-- Promote project workspace curation tasks into account-backed source-backed tasks once a user/project identity layer exists.
+- Promote project workspace curation tasks into source-backed account records once a user/project identity layer is attached to the account namespace.
 
 ### 5. AG2 Assistant Context
 
@@ -184,6 +189,7 @@ Goal: make AI assistance visibly grounded in selected Wikidata context.
 - Shipped citation-style grounding requirements for AG2 chat, summaries, graph analysis, suggestions, verification, comparison, and reports.
 - Shipped route-level AG2 response grounding validation for `Grounding references` and supplied Wikidata IDs, including an observability alert category for invalid grounding.
 - Shipped AI-enabled API route success contracts through a token-authenticated mock AG2 remote service for chat, entity summaries, and graph workflow responses.
+- Shipped `npm run ag2:demo:check -- --health` as an intentional AI demo preflight covering flags, service token/health, rate limits, docs-off posture, grounding-contract evidence, and hosted/durable monitoring.
 - Shipped portable workspace snapshots that can carry saved AG2 run history between browser sessions.
 - Shipped project-level saved AG2 run summaries through the optional project workspace store; persist them beyond portable/browser artifacts once a database or account layer is introduced.
 - Deploy the AG2 service container to a public/private host for an optional AI-enabled demo.
@@ -199,6 +205,10 @@ Keep these green before shipping code changes:
 - `npm run smoke`
 - `npm run api:contracts`
 - `npm run api:contracts:ag2`
+- `npm run ag2:demo:check -- --health` for intentional AI-enabled demo targets
+- `npm run production:proof` after deployment against the live portfolio URL
+- GitHub Actions `Production Proof` workflow after deployment for an auditable proof log
+- `npm run ops:proof` against private hosted workspace/observability targets with bearer tokens
 - `npm run e2e`
 - `npm run perf:check`
 - `npm run visual:qa`
@@ -210,6 +220,10 @@ Next quality improvements:
 - Keep graph accessibility checks green for control labels, keyboard navigation, tab order, statement drawers, pinned history, and reduced-motion behavior.
 - Keep `/search?q=Q42` performance budgets and shared comparison URL restore green as graph/comparison features expand.
 - Keep AI-enabled AG2 success contracts green as chat/workflow payloads evolve.
+- Keep AG2 demo readiness green before any intentional AI-enabled demo traffic.
+- Keep production proof green after each deployment and pair it with green GitHub Actions plus successful Vercel status.
+- Archive or link the `production-proof-log` artifact beside Vercel/GitHub evidence for final portfolio release notes.
+- Keep hosted ops proof green when workspace and observability bearer tokens are configured, then attach its output to final production-depth evidence.
 
 ## Deployment And Operations
 
@@ -227,6 +241,7 @@ AI-enabled future mode:
 - Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the AG2 service host.
 - Enable `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, and `AG2_SERVICE_URL=https://...` only for intentional AI-enabled demos.
 - Keep FastAPI docs disabled in production with `AG2_ENABLE_DOCS=false`.
+- Run `npm run ag2:demo:check -- --health` with hosted monitoring configured before routing demo traffic to the AI-enabled app.
 
 Observability:
 
@@ -235,9 +250,9 @@ Observability:
 - Track API error categories: Wikidata unavailable, Commons unavailable, AG2 disabled, request validation, safety policy, request rate limit, OpenAI key missing, OpenAI quota/rate limit, and AG2 service unavailable.
 - Track AG2 grounding invalid responses as a critical alert category before any public AI-enabled demo traffic.
 - Shipped optional hosted monitor webhook delivery for sanitized API failure events and matching alert-rule metadata.
-- Shipped a token-protected built-in monitor receiver with bounded recent-event retention and alert/dashboard snapshots.
+- Shipped a token-protected built-in monitor receiver with bounded recent-event retention, optional filesystem-backed durable storage, and alert/dashboard snapshots.
 - Shipped live API contract coverage for the built-in monitor receiver's bearer auth, event ingestion, sanitized snapshot, and alert firing behavior.
-- Shipped a tested dashboard/alert rule contract for category panels, severity thresholds, alert windows, and runbook text; next step is configuring durable hosted production storage/dashboarding.
+- Shipped a tested dashboard/alert rule contract for category panels, severity thresholds, alert windows, runbook text, and durable receiver retention; next step is attaching it to hosted infrastructure and capturing restart-proof monitor evidence.
 
 ## Maintenance
 
@@ -289,6 +304,6 @@ Status: partially shipped
 Status: in progress
 
 - Shipped: portable workspace snapshots and named browser-local workspace slots for review task statuses, dismissed findings, and saved AG2 run history.
-- Shipped: optional token-protected project workspace slot persistence, workbench sync controls, project curation-task summaries/previews, project AG2 run summaries/previews, and Markdown project briefs for sanitized portable snapshots with curation task details and saved agent history.
+- Shipped: optional token-protected project workspace slot persistence with account-ready namespaces, workbench sync controls, project curation-task summaries/previews, project AG2 run summaries/previews, and Markdown project briefs for sanitized portable snapshots with curation task details and saved agent history.
 - Next: account-backed persisted curation tasks and agent history.
 - Broader accessibility and performance budgets suitable for a production-facing research tool as stored workspace features arrive.

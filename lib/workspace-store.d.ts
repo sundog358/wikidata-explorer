@@ -8,6 +8,7 @@ export interface WorkspaceStoreResult {
   ok: boolean;
   status?: number;
   reason?: string;
+  accountId?: string;
   projectId: string;
   slots: WorkspaceSlot[];
 }
@@ -68,6 +69,7 @@ export interface ProjectWorkspaceAgentRunSummary {
 }
 
 export function normalizeWorkspaceProjectId(value?: unknown): string;
+export function normalizeWorkspaceAccountId(value?: unknown): string;
 export function workspaceStoreConfig(env?: Record<string, string | undefined>): WorkspaceStoreConfig;
 export function authorizeWorkspaceStore(headers?: Headers | Record<string, string | undefined>, env?: Record<string, string | undefined>):
   | { authorized: false; status: number; reason?: string }
@@ -76,7 +78,7 @@ export function buildProjectWorkspaceCurationTaskIndex(slots?: unknown): Project
 export function summarizeProjectWorkspaceCurationTasks(slots?: unknown): ProjectWorkspaceCurationTaskSummary;
 export function buildProjectWorkspaceAgentRunIndex(slots?: unknown): ProjectWorkspaceAgentRun[];
 export function summarizeProjectWorkspaceAgentRuns(slots?: unknown): ProjectWorkspaceAgentRunSummary;
-export function readProjectWorkspaceSlots(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; projectId?: unknown }): Promise<WorkspaceStoreResult>;
-export function writeProjectWorkspaceSlots(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; projectId?: unknown; slots?: unknown }): Promise<WorkspaceStoreResult>;
-export function upsertProjectWorkspaceSlot(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; projectId?: unknown; slot?: unknown }): Promise<WorkspaceStoreResult>;
-export function removeProjectWorkspaceSlot(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; projectId?: unknown; slotId?: unknown }): Promise<WorkspaceStoreResult>;
+export function readProjectWorkspaceSlots(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; accountId?: unknown; projectId?: unknown }): Promise<WorkspaceStoreResult>;
+export function writeProjectWorkspaceSlots(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; accountId?: unknown; projectId?: unknown; slots?: unknown }): Promise<WorkspaceStoreResult>;
+export function upsertProjectWorkspaceSlot(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; accountId?: unknown; projectId?: unknown; slot?: unknown }): Promise<WorkspaceStoreResult>;
+export function removeProjectWorkspaceSlot(options?: { env?: Record<string, string | undefined>; config?: Extract<WorkspaceStoreConfig, { enabled: true }>; accountId?: unknown; projectId?: unknown; slotId?: unknown }): Promise<WorkspaceStoreResult>;

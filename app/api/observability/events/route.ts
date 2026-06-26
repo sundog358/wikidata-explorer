@@ -1,7 +1,7 @@
 import {
-  apiObservabilityReceiverSnapshot,
+  apiObservabilityReceiverSnapshotWithStore,
   authorizeApiObservabilityReceiver,
-  receiveApiObservabilityMonitorPayload,
+  receiveApiObservabilityMonitorPayloadWithStore,
 } from "@/lib/api-observability.mjs";
 
 export const runtime = "nodejs";
@@ -41,11 +41,12 @@ export async function POST(req: Request) {
     );
   }
 
-  const received = receiveApiObservabilityMonitorPayload(body);
+  const received = await receiveApiObservabilityMonitorPayloadWithStore(body, { env: process.env });
   return Response.json({
     received: received.received,
     category: received.event.category,
     retainedEvents: received.retainedEvents,
+    storage: received.storage,
     firingAlerts: received.alertResults.filter((alert: { firing: boolean }) => alert.firing),
   }, { status: 202 });
 }
@@ -54,5 +55,5 @@ export async function GET(req: Request) {
   const unauthorized = authResponse(req);
   if (unauthorized) return unauthorized;
 
-  return Response.json(apiObservabilityReceiverSnapshot());
+  return Response.json(await apiObservabilityReceiverSnapshotWithStore({ env: process.env }));
 }
