@@ -39,21 +39,24 @@ assert.equal(classifyApiFailure({ status: 503, message: "Commons media metadata 
 assert.equal(classifyApiFailure({ status: 403, message: "Autonomy safety policy blocked this workflow." }), API_FAILURE_CATEGORIES.SAFETY_POLICY);
 assert.equal(classifyApiFailure({ status: 400, message: "Invalid chat request." }), API_FAILURE_CATEGORIES.REQUEST_VALIDATION);
 
-const redacted = sanitizeLogMessage("OpenAI key sk-proj-secret123456 and Authorization=Bearer abcdefghijklmnop token=very-secret");
-assert.doesNotMatch(redacted, /sk-proj-secret/);
-assert.doesNotMatch(redacted, /abcdefghijklmnop/);
-assert.doesNotMatch(redacted, /very-secret/);
+const openAiKeyFixture = ["sk", "proj-redaction-test-value"].join("-");
+const bearerTokenFixture = "bearer-redaction-fixture";
+const queryTokenFixture = "query-redaction-fixture";
+const redacted = sanitizeLogMessage(`OpenAI key ${openAiKeyFixture} and Authorization=Bearer ${bearerTokenFixture} token=${queryTokenFixture}`);
+assert.doesNotMatch(redacted, new RegExp(openAiKeyFixture));
+assert.doesNotMatch(redacted, new RegExp(bearerTokenFixture));
+assert.doesNotMatch(redacted, new RegExp(queryTokenFixture));
 assert.match(redacted, /<redacted>/);
 
 const event = apiFailureEvent({
   route: "/api/chat?prompt=hidden",
   status: 503,
-  error: new Error("Could not reach AG2 service with token=secret-token-value"),
+  error: new Error(`Could not reach AG2 service with token=${queryTokenFixture}`),
 });
 assert.equal(event.route, "unknown");
 assert.equal(event.category, API_FAILURE_CATEGORIES.AG2_SERVICE_UNAVAILABLE);
 assert.equal(event.status, 503);
-assert.doesNotMatch(JSON.stringify(event), /secret-token-value/);
+assert.doesNotMatch(JSON.stringify(event), new RegExp(queryTokenFixture));
 
 const logs = [];
 const logged = logApiFailure(
@@ -93,12 +96,12 @@ assert.deepEqual(
 const monitorPayload = apiObservabilityMonitorPayload({
   route: "/api/chat",
   status: 502,
-  message: "The AG2 response did not include required Wikidata grounding references. Bearer abcdefghijklmnop",
+  message: `The AG2 response did not include required Wikidata grounding references. Bearer ${bearerTokenFixture}`,
 });
 assert.equal(monitorPayload.source, "wikidata-explorer");
 assert.equal(monitorPayload.event.category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
 assert.equal(monitorPayload.alertRules[0].id, "ag2-grounding-invalid");
-assert.doesNotMatch(JSON.stringify(monitorPayload), /abcdefghijklmnop/);
+assert.doesNotMatch(JSON.stringify(monitorPayload), new RegExp(bearerTokenFixture));
 
 const receiverStore = [];
 const receivedMonitor = receiveApiObservabilityMonitorPayload(monitorPayload, {
@@ -109,7 +112,7 @@ assert.equal(receivedMonitor.received, true);
 assert.equal(receivedMonitor.event.category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
 assert.equal(receivedMonitor.retainedEvents, 1);
 assert.equal(receivedMonitor.alertResults.find((alert) => alert.id === "ag2-grounding-invalid").firing, true);
-assert.doesNotMatch(JSON.stringify(receiverStore), /abcdefghijklmnop/);
+assert.doesNotMatch(JSON.stringify(receiverStore), new RegExp(bearerTokenFixture));
 
 for (let index = 0; index < API_OBSERVABILITY_RECEIVER_EVENT_LIMIT + 3; index += 1) {
   receiveApiObservabilityMonitorPayload({
@@ -145,7 +148,7 @@ try {
   assert.equal(durableReceived.retainedEvents, 1);
   const persisted = JSON.parse(await readFile(durableConfig.filePath, "utf8"));
   assert.equal(persisted[0].category, API_FAILURE_CATEGORIES.AG2_GROUNDING_INVALID);
-  assert.doesNotMatch(JSON.stringify(persisted), /abcdefghijklmnop/);
+  assert.doesNotMatch(JSON.stringify(persisted), new RegExp(bearerTokenFixture));
 
   const overflow = [];
   for (let index = 0; index < API_OBSERVABILITY_RECEIVER_EVENT_LIMIT + 5; index += 1) {
