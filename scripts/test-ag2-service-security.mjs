@@ -62,5 +62,22 @@ assert.match(pythonAgent, /statement IDs, ranks, qualifiers, references, and sou
 
 const dockerfile = readFileSync(new URL("../agents/Dockerfile", import.meta.url), "utf8");
 assert.match(dockerfile, /USER appuser/);
+assert.match(dockerfile, /HEALTHCHECK/);
+assert.match(dockerfile, /127\.0\.0\.1:8000\/health/);
+
+const dockerignore = readFileSync(new URL("../.dockerignore", import.meta.url), "utf8");
+assert.match(dockerignore, /^\*/m);
+for (const requiredAgentFile of [
+  "!agents/",
+  "!agents/Dockerfile",
+  "!agents/requirements.txt",
+  "!agents/wikidata_ag2_agent.py",
+  "!agents/ag2_service.py",
+]) {
+  assert.ok(dockerignore.includes(requiredAgentFile), `.dockerignore should allow ${requiredAgentFile}`);
+}
+for (const excludedPath of [".env", "node_modules", ".tmp", "docs", "public"]) {
+  assert.ok(!dockerignore.includes(`!${excludedPath}`), `.dockerignore should not allow ${excludedPath}`);
+}
 
 console.log("PASS AG2 service security tests");

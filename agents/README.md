@@ -18,6 +18,10 @@ Health check:
 curl http://localhost:8000/health
 ```
 
+The Docker image also declares a container `HEALTHCHECK` against `/health` so hosts that surface Docker health status can fail fast before the Next.js app points at the service.
+
+The root `.dockerignore` allowlists only the AG2 service files needed by `agents/Dockerfile`, keeping local env files, build outputs, screenshots, docs, and other repo artifacts out of remote build contexts.
+
 Authenticated run requests must include the bearer token:
 
 ```bash
@@ -42,6 +46,8 @@ AG2_SERVICE_TOKEN=replace-with-a-random-32-plus-character-secret
 - Keep `AG2_SERVICE_TOKEN` secret and shared only between Vercel and the AG2 host.
 - Prefer private networking between Vercel and the container host when available.
 - Keep `AG2_ENABLE_DOCS=false` unless intentionally debugging a private deployment.
+- Keep the container healthcheck enabled so hosted AG2 proof failures distinguish an unhealthy service from route grounding or observability issues.
+- Keep the root `.dockerignore` allowlist tight when adding AG2 service files.
 - Set `AI_AGENT_RATE_LIMIT_MAX` and `AI_AGENT_RATE_LIMIT_WINDOW_MS` on the Next.js deployment for public AI-enabled demos.
 
 The service keeps provider credentials in the container environment, runs as a non-root user, disables FastAPI docs by default, and exposes only a bounded, bearer-token-protected `/run` endpoint for the validated payloads already used by the Next.js API routes.

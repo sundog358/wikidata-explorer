@@ -17,6 +17,24 @@ on:
         required: true
         type: boolean
         default: false
+      run_ag2_proof:
+        description: Also verify hosted AG2 service, grounding, and observability proof using repository secrets
+        required: true
+        type: boolean
+        default: false
+      ai_app_base_url:
+        description: Optional AI-enabled Next app URL for hosted AG2 proof; defaults to base_url
+        required: false
+        default: ""
+      ag2_service_url:
+        description: Hosted AG2 service URL used by the AI-enabled app
+        required: false
+        default: ""
+      require_ag2_durable_monitor:
+        description: Require the hosted AG2 proof receiver to report durable storage
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   production-proof:
@@ -39,6 +57,28 @@ jobs:
         id: setup-chrome
         uses: browser-actions/setup-chrome@v2.1.2
 
+      - name: Preflight hosted ops proof
+        if: ${{ inputs.run_ops_proof }}
+        env:
+          WORKSPACE_STORE_TOKEN: ${{ secrets.PRODUCTION_WORKSPACE_STORE_TOKEN }}
+          API_OBSERVABILITY_RECEIVER_TOKEN: ${{ secrets.PRODUCTION_OBSERVABILITY_RECEIVER_TOKEN }}
+        run: npm run portfolio:hosted:preflight -- --scope=ops --ops-base-url="${{ inputs.base_url }}"
+
+      - name: Preflight hosted AG2 proof
+        if: ${{ inputs.run_ag2_proof }}
+        env:
+          AG2_DEMO_OBSERVABILITY_RECEIVER_TOKEN: ${{ secrets.AG2_DEMO_OBSERVABILITY_RECEIVER_TOKEN }}
+          AG2_SERVICE_TOKEN: ${{ secrets.AG2_DEMO_SERVICE_TOKEN }}
+          NEXT_PUBLIC_ENABLE_AI_AGENTS: "true"
+          ENABLE_AI_AGENTS: "true"
+          AI_AGENT_RATE_LIMIT_MAX: "20"
+          AI_AGENT_RATE_LIMIT_WINDOW_MS: "60000"
+          AG2_ENABLE_DOCS: "false"
+          AI_APP_BASE_URL: ${{ inputs.ai_app_base_url != '' && inputs.ai_app_base_url || inputs.base_url }}
+          API_OBSERVABILITY_WEBHOOK_URL: ${{ inputs.ai_app_base_url != '' && inputs.ai_app_base_url || inputs.base_url }}/api/observability/events
+          API_OBSERVABILITY_WEBHOOK_TOKEN: ${{ secrets.AG2_DEMO_OBSERVABILITY_RECEIVER_TOKEN }}
+        run: npm run portfolio:hosted:preflight -- --scope=ag2 --app-base-url="$AI_APP_BASE_URL" --ag2-service-url="${{ inputs.ag2_service_url }}"
+
       - name: Run production proof
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
@@ -58,7 +98,55 @@ jobs:
           HOSTED_OPS_BASE_URL: ${{ inputs.base_url }}
           WORKSPACE_STORE_TOKEN: ${{ secrets.PRODUCTION_WORKSPACE_STORE_TOKEN }}
           API_OBSERVABILITY_RECEIVER_TOKEN: ${{ secrets.PRODUCTION_OBSERVABILITY_RECEIVER_TOKEN }}
-        run: npm run ops:proof 2>&1 | tee hosted-ops-proof.log
+        run: |
+          set -o pipefail
+          npm run ops:proof 2>&1 | tee hosted-ops-proof.log
+
+      - name: Run hosted AG2 proof
+        if: ${{ inputs.run_ag2_proof }}
+        env:
+          AG2_DEMO_BASE_URL: ${{ inputs.ai_app_base_url != '' && inputs.ai_app_base_url || inputs.base_url }}
+          AG2_SERVICE_URL: ${{ inputs.ag2_service_url }}
+          AG2_SERVICE_TOKEN: ${{ secrets.AG2_DEMO_SERVICE_TOKEN }}
+          AG2_DEMO_OBSERVABILITY_RECEIVER_TOKEN: ${{ secrets.AG2_DEMO_OBSERVABILITY_RECEIVER_TOKEN }}
+          AG2_DEMO_REQUIRE_DURABLE_OBSERVABILITY: ${{ inputs.require_ag2_durable_monitor }}
+          NEXT_PUBLIC_SITE_URL: ${{ inputs.ai_app_base_url != '' && inputs.ai_app_base_url || inputs.base_url }}
+          NEXT_PUBLIC_ENABLE_AI_AGENTS: "true"
+          ENABLE_AI_AGENTS: "true"
+          AI_AGENT_RATE_LIMIT_MAX: "20"
+          AI_AGENT_RATE_LIMIT_WINDOW_MS: "60000"
+          AG2_ENABLE_DOCS: "false"
+          API_OBSERVABILITY_WEBHOOK_URL: ${{ inputs.ai_app_base_url != '' && inputs.ai_app_base_url || inputs.base_url }}/api/observability/events
+          API_OBSERVABILITY_WEBHOOK_TOKEN: ${{ secrets.AG2_DEMO_OBSERVABILITY_RECEIVER_TOKEN }}
+        run: |
+          set -o pipefail
+          npm run ag2:hosted:proof 2>&1 | tee ag2-hosted-proof.log
+
+      - name: Summarize portfolio evidence
+        if: always()
+        run: |
+          set -o pipefail
+          ARGS=(--dir=.)
+          if [ "${{ inputs.run_ops_proof }}" = "true" ]; then
+            ARGS+=(--require-hosted-ops)
+          fi
+          if [ "${{ inputs.run_ag2_proof }}" = "true" ]; then
+            ARGS+=(--require-hosted-ag2)
+          fi
+          set +e
+          npm run portfolio:evidence -- "${ARGS[@]}" 2>&1 | tee portfolio-evidence.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ] && [ -f portfolio-evidence-summary.md ]; then
+            cat portfolio-evidence-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$STATUS"
+
+      - name: Validate portfolio 10 artifact
+        if: ${{ inputs.run_ops_proof && inputs.run_ag2_proof }}
+        run: |
+          set -o pipefail
+          npm run portfolio:10:check -- --dir=. 2>&1 | tee portfolio-10-check.log
 
       - name: Upload production proof log
         if: always()
@@ -68,4 +156,9 @@ jobs:
           path: |
             production-proof.log
             hosted-ops-proof.log
+            ag2-hosted-proof.log
+            portfolio-evidence.log
+            portfolio-10-check.log
+            portfolio-evidence-summary.json
+            portfolio-evidence-summary.md
           if-no-files-found: ignore

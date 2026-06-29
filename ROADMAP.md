@@ -1,6 +1,6 @@
 # Wikidata Explorer Roadmap
 
-Last reviewed: June 25, 2026
+Last reviewed: June 29, 2026
 
 This roadmap tracks the path from a strong public portfolio app to a credible linked-data research workspace. The public Next.js app is live at `https://www.wikidataexplorer.com` with AI disabled by default; the AG2 runtime remains available locally or through the token-protected container service path.
 
@@ -69,9 +69,19 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - A token-protected `/api/observability/events` receiver can now accept sanitized monitor payloads, retain a bounded event window in memory or an optional durable filesystem store, and expose evaluated alert/dashboard snapshots for hosted smoke checks or lightweight demos.
 - AI API routes now emit sanitized failure events with stable categories for disabled mode, validation, safety policy, request rate limits, OpenAI key/quota issues, AG2 service outages, Wikidata outages, and Commons outages.
 - The search workbench now has a client-side error boundary with a reset/reload fallback and sanitized client failure telemetry.
+- A new `npm run ag2:hosted:proof` command verifies an intentionally AI-enabled hosted Next app against a hosted AG2 service, grounded live route output, and hosted observability receiver delivery.
+- A manual GitHub Actions `AG2 Demo Proof` workflow now uploads `ag2-hosted-proof-log` for optional AI-enabled demo release evidence.
+- A new `npm run portfolio:evidence` command validates proof logs, rejects secret-shaped text, and generates Markdown/JSON release evidence summaries with release-readiness classification, public and hosted target URLs, GitHub Actions provenance, byte counts, and SHA-256 artifact digests.
+- A new `npm run portfolio:hosted:preflight` command validates local hosted-proof variables or GitHub Actions secret metadata before spending a final proof run.
+- Hosted preflight failures now print redacted `NEXT` setup actions for missing GitHub secrets, hosted AG2 URL replacement, final workflow dispatch, and strict downloaded-artifact validation.
+- A new `npm run portfolio:10:check` command is the explicit final gate: it fails unless production, hosted ops, and hosted AG2 proof logs all pass.
+- The AG2 service Docker image now declares a `/health` container healthcheck and uses a tight `.dockerignore` allowlist so remote builds only upload the service files needed by `agents/Dockerfile`.
 
 ## Recently Confirmed In Production
 
+- `npm run production:proof` passed against `https://www.wikidataexplorer.com` on June 29, 2026, covering public metadata, route smoke, the Q42 recruiter proof path, search/graph/comparison interactions, selected-path exports, and direct P31 lookup.
+- `npm run portfolio:evidence -- --dir=.tmp\portfolio-evidence` validated that live public proof log, generated Markdown/JSON evidence summaries, and found no secret-shaped text; hosted ops and hosted AG2 proof logs remain optional until those targets are intentionally configured.
+- `npm run portfolio:hosted:preflight -- --github --app-base-url=https://www.wikidataexplorer.com --ag2-service-url=https://replace-with-hosted-ag2.example.com` currently fails as expected because the required GitHub Actions secrets are not configured and the AG2 service URL is still a placeholder.
 - `https://www.wikidataexplorer.com/search?q=Q42&tab=compare&compare=Q80` restores the public AI-off Q42/Q80 comparison workflow.
 - Production comparison exports now include structured JSON beside Markdown notes.
 
@@ -83,9 +93,11 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 - A route-mocked browser fixture flow is on `main` for the search workbench, Q42 graph context, Q25169 related-work graph context, Q95 organization headquarters/media context, Q90 place country/media context, Commons media, language metadata, Q42/Q80 comparison JSON export, Q42/Q46248 author comparison JSON export, Q25169/Q95/Q42 cross-type comparison JSON export, Q25169/Q95/Q90 work/organization/place comparison JSON export, property-focused comparison export restore for P17, direct P31 lookup, empty/missing results, Wikidata outage states, Commons outage states, and language fallback states without live Wikidata calls.
 - AI-enabled AG2 API success contracts are on `main` for `/api/chat`, `/api/entity-summary`, and `/api/ag2-workflow` through a token-authenticated mock remote service.
 - AG2 demo readiness checks are on `main` for enabled flags, token strength, service health, rate limits, docs-off posture, grounding-contract evidence, and hosted/durable monitoring.
+- Hosted AG2 proof checks are on `main` for intentional AI-enabled demo targets: AG2 `/health`, grounded `/api/entity-summary`, and monitor delivery into the hosted observability receiver.
 - `npm run production:proof` now composes live metadata, route smoke, homepage proof-path, and search/graph/comparison interaction checks against the production URL.
-- A manual GitHub Actions `Production Proof` workflow now runs the same live proof command, can optionally run hosted ops proof with repository secrets, and uploads `production-proof-log`/`hosted-ops-proof.log` artifacts for post-deploy release evidence.
-- `npm run ops:proof` now provides a token-required hosted proof for account-scoped workspace persistence and durable observability receiver checks.
+- A manual GitHub Actions `Production Proof` workflow now runs the same live proof command, can optionally run scoped hosted preflights plus hosted ops and hosted AG2 proof with repository secrets, supports a separate `ai_app_base_url` for AI-enabled demos, validates those logs with `npm run portfolio:evidence`, runs `npm run portfolio:10:check -- --dir=.` when both hosted proofs are enabled, and uploads `production-proof-log`/`hosted-ops-proof.log`/`ag2-hosted-proof.log` plus `portfolio-10-check.log` and `portfolio-evidence-summary.md/json` artifacts with run URL, ref, commit SHA provenance, and SHA-256 proof-log digests for post-deploy release evidence.
+- A manual GitHub Actions `AG2 Demo Proof` workflow now runs an AG2-scoped hosted preflight, then `npm run ag2:hosted:proof` with repository secrets, and uploads `ag2-hosted-proof-log`.
+- `npm run ops:proof` now provides a token-required hosted proof for account-scoped workspace persistence, namespace isolation, task/agent summaries, and durable observability receiver checks.
 - The built-in observability receiver route is on `main` with live API contract coverage for fail-closed auth, accepted monitor events, sanitized snapshots, firing alert results, and optional filesystem-backed durable retention.
 - The optional project workspace store is on `main` with live API contract coverage for bearer auth, safe account/project namespace validation, sanitized save/list/delete, persisted review/agent-history snapshots, project-level curation-task summaries, and project-level AG2 run summaries.
 - The search workbench is on `main` with mocked browser coverage for project workspace save/delete/load controls, task-summary display, agent-history summary display, project backlog/history previews, and Markdown project brief exports.
@@ -93,9 +105,9 @@ The project is now beyond a prototype. It has a working public demo, a coherent 
 
 ## Portfolio Readiness
 
-Current local grade: 9.7 / 10
+Current local grade: 9.8 / 10
 
-The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, timeline evidence layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is less about baseline readiness and more about making the research workspace feel production-deep.
+The project is job-portfolio ready now. It shows product judgment, modern frontend engineering, linked-data depth, AI-off comparison, graph depth controls, grouped graph layout, timeline evidence layout, richer graph previews, pinned graph comparison, AI safety boundaries, CI discipline, deployment hardening, and a real public URL. The remaining gap is no longer missing proof tooling; it is capturing green hosted proof artifacts from intentionally enabled production-depth services.
 
 Beyond 9.5:
 
@@ -103,7 +115,11 @@ Beyond 9.5:
 
 To reach 10:
 
-- Attach the AG2 demo readiness gate to a hosted container target and capture proof that `/health`, route grounding, and monitor delivery pass against the live demo environment.
+- Run `Production Proof` with both `run_ops_proof` and `run_ag2_proof` enabled against production-depth hosted services, then run `npm run portfolio:10:check -- --dir=<artifact-dir> --require-check-log` and archive the combined green artifact containing `production-proof.log`, `hosted-ops-proof.log`, `ag2-hosted-proof.log`, `portfolio-10-check.log`, and pre-existing `portfolio-evidence-summary.md/json` files whose digests match those logs.
+- Use `ai_app_base_url` when the AI-enabled Next.js target is separate from the public AI-off portfolio URL.
+- Confirm the generated `portfolio-evidence-summary.md/json` says `Portfolio 10/10 ready (10/10)` and includes GitHub Actions provenance such as run URL, ref, commit SHA, and SHA-256 proof-log digests.
+- Follow `docs/portfolio-10-release-runbook.md` for the exact secret setup, workflow dispatch, artifact download, and final readiness check sequence.
+- Before dispatching that final workflow, run `npm run portfolio:hosted:preflight -- --github --app-base-url=<ai-app-url> --ag2-service-url=<ag2-service-url>` and clear missing `PRODUCTION_WORKSPACE_STORE_TOKEN`, `PRODUCTION_OBSERVABILITY_RECEIVER_TOKEN`, `AG2_DEMO_SERVICE_TOKEN`, `AG2_DEMO_OBSERVABILITY_RECEIVER_TOKEN`, and placeholder URL failures.
 - Attach the account-scoped workspace store to hosted identity-backed storage, then promote curation tasks and agent history into first-class account-backed records.
 - Attach the durable monitor receiver to hosted infrastructure and capture portfolio proof of retained alert history across restarts.
 
@@ -190,9 +206,11 @@ Goal: make AI assistance visibly grounded in selected Wikidata context.
 - Shipped route-level AG2 response grounding validation for `Grounding references` and supplied Wikidata IDs, including an observability alert category for invalid grounding.
 - Shipped AI-enabled API route success contracts through a token-authenticated mock AG2 remote service for chat, entity summaries, and graph workflow responses.
 - Shipped `npm run ag2:demo:check -- --health` as an intentional AI demo preflight covering flags, service token/health, rate limits, docs-off posture, grounding-contract evidence, and hosted/durable monitoring.
+- Shipped `npm run ag2:hosted:proof` and the manual `AG2 Demo Proof` workflow to capture hosted AG2 service health, grounded live route output, and observability receiver delivery as an auditable artifact.
 - Shipped portable workspace snapshots that can carry saved AG2 run history between browser sessions.
 - Shipped project-level saved AG2 run summaries through the optional project workspace store; persist them beyond portable/browser artifacts once a database or account layer is introduced.
 - Deploy the AG2 service container to a public/private host for an optional AI-enabled demo.
+- Capture a green `ag2-hosted-proof-log` from that hosted AI demo before calling the AG2 portfolio slice complete.
 - Expand safety copy and policy UI for future live bot-ready actions, source requirements, and human approval states.
 
 ## Testing And Quality
@@ -206,9 +224,14 @@ Keep these green before shipping code changes:
 - `npm run api:contracts`
 - `npm run api:contracts:ag2`
 - `npm run ag2:demo:check -- --health` for intentional AI-enabled demo targets
+- `npm run ag2:hosted:proof` for intentionally hosted AI-enabled demo targets
+- `npm run portfolio:hosted:preflight -- --github --app-base-url=<ai-app-url> --ag2-service-url=<ag2-service-url>` before final hosted proof dispatch
+- `npm run portfolio:evidence -- --require-hosted-ops --require-hosted-ag2` for final release artifacts
+- `npm run portfolio:10:check -- --dir=<artifact-dir> --require-check-log` before calling a release 10/10 from a downloaded proof artifact
 - `npm run production:proof` after deployment against the live portfolio URL
-- GitHub Actions `Production Proof` workflow after deployment for an auditable proof log
-- `npm run ops:proof` against private hosted workspace/observability targets with bearer tokens
+- GitHub Actions `Production Proof` workflow after deployment for auditable public, hosted ops, and hosted AG2 proof logs
+- GitHub Actions `AG2 Demo Proof` workflow after enabling a hosted AG2 demo for an auditable AI proof log
+- `npm run ops:proof` against private hosted workspace/observability targets with bearer tokens, including account/project namespace isolation
 - `npm run e2e`
 - `npm run perf:check`
 - `npm run visual:qa`
@@ -221,6 +244,7 @@ Next quality improvements:
 - Keep `/search?q=Q42` performance budgets and shared comparison URL restore green as graph/comparison features expand.
 - Keep AI-enabled AG2 success contracts green as chat/workflow payloads evolve.
 - Keep AG2 demo readiness green before any intentional AI-enabled demo traffic.
+- Keep hosted AG2 proof green once the optional AI demo target exists, and archive `ag2-hosted-proof.log` beside `production-proof.log`, `hosted-ops-proof.log`, and `portfolio-evidence-summary.md/json`.
 - Keep production proof green after each deployment and pair it with green GitHub Actions plus successful Vercel status.
 - Archive or link the `production-proof-log` artifact beside Vercel/GitHub evidence for final portfolio release notes.
 - Keep hosted ops proof green when workspace and observability bearer tokens are configured, then attach its output to final production-depth evidence.
@@ -237,11 +261,13 @@ Current public mode:
 AI-enabled future mode:
 
 - Deploy `agents/Dockerfile` to a container host such as Render, Railway, Fly, or a private VM.
+- Keep the AG2 Docker `/health` healthcheck and `.dockerignore` allowlist intact for hosted builds.
 - Store provider credentials in the AG2 service environment, not in public client code.
 - Set the same 32+ character `AG2_SERVICE_TOKEN` in Vercel and the AG2 service host.
 - Enable `NEXT_PUBLIC_ENABLE_AI_AGENTS=true`, `ENABLE_AI_AGENTS=true`, and `AG2_SERVICE_URL=https://...` only for intentional AI-enabled demos.
 - Keep FastAPI docs disabled in production with `AG2_ENABLE_DOCS=false`.
 - Run `npm run ag2:demo:check -- --health` with hosted monitoring configured before routing demo traffic to the AI-enabled app.
+- Run `npm run ag2:hosted:proof` or the manual `AG2 Demo Proof` workflow after deployment to verify the AI-enabled app can return grounded route output and deliver monitor events to the hosted receiver.
 
 Observability:
 
@@ -297,7 +323,8 @@ Status: partially shipped
 
 - Shipped: feature-flagged AG2 routes, local/container bridge, safety policy, remote service contract, disabled public mode, and mock-service success contracts for enabled API routes.
 - Shipped: route-level citation-style response validation for enabled AG2 route outputs.
-- Next: hosted optional AG2 demo using the validated remote-service path.
+- Shipped: hosted AG2 proof command and manual workflow for an intentional AI-enabled demo target.
+- Next: deploy the optional AG2 demo using the validated remote-service path and archive a green hosted proof artifact.
 
 ### Milestone 5: Research Workspace
 

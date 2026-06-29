@@ -1,6 +1,6 @@
 # Wikidata Explorer Case Study
 
-Last reviewed: June 25, 2026
+Last reviewed: June 29, 2026
 
 Wikidata Explorer is a public linked-data research workbench. The product goal is narrow on purpose: start with one Wikidata entity, then make the trustworthy graph around it clear enough to inspect, compare, export, and hand off.
 
@@ -62,9 +62,14 @@ The verification loop is intentionally broader than a typical portfolio app beca
 - `npm run verify` runs lint, deterministic tests, and production build.
 - `npm run api:contracts` checks public AI-off failures and AI-enabled route validation.
 - `npm run ag2:demo:check -- --health` verifies intentional AI demo flags, AG2 service health, docs-off posture, rate limits, grounding-contract evidence, and hosted/durable monitoring before demo traffic.
+- `npm run ag2:hosted:proof` verifies an intentionally AI-enabled hosted app can reach the AG2 service, records the app/service target pair, returns a grounded live route response, and delivers an induced API failure into the hosted observability receiver.
+- `npm run portfolio:evidence` validates proof logs, rejects secret-shaped text, and writes Markdown/JSON summaries with release-readiness classification, GitHub Actions provenance, and SHA-256 artifact digests for release artifacts.
+- `npm run portfolio:hosted:preflight` checks local hosted-proof variables or GitHub Actions secret metadata before the final hosted proof run.
+- `npm run portfolio:10:check` is the final release gate; it requires public production proof, hosted ops proof, and hosted AG2 proof logs to all pass before the portfolio is treated as 10/10.
 - `npm run production:proof` runs the live metadata, route smoke, homepage proof-path, and search/graph/comparison interaction checks against the public portfolio URL after deployment.
-- The manual GitHub Actions `Production Proof` workflow wraps the live proof command and can optionally run hosted ops proof with repository secrets, uploading proof log artifacts for release review.
-- `npm run ops:proof` verifies token-protected hosted workspace persistence and durable observability receiver behavior when private hosted credentials are configured.
+- The manual GitHub Actions `Production Proof` workflow wraps the live proof command and can optionally run hosted ops proof plus hosted AG2 proof with repository secrets, then uploads public, workspace/observability, AI, and `portfolio-evidence-summary` logs as one self-validating release artifact.
+- The manual GitHub Actions `AG2 Demo Proof` workflow wraps the hosted AG2 proof independently and uploads `ag2-hosted-proof-log` when only an AI-enabled demo target needs verification.
+- `npm run ops:proof` verifies token-protected hosted workspace persistence, account/project namespace isolation, curation-task and agent-run summaries, durable observability receiver behavior, and the hosted app target URL when private hosted credentials are configured.
 - `npm run e2e` covers proof paths, graph interactions, statements, comparison, exports, URL restore, and route-mocked fixture flows.
 - `npm run perf:check` budgets Q42 route readiness, graph readiness, graph node count, and DOM size.
 - `npm run visual:qa` captures portfolio surfaces and fails on console errors, hydration errors, and horizontal overflow.
@@ -83,6 +88,7 @@ The AG2 runtime is deliberately separate:
 - The container can be hosted on Render, Railway, Fly, or a private VM when an AI-enabled demo is intentional.
 - The AG2 service owns provider credentials and exposes only a token-protected `/run` endpoint to Next.js.
 - FastAPI docs are disabled in production unless explicitly enabled.
+- The AG2 Docker image declares a `/health` container healthcheck and uses a tight `.dockerignore` allowlist so hosted builds do not upload local env files, screenshots, docs, or app dependencies.
 
 This split keeps the public demo dependable while preserving a credible path to richer grounded AI workflows.
 
@@ -92,7 +98,9 @@ Monitoring follows the same safety boundary: API failures are classified into sa
 
 The project is portfolio-ready now. The remaining roadmap work is about making the workspace deeper:
 
-- optional hosted AG2 demo with live citation validation;
+- a captured green `AG2 Demo Proof` artifact from an optional hosted AG2 demo with live citation validation;
+- configured GitHub Actions secrets and a real hosted `AG2_SERVICE_URL` that pass `portfolio:hosted:preflight`;
+- a final `portfolio-evidence-summary` artifact that says `Portfolio 10/10 ready` and links back to the GitHub Actions run URL, commit SHA, and SHA-256 proof-log digests;
 - broader non-biographical fixture coverage;
 - identity-backed curation tasks and persisted agent history beyond the optional account-scoped project workspace store;
 - more accessibility and dark-mode visual QA coverage.

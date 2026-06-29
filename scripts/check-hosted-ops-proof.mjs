@@ -2,9 +2,13 @@ import { runHostedOpsProof } from "../lib/hosted-ops-proof.mjs";
 
 const result = await runHostedOpsProof({ env: process.env });
 
+if (result.ok) {
+  console.log(`PASS hosted-ops-target app=${result.baseUrl}`);
+}
+
 for (const check of result.checks || []) {
   if (check.id === "workspace-store") {
-    console.log(`PASS workspace-store account=${check.accountId} project=${check.projectId}`);
+    console.log(`PASS workspace-store account=${check.accountId} project=${check.projectId} isolated=${check.isolated} tasks=${check.taskSummaryTotal} agentRuns=${check.agentSummaryTotal}`);
   } else if (check.id === "observability-receiver") {
     console.log(`PASS observability-receiver durable=${check.durable} retainedEvents=${check.retainedEvents}`);
   } else {
